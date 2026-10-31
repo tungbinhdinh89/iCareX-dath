@@ -80,7 +80,7 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
   }, [])
   const query = useQuery({
     queryKey: ["garage", session?.id ?? "preview"],
-    queryFn: () => api.get(session?.id ?? null),
+    queryFn: () => api.get(session),
     retry: 1,
     staleTime: Infinity,
   })
@@ -145,9 +145,7 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
           setSelectedVehicle("all")
           setMonth("all")
           setModal(null)
-          notify(
-            `Xin chào ${account.name}! Dữ liệu chỉ lưu trong bộ nhớ phiên này.`,
-          )
+          notify(`Xin chào ${account.name}!`)
         },
         logout: async () => {
           try {

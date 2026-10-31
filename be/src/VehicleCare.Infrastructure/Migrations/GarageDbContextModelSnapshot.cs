@@ -177,6 +177,9 @@ namespace VehicleCare.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
 
                     b.ToTable("accounts", null, t =>
@@ -236,6 +239,10 @@ namespace VehicleCare.Infrastructure.Migrations
                     b.Property<Guid>("VehicleId")
                         .HasColumnType("uuid");
 
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId", "VehicleId", "PlanId");
@@ -289,6 +296,9 @@ namespace VehicleCare.Infrastructure.Migrations
                     b.Property<Guid>("VehicleId")
                         .HasColumnType("uuid");
 
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId", "VehicleId");
@@ -319,6 +329,9 @@ namespace VehicleCare.Infrastructure.Migrations
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
 
                     b.HasKey("AccountId");
 
@@ -374,6 +387,10 @@ namespace VehicleCare.Infrastructure.Migrations
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Year")
                         .HasColumnType("integer");

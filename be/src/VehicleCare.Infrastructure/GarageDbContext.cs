@@ -51,6 +51,7 @@ public sealed class GarageDbContext(DbContextOptions<GarageDbContext> options)
             e.Property(x => x.PlateNormalized).HasMaxLength(20);
             e.Property(x => x.Type).HasConversion<string>().HasMaxLength(16);
             e.Property(x => x.ImageUrl).HasMaxLength(2048);
+            e.Property(x => x.Version).IsConcurrencyToken();
             e.HasOne<Account>().WithMany().HasForeignKey(x => x.AccountId).OnDelete(DeleteBehavior.Cascade);
         });
         b.Entity<MaintenancePlan>(e =>
@@ -73,6 +74,7 @@ public sealed class GarageDbContext(DbContextOptions<GarageDbContext> options)
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.Version).IsConcurrencyToken();
             e.Property(x => x.Title).HasMaxLength(100);
             e.Property(x => x.Note).HasMaxLength(500);
             e.HasIndex(x => new { x.AccountId, x.VehicleId, x.Date, x.Odo });

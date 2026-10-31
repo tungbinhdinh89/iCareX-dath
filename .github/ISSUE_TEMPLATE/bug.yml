@@ -1,0 +1,23 @@
+name: Bug
+description: Hành vi sai cần tái hiện và sửa
+title: "[Bug] "
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Các bước tái hiện
+      description: Môi trường, input, kết quả thực tế và kết quả mong đợi.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Log/test/evidence
+    validations:
+      required: true

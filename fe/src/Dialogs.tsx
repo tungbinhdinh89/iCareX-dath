@@ -73,7 +73,7 @@ function EntryForm({
 }: {
   modal: Extract<ModalState, { type: "entry" }>
 }) {
-  const { data, save, pending, setModal } = useGarage()
+  const { data, save, pending, setModal, refetch, notify } = useGarage()
   const [error, setError] = useState("")
   const initialVehicle =
     modal.entry?.vehicleId ?? modal.vehicleId ?? data?.vehicles[0]?.id ?? ""
@@ -121,6 +121,31 @@ function EntryForm({
       validateEntry(data, entry)
     } catch (e) {
       setError((e as Error).message)
+      return
+    }
+    if (modal.kind === "odo") {
+      try {
+        if (modal.entry) {
+          await api.updateOdometerReading(entry.vehicleId, entry.id, {
+            date: entry.date,
+            odo: entry.odo,
+            note: entry.note,
+            version: modal.entry.version ?? 0,
+          })
+        } else {
+          await api.createOdometerReading(entry.vehicleId, {
+            date: entry.date,
+            odo: entry.odo,
+            note: entry.note,
+          })
+        }
+        await refetch()
+        notify(modal.entry ? "Đã cập nhật ODO." : "Đã thêm bản ghi ODO.")
+        setModal(null)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Không thể lưu ODO.")
+        notify(e instanceof Error ? e.message : "Không thể lưu ODO.", "error")
+      }
       return
     }
     const ok = await save(
@@ -318,8 +343,9 @@ const vehicleSchema = z.object({
 })
 type VehicleFields = z.infer<typeof vehicleSchema>
 function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
-  const { data, save, pending, setModal } = useGarage()
+  const { data, notify, refetch, setModal } = useGarage()
   const [error, setError] = useState("")
+  const [pending, setPending] = useState(false)
   const {
     register,
     control,
@@ -337,6 +363,7 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
   })
   const submit = handleSubmit(async (values) => {
     setError("")
+    setPending(true)
     if (
       data?.vehicles.some(
         (v) =>
@@ -357,23 +384,25 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
       setError("ODO ban đầu không thể lớn hơn ODO đã có trong lịch sử.")
       return
     }
-    const next: Vehicle = {
-      ...values,
-      plate: values.plate.toUpperCase(),
-      id: vehicle?.id ?? crypto.randomUUID(),
-      image: defaultImage(values.type),
-    }
-    if (
-      await save(
-        (d) => {
-          const i = d.vehicles.findIndex((v) => v.id === next.id)
-          if (i >= 0) d.vehicles[i] = next
-          else d.vehicles.push(next)
-        },
-        vehicle ? "Đã cập nhật thông tin xe." : "Đã thêm phương tiện mới.",
-      )
-    )
+    try {
+      if (vehicle) {
+        await api.updateVehicle(vehicle.id, {
+          ...values,
+          version: vehicle.version,
+          image: defaultImage(values.type),
+        })
+      } else {
+        await api.createVehicle({ ...values, image: defaultImage(values.type) })
+      }
+      await refetch()
+      notify(vehicle ? "Đã cập nhật thông tin xe." : "Đã thêm phương tiện mới.")
       setModal(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không thể lưu phương tiện.")
+      notify(e instanceof Error ? e.message : "Không thể lưu phương tiện.", "error")
+    } finally {
+      setPending(false)
+    }
   })
   return (
     <Box component="form" onSubmit={submit} noValidate>
@@ -709,7 +738,7 @@ function LoginForm() {
   )
 }
 export default function Dialogs() {
-  const { modal, setModal, data, save, pending } = useGarage()
+  const { modal, setModal, data, save, pending, notify, refetch } = useGarage()
   if (!modal) return null
   const title =
     modal.type === "login"
@@ -778,15 +807,33 @@ export default function Dialogs() {
               color="error"
               disabled={pending}
               onClick={async () => {
+                if (modal.entity === "vehicle") {
+                  try {
+                    await api.archiveVehicle(modal.id, data?.vehicles.find((v) => v.id === modal.id)?.version ?? 0)
+                    await refetch()
+                    notify("Đã lưu trữ phương tiện.", "success")
+                    setModal(null)
+                  } catch (e) {
+                    notify(e instanceof Error ? e.message : "Không thể lưu trữ phương tiện.", "error")
+                  }
+                  return
+                }
+                const entry = modal.entity === "entry"
+                  ? data?.entries.find((item) => item.id === modal.id)
+                  : undefined
+                if (entry?.kind === "odo") {
+                  try {
+                    await api.deleteOdometerReading(entry.vehicleId, entry.id, entry.version ?? 0)
+                    await refetch()
+                    notify("Đã xóa bản ghi ODO.")
+                    setModal(null)
+                  } catch (e) {
+                    notify(e instanceof Error ? e.message : "Không thể xóa bản ghi ODO.", "error")
+                  }
+                  return
+                }
                 if (
                   await save((d) => {
-                    if (modal.entity === "vehicle") {
-                      d.vehicles = d.vehicles.filter((v) => v.id !== modal.id)
-                      d.entries = d.entries.filter(
-                        (e) => e.vehicleId !== modal.id,
-                      )
-                      d.plans = d.plans.filter((p) => p.vehicleId !== modal.id)
-                    }
                     if (modal.entity === "entry")
                       d.entries = d.entries.filter((e) => e.id !== modal.id)
                     if (modal.entity === "plan") {

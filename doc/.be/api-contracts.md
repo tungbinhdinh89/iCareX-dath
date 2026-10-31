@@ -59,3 +59,23 @@ Login lockout 5 lần/15 phút đã cấu hình qua Identity; rate limit auth v�
 401 chưa login; 403 archive; 404 không tồn tại/khác owner; 409 plate/idempotency conflict;
 412 revision cũ; 422 validation nghiệp vụ; 428 thiếu If-Match; 400 malformed JSON/thiếu header bắt buộc khác;
 500 nội bộ không lộ SQL/secret. Api nền tảng hiện dùng ProblemDetails cho lỗi host, chưa phải envelope nghiệp vụ.
+## Vehicle and ODO API (T03)
+
+Authenticated endpoints use the current session account; `accountId` is never
+accepted from the client. Vehicle mutations use the `version` field and return
+`409 Conflict` when the version is stale.
+
+- `GET /api/v1/vehicles?includeArchived=false`
+- `GET /api/v1/vehicles/{vehicleId}`
+- `POST /api/v1/vehicles`
+- `PUT /api/v1/vehicles/{vehicleId}`
+- `POST /api/v1/vehicles/{vehicleId}/archive`
+- `POST /api/v1/vehicles/{vehicleId}/restore`
+- `GET /api/v1/vehicles/{vehicleId}/odometer-readings`
+- `POST /api/v1/vehicles/{vehicleId}/odometer-readings`
+- `PUT /api/v1/vehicles/{vehicleId}/odometer-readings/{readingId}`
+- `DELETE /api/v1/vehicles/{vehicleId}/odometer-readings/{readingId}?version={version}`
+
+Archive preserves vehicle/history data and blocks mutations. ODO dates cannot
+be in the future; ODO values must remain between the previous and next reading
+for the same vehicle. Fuel/service APIs remain scoped to later tickets.

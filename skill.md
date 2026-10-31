@@ -7,6 +7,20 @@
 Tài liệu thao tác cho agent. Đọc [sumary.md](./sumary.md) để biết cấu trúc và
 [rules.md](./rules.md) trước khi triển khai.
 
+## Quy trình ticket bắt buộc
+
+Trước mọi thay đổi code thuộc feature, enhancement, fix hoặc bug, tạo/đối chiếu
+issue và làm trên branch riêng từ `main`: `feature/<issue>-<slug>`,
+`enhancement/<issue>-<slug>`, `fix/<issue>-<slug>` hoặc
+`bug/<issue>-<slug>`. Implement theo scope/acceptance criteria của ticket,
+chạy kiểm tra, self-review, rồi mở một PR liên kết ticket về `main`.
+
+Agent không được tự approve PR, merge PR, bật auto-merge, bypass protection hay
+đóng issue. Sau khi PR sẵn sàng review, phải dừng và chờ chủ repository xác
+nhận approve; sau khi merge cũng phải chờ xác nhận riêng trước khi đóng issue.
+Nếu phát hiện scope mới, tạo ticket/branch/PR mới thay vì âm thầm mở rộng PR
+đang review. Cập nhật tài liệu và changelog khi thay đổi backend hoặc contract.
+
 **Ranh giới:** phần A áp dụng cho frontend hiện tại; phần B là thiết kế đề xuất,
 chưa có code/backend/database tương ứng. Không tự cài dependency, tạo secrets,
 kết nối dịch vụ hoặc chuyển runtime chỉ vì một công nghệ được nhắc ở đây.
@@ -106,6 +120,15 @@ pnpm build
   Không tự commit/push.
 
 ## B. Thiết kế backend/database thật — đề xuất chưa triển khai
+
+### B0. Logging backend
+
+Backend ASP.NET Core hiện dùng Serilog qua `Serilog.AspNetCore`,
+`Serilog.Sinks.Console` và `Serilog.Sinks.File`. Khi sửa backend, dùng
+`ILogger<T>` và structured logging; log request, migration/database operation
+và trạng thái auth ở mức phù hợp. Không ghi password, token, cookie, connection
+string hoặc request body nhạy cảm. Log được xem ở console khi `dotnet run/watch`
+và file rolling theo ngày trong thư mục `logs/`; không commit thư mục này.
 
 ### B1. Bước 1 — Chốt lựa chọn triển khai
 

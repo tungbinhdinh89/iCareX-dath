@@ -10,6 +10,34 @@ Tài liệu này bổ sung quy tắc riêng của VehicleCare, không thay thế
 hay chỉ dẫn của môi trường Make. Nếu có mâu thuẫn ảnh hưởng đến sản phẩm, nêu
 rõ và xác nhận thay vì âm thầm đổi yêu cầu.
 
+## 0. Quy trình issue, branch và pull request
+
+Mỗi công việc phải được phân loại và theo dõi bằng ticket: **Feature** (tính
+năng mới), **Enhancement** (cải tiến), **Fix** (sửa kỹ thuật) hoặc **Bug** (sửa
+hành vi sai). Một ticket tương ứng một branch và một PR; không làm trực tiếp
+trên `main`.
+
+1. Tạo issue có scope, acceptance criteria, dependency, test/evidence và
+   Definition of Done; đặt prefix `[Feature]`, `[Enhancement]`, `[Fix]` hoặc
+   `[Bug]`.
+2. Tạo branch từ `main`: `feature/<issue>-<slug>`,
+   `enhancement/<issue>-<slug>`, `fix/<issue>-<slug>` hoặc
+   `bug/<issue>-<slug>`.
+3. Implement, test và self-review trên branch; cập nhật tài liệu/changelog
+   liên quan. Chuyển issue sang In Progress.
+4. Mở PR về `main`, liên kết issue bằng `Fixes #<issue>` hoặc `Refs #<issue>`,
+   nêu rõ test, rủi ro và migration/deploy note. Chuyển sang In Review.
+5. Agent không được tự approve, merge, bật auto-merge hoặc bypass protection.
+   Phải chờ chủ repository xác nhận approve PR.
+6. Sau khi được approve, chỉ merge khi có chỉ đạo rõ ràng. Sau khi merge,
+   vẫn phải chờ chủ repository xác nhận trước khi đóng issue.
+7. Chỉ khi có xác nhận đóng issue mới chuyển ticket/Project sang Done và ghi
+   link PR, commit merge và evidence. Nếu chưa có xác nhận, giữ issue mở.
+
+Issue mới phát sinh khác scope phải tạo ticket/branch riêng; không âm thầm mở
+rộng PR đang review. Hotfix cũng phải có issue và PR, chỉ được rút gọn checklist
+khi có lý do vận hành được ghi lại.
+
 ## 1. Phân biệt hiện trạng, yêu cầu và đề xuất
 
 - **Hiện trạng:** frontend demo hai tài khoản, toàn bộ dữ liệu/phiên trong bộ nhớ.

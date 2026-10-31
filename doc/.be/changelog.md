@@ -25,6 +25,9 @@
   application/json` ổn định trong frontend auth client.
 - Tích hợp Serilog console/file rolling cho API và DatabaseTool; thêm request
   logging, auth logging có structured properties và hướng dẫn tránh ghi secret.
+- T03: thêm Vehicle CRUD/list/detail, archive/restore, optimistic version
+  conflict và ODO manual CRUD theo owner; tạo migration cho version và nối FE
+  Vehicle/ODO vào API, loại bỏ garage seed/mock data.
 
 ## 2026-10-30 — Nền tảng đầu tiên
 

@@ -16,8 +16,9 @@ Agent chuyên backend phải đọc `be/AGENTS.md` trước khi sửa.
 
 Đã có project, model/mapping, domain rules ODO/kế hoạch, migration, health endpoints và công cụ database.
 Kết quả chạy thực tế tại [testing.md](testing.md).
-Auth/session API đã triển khai; API nghiệp vụ garage vẫn chưa có. Frontend auth
-đã gọi API thật, còn dữ liệu garage vẫn mock và không được mô tả đã lưu PostgreSQL.
+Auth/session API và T03 Vehicle/ODO API đã triển khai; fuel/service/plan API vẫn
+chưa có. Frontend auth và Vehicle/ODO đã gọi API thật; các dữ liệu nghiệp vụ
+chưa có API không được giả là đã lưu PostgreSQL.
 
 ## Cấu hình và chạy
 

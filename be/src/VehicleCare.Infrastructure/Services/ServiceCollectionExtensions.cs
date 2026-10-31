@@ -11,6 +11,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<VehicleRepository>();
+        services.AddScoped<IVehicleService, VehicleService>();
         return services;
     }
 }
