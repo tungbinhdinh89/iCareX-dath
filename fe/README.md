@@ -1,9 +1,9 @@
 # Frontend
 
-Frontend React + Vite của VehicleCare. Mã nguồn được tách riêng để sau này
-frontend có thể được build và deploy độc lập với ASP.NET Core API.
+Frontend React + Vite của VehicleCare. Mã nguồn được tách riêng để frontend có
+thể được build và deploy độc lập với ASP.NET Core API.
 
-Các lớp Clean Architecture dự kiến trong `src/`:
+Các lớp Clean Architecture trong `src/`:
 
 - `app/`: composition root, routing và cấu hình ứng dụng.
 - `features/`: use case và UI theo từng nghiệp vụ.
@@ -11,5 +11,5 @@ Các lớp Clean Architecture dự kiến trong `src/`:
 - `infrastructure/`: HTTP client, storage và adapter bên ngoài.
 - `shared/`: component, hook và tiện ích dùng chung.
 
-Các thư mục lớp sẽ được tạo khi có nghiệp vụ tương ứng; hiện trạng prototype
-được giữ nguyên để không thay đổi hành vi.
+Auth đã dùng API thật qua `/api/v1/auth` (CSRF, register, login, me, logout);
+garage vẫn dùng mock data cho tới khi business API backend hoàn tất.

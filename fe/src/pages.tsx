@@ -1405,10 +1405,10 @@ export function Profile() {
       <Box className="panel">
         <Empty
           title="Hồ sơ của riêng bạn"
-          description="Đăng nhập một tài khoản demo để quản lý hồ sơ và dữ liệu cá nhân."
+          description="Đăng nhập để quản lý hồ sơ và dữ liệu cá nhân."
           action={
             <Button variant="contained" onClick={() => open({ type: "login" })}>
-              Đăng nhập demo
+              Đăng nhập
             </Button>
           }
         />
@@ -1479,10 +1479,10 @@ export function Profile() {
             />
             <TextField
               className="full"
-              label="Email đăng nhập demo"
+              label="Email đăng nhập"
               value={session.email}
               disabled
-              helperText="Email của tài khoản demo không thể thay đổi."
+              helperText="Email không thể thay đổi sau khi đăng ký."
             />
           </Box>
           <Button
@@ -1495,8 +1495,8 @@ export function Profile() {
           </Button>
         </Box>
         <Alert severity="info">
-          Đây là tài khoản demo. Không hỗ trợ đăng ký, đổi mật khẩu hay khôi
-          phục tài khoản. Mọi thay đổi mất khi tải lại trang.
+          Xác thực tài khoản và phiên đăng nhập được lưu ở backend. Dữ liệu garage
+          hiện vẫn là dữ liệu mẫu trong bộ nhớ cho tới khi business API hoàn tất.
         </Alert>
       </Box>
     </Box>
@@ -1624,10 +1624,8 @@ export function Settings() {
             <Typography variant="h6">Quyền riêng tư & dữ liệu</Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">
-            Dữ liệu nghiệp vụ không gửi đến máy chủ. Dữ liệu và phiên đăng nhập
-            chỉ được lưu trong bộ nhớ; không dùng localStorage, database hoặc
-            JWT thật. Khi tải lại trang, dữ liệu sẽ trở về bộ mẫu và bạn cần
-            đăng nhập lại.
+            Dữ liệu garage hiện chưa gửi đến máy chủ. Phiên đăng nhập dùng cookie
+            HttpOnly và session backend; garage sẽ trở về bộ mẫu khi tải lại trang.
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
             Không gửi nhắc nhở khi web đã đóng. Ảnh minh họa từ Unsplash, không
@@ -1640,8 +1638,8 @@ export function Settings() {
         </Box>
         {!session && (
           <Alert severity="info">
-            Bạn đang xem bản trải nghiệm. Cần đăng nhập demo để lưu thay đổi cài
-            đặt.
+            Bạn đang xem bản trải nghiệm. Cần đăng nhập để lưu thay đổi cài đặt
+            trong phiên hiện tại.
           </Alert>
         )}
       </Box>

@@ -44,7 +44,7 @@ type ContextValue = {
   setModal: (m: ModalState) => void
   open: (m: ModalState) => void
   login: (account: Account) => void
-  logout: () => void
+  logout: () => Promise<void>
   save: (action: (d: Garage) => void, message?: string) => Promise<boolean>
   pending: boolean
   notify: (text: string, severity?: "success" | "error" | "info") => void
@@ -75,6 +75,9 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
     text: string
     severity: "success" | "error" | "info"
   } | null>(null)
+  useEffect(() => {
+    void api.me().then(setSession).catch(() => setSession(null))
+  }, [])
   const query = useQuery({
     queryKey: ["garage", session?.id ?? "preview"],
     queryFn: () => api.get(session?.id ?? null),
@@ -146,7 +149,16 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
             `Xin chào ${account.name}! Dữ liệu chỉ lưu trong bộ nhớ phiên này.`,
           )
         },
-        logout: () => {
+        logout: async () => {
+          try {
+            await api.logout()
+          } catch (error) {
+            notify(
+              error instanceof Error ? error.message : "Không thể đăng xuất.",
+              "error",
+            )
+            return
+          }
           setSession(null)
           setModal(null)
           setSelectedVehicle("all")

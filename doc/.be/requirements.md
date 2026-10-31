@@ -5,7 +5,7 @@ Không có specification riêng khác trong repo. Công nghệ cũ trong đề x
 
 | FR | Chức năng | Acceptance | Trạng thái backend |
 |---|---|---|---|
-| FR-01 | Register/login/me/logout | Email unique, Identity password hash, settings mặc định, thu hồi phiên server | Auth API đã triển khai; test DB thật còn cần |
+| FR-01 | Register/login/me/logout | Email unique, Identity password hash, settings mặc định, thu hồi phiên server | Auth controller đã triển khai; host tests và DB smoke cần chạy theo môi trường |
 | FR-02 | Xe CRUD | Hai loại, plate unique theo owner, base ODO không vượt entry, delete cascade | Entity/mapping, một phần rules |
 | FR-03 | Archive | Giữ lịch sử, chặn mọi ghi; không restore; báo cáo giữ, nhắc hạn bỏ | Property/domain guard, chưa API |
 | FR-04 | Fuel/service/ODO | Một timeline ODO, ngày VN không tương lai, cost/liters đúng loại | Entity/constraints/domain rules |

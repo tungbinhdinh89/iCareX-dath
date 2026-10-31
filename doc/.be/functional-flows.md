@@ -14,7 +14,8 @@ flowchart LR
     Mock --> Cache[TanStack Query cache theo account]
 ```
 
-Hiện login gọi mock api.login; get(null) lấy dữ liệu demo. Không dùng cách preview này với database thật.
+Hiện auth gọi API thật qua `/api/v1/auth`; `api.get/update` garage vẫn là mock
+preview trong bộ nhớ và không được coi là persistence database.
 Đích sau này: thay callback bằng DTO JSON qua adapter HTTP, giữ useGarage và query cache; không gửi/eval callback hoặc upload Garage để overwrite.
 
 ## Pipeline ghi chung

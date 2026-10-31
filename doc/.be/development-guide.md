@@ -11,8 +11,10 @@
 
 ## Cấu hình
 
-`.env` là file key=value, hỗ trợ value có double quotes bao ngoài; không substitution/expansion/eval.
-Script chỉ cho ConnectionStrings__VehicleCare, ASPNETCORE_ENVIRONMENT và ASPNETCORE_URLS.
+Connection string dùng .NET User Secrets với `UserSecretsId=VehicleCare.Api`;
+không lưu credential trong `.env` hoặc source control.
+Script không parse file cấu hình bí mật; `ConnectionStrings__VehicleCare` chỉ là
+override dành cho môi trường triển khai/CI.
 Không dùng parser env này cho shell code. Env từ process có ưu tiên cao hơn file.
 Thiếu connection string fail sớm; không fallback password trong source/appsettings.
 SDK install ở `.tools` bị ignore; máy khác có thể dùng SDK hệ thống major 10.
@@ -26,7 +28,20 @@ SDK install ở `.tools` bị ignore; máy khác có thể dùng SDK hệ thốn
 - Nếu connection fail: kiểm tra route/firewall TCP 5433, Docker port mapping, pg_hba.conf, auth và quyền. Không tự thay NAS settings.
 - Nếu CREATEDB bị từ chối: người quản trị chạy `CREATE DATABASE vehiclecare OWNER tungbinhdinh89;`, rồi chạy check/migrate.
 
+## Logging
+
+- Dùng `ILogger<T>` trong service/controller; message dùng structured logging
+  với property đặt tên, không nối chuỗi thủ công.
+- API request log được Serilog ghi tự động ra console và file rolling theo ngày.
+- Auth log trạng thái register/login, account id và email đã che; không ghi
+  password, token, cookie, connection string hoặc payload nhạy cảm.
+- File log nằm trong `be/src/VehicleCare.Api/logs/`; không commit hoặc đưa log
+  chứa dữ liệu nhạy cảm lên issue/chat.
+- Khi kiểm tra migration/database tool, xem console hoặc file log do
+  `VehicleCare.DatabaseTool` tạo; thông tin credential luôn bị loại khỏi message.
+
 ## Tài liệu cũ
 
 sumary/skill/rules ở gốc vẫn mô tả frontend prototype và yêu cầu. Chỉ dẫn mới về backend nằm bộ này.
-Khi nối frontend thật sau này mới cập nhật nội dung “chỉ trong bộ nhớ” và thay mock; không đổi trước.
+Auth frontend đã nối thật; chỉ thay mock garage khi business API hoàn tất và có
+DTO/ownership/revision tương ứng.

@@ -3,7 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  ButtonBase,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -24,11 +23,9 @@ import { useForm, Controller } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
-  accounts,
   api,
   dateLabel,
   defaultImage,
-  demoPassword,
   number,
   odoOf,
   today,
@@ -583,9 +580,12 @@ function PlanForm({ modal }: { modal: Extract<ModalState, { type: "plan" }> }) {
   )
 }
 function LoginForm() {
-  const { login } = useGarage()
-  const [email, setEmail] = useState(accounts[0].email)
-  const [password, setPassword] = useState(demoPassword)
+  const { login, notify } = useGarage()
+  const [registerMode, setRegisterMode] = useState(false)
+  const [name, setName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [show, setShow] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
@@ -598,9 +598,17 @@ function LoginForm() {
         setPending(true)
         setError("")
         try {
-          login(await api.login(email, password))
+          if (registerMode) {
+            await api.register({ name, email, password, phone })
+            notify("Tạo tài khoản thành công. Hãy đăng nhập để tiếp tục.")
+            setRegisterMode(false)
+          } else {
+            login(await api.login(email, password))
+          }
         } catch (e) {
-          setError((e as Error).message)
+          const message = (e as Error).message
+          setError(message)
+          notify(message, "error")
         } finally {
           setPending(false)
         }
@@ -612,35 +620,36 @@ function LoginForm() {
             <ShieldOutlined />
           </Box>
           <Typography variant="body2" color="text.secondary">
-            Chọn một tài khoản để khám phá đầy đủ. Hai tài khoản có dữ liệu hoàn
-            toàn tách biệt.
+            {registerMode
+              ? "Tạo tài khoản mới. Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."
+              : "Đăng nhập bằng tài khoản đã lưu trong PostgreSQL."}
           </Typography>
         </Box>
-        <Box className="login-accounts">
-          {accounts.map((a, i) => (
-            <ButtonBase
-              key={a.id}
-              className={`login-account ${email === a.email ? "selected" : ""}`}
-              onClick={() => {
-                setEmail(a.email)
-                setPassword(demoPassword)
-                setError("")
-              }}
-            >
-              <Typography variant="subtitle2">{a.name}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                Tài khoản demo {i + 1} · {i ? "1 ô tô" : "1 ô tô, 1 xe máy"}
-              </Typography>
-            </ButtonBase>
-          ))}
-        </Box>
+        {registerMode && (
+          <>
+            <TextField
+              label="Họ và tên"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="Số điện thoại"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              helperText="Không bắt buộc, 10 chữ số bắt đầu bằng 0"
+              sx={{ mb: 2 }}
+            />
+          </>
+        )}
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
         <TextField
-          label="Email demo"
+          label="Email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -649,7 +658,7 @@ function LoginForm() {
           sx={{ mb: 2.5 }}
         />
         <TextField
-          label="Mật khẩu demo"
+          label="Mật khẩu"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -674,16 +683,26 @@ function LoginForm() {
               ),
             },
           }}
-          helperText={`Mật khẩu dùng chung: ${demoPassword}`}
+          helperText={
+            registerMode
+              ? "Mật khẩu tối thiểu 12 ký tự, gồm hoa/thường/số/ký tự đặc biệt."
+              : undefined
+          }
         />
-        <Alert severity="info" sx={{ mt: 2 }}>
-          Không có backend. Dữ liệu và phiên đăng nhập chỉ nằm trong bộ nhớ, tải
-          lại trang sẽ xóa mọi thay đổi.
-        </Alert>
+        {!registerMode && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            Phiên dùng cookie HttpOnly; dữ liệu tài khoản được xác thực ở backend.
+          </Alert>
+        )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button type="submit" variant="contained" fullWidth disabled={pending}>
-          {pending ? "Đang đăng nhập..." : "Đăng nhập & bắt đầu"}
+        <Button type="button" onClick={() => setRegisterMode(!registerMode)} disabled={pending}>
+          {registerMode ? "Đã có tài khoản" : "Tạo tài khoản"}
+        </Button>
+        <Button type="submit" variant="contained" disabled={pending}>
+          {pending
+            ? registerMode ? "Đang tạo..." : "Đang đăng nhập..."
+            : registerMode ? "Đăng ký" : "Đăng nhập & bắt đầu"}
         </Button>
       </DialogActions>
     </Box>

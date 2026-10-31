@@ -3,16 +3,34 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
+using Serilog;
+using Serilog.Events;
 using VehicleCare.Application;
+using VehicleCare.Application.Services;
 using VehicleCare.Infrastructure;
+using VehicleCare.Infrastructure.Services;
 using VehicleCare.Api;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Logging.ClearProviders();
-builder.Logging.AddSimpleConsole();
+builder.Host.UseSerilog((context, _, configuration) =>
+{
+    configuration
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "VehicleCare.Api")
+        .WriteTo.Console()
+        .WriteTo.File(
+            Path.Combine(context.HostingEnvironment.ContentRootPath, "logs", "vehiclecare-.log"),
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            shared: true);
+});
 builder.Services.AddPersistence();
+builder.Services.AddApplicationServices();
+builder.Services.AddInfrastructureServices();
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<SessionCookieEvents>();
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
@@ -26,6 +44,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         options.Lockout.AllowedForNewUsers = true;
     })
+    .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<GarageDbContext>()
     .AddDefaultTokenProviders();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -50,10 +69,15 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgresql", tags: ["ready"]);
 var app = builder.Build();
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+});
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -64,7 +88,7 @@ if (app.Environment.IsDevelopment())
 }
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
-app.MapAuth();
+app.MapControllers();
 app.Run();
 
 public partial class Program { }

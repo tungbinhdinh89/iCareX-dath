@@ -4,7 +4,6 @@ import {
   accounts,
   api,
   dateAt,
-  demoPassword,
   odoOf,
   planState,
   today,
@@ -12,16 +11,8 @@ import {
   type Entry,
 } from "../src/data.ts"
 
-test("only the two demo accounts can log in", async () => {
-  assert.equal(
-    (await api.login(accounts[0].email, demoPassword)).id,
-    accounts[0].id,
-  )
-  await assert.rejects(api.login(accounts[0].email, "wrong"), /chưa đúng/)
-  await assert.rejects(
-    api.login("unknown@example.com", demoPassword),
-    /chưa đúng/,
-  )
+test("auth accounts expose the shared response shape", () => {
+  assert.ok(accounts.every((account) => account.roles.includes("User")))
 })
 
 test("mock results are copied and accounts remain isolated", async () => {

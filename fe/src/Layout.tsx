@@ -156,7 +156,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 fontWeight: 600,
               }}
             >
-              {session ? "Không gian demo cá nhân" : "Khám phá VehicleCare"}
+              {session ? "Không gian cá nhân" : "Khám phá VehicleCare"}
             </Typography>
           </Box>
           <Typography
@@ -328,7 +328,7 @@ export default function Layout() {
                 size="small"
                 onClick={() => open({ type: "login" })}
               >
-                Đăng nhập demo
+                Đăng nhập
               </Button>
             )}
             <Box
@@ -417,7 +417,7 @@ export default function Layout() {
                   sx={{ gap: 1, fontSize: "var(--text-small-size)" }}
                 >
                   <LoginRounded fontSize="small" />
-                  Đăng nhập demo
+                  Đăng nhập
                 </MenuItem>
               )}
             </Menu>

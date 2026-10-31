@@ -22,8 +22,10 @@ Chạy từ root: `powershell -NoProfile -ExecutionPolicy Bypass -File be/script
 - Integration: migrate PostgreSQL riêng, persistence, duplicate plate, ownership FK, kind constraint, unlink plan giữ chi phí, cascade vehicle; health/OpenAPI/Scalar qua WebApplicationFactory.
 - Host tests độc lập Docker: liveness/OpenAPI/Scalar, readiness 503 khi DB unavailable và docs 404 trong Production.
 - Host auth test: cấp CSRF token, từ chối mutation thiếu CSRF và trả 401 cho `/auth/me` khi chưa xác thực.
+- Kết quả mới nhất: `scripts/be.ps1 test` pass 12 unit tests và 3 host tests.
 
-Testcontainers không lấy connection từ `.env` và không dùng NAS. Test thiếu Docker phải báo thất bại, không silently skip/pass.
+Testcontainers không lấy connection từ User Secrets/NAS và không dùng NAS. Test
+thiếu Docker phải báo thất bại, không silently skip/pass.
 Khi thêm API phải bổ sung IDOR, CSRF/session revoke, archive mọi đường ghi, rollback/concurrency/If-Match/idempotency và report/CSV parity.
 
 ## Kết quả phiên triển khai 2026-10-30
@@ -38,6 +40,6 @@ Khi thêm API phải bổ sung IDOR, CSRF/session revoke, archive mọi đườn
 - API thực chạy tạm: `/health/live`, `/health/ready`, `/openapi/v1.json`, `/scalar/v1` đều HTTP 200 khi process có quyền mạng tới NAS; đã dừng process kiểm chứng.
 - Khi chạy trong sandbox hạn chế mạng, ready trả 503 như thiết kế; kiểm tra ngoài sandbox đã xác nhận 200.
 
-Giới hạn: chưa kiểm chứng database constraints/delete policies và register/login với
-PostgreSQL Testcontainers do thiếu Docker; database smoke chỉ xác nhận
+Giới hạn: chưa kiểm chứng database constraints/delete policies và register/login
+với PostgreSQL Testcontainers do thiếu Docker; database smoke chỉ xác nhận
 persistence. Cần chạy lại integration auth với Docker trước nghiệm thu.

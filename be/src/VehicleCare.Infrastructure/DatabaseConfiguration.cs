@@ -14,7 +14,8 @@ public static class DatabaseConfiguration
         services.AddOptions<DatabaseOptions>().Configure<IConfiguration>((options, configuration) =>
             options.ConnectionString = configuration.GetConnectionString("VehicleCare") ?? "")
             .Validate(options => !string.IsNullOrWhiteSpace(options.ConnectionString),
-                "Missing ConnectionStrings__VehicleCare. Use scripts/be.ps1.").ValidateOnStart();
+                "Missing ConnectionStrings:VehicleCare. Configure it with dotnet user-secrets.")
+            .ValidateOnStart();
         services.AddDbContext<GarageDbContext>((provider, options) =>
             Configure(options, provider.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
         services.AddSingleton<IBusinessClock, BusinessClock>();
@@ -33,9 +34,14 @@ public sealed class GarageDbContextFactory : IDesignTimeDbContextFactory<GarageD
 {
     public GarageDbContext CreateDbContext(string[] args)
     {
-        var connection = Environment.GetEnvironmentVariable("ConnectionStrings__VehicleCare");
+        var configuration = new ConfigurationBuilder()
+            .AddUserSecrets(typeof(DatabaseConfiguration).Assembly, optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+        var connection = configuration.GetConnectionString("VehicleCare");
         if (string.IsNullOrWhiteSpace(connection))
-            throw new InvalidOperationException("Missing ConnectionStrings__VehicleCare. Use scripts/be.ps1.");
+            throw new InvalidOperationException(
+                "Missing ConnectionStrings:VehicleCare. Configure it with dotnet user-secrets.");
         var options = new DbContextOptionsBuilder<GarageDbContext>();
         DatabaseConfiguration.Configure(options, connection);
         return new(options.Options);

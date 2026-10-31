@@ -1,6 +1,7 @@
 # API contracts — thiết kế cho giai đoạn tiếp theo
 
-Health/Scalar/OpenAPI và nhóm `/api/v1/auth` đã có HTTP endpoint. Các route garage/business còn lại dưới đây CHƯA triển khai.
+Health/Scalar/OpenAPI và nhóm `/api/v1/auth` đã có HTTP controller. Các route
+garage/business còn lại dưới đây CHƯA triển khai.
 
 ## Quy ước
 
@@ -22,7 +23,7 @@ Health/Scalar/OpenAPI và nhóm `/api/v1/auth` đã có HTTP endpoint. Các rout
 | GET /auth/csrf | Không | Token, anti-forgery cookie |
 | POST /auth/register | name,email,password,phone? + CSRF | Account, 201; không tự login; settings true/500/30 |
 | POST /auth/login | email,password + CSRF | Account + cookie, 200 |
-| GET /auth/me | Cookie | Account hoặc 401 |
+| GET /auth/me | Cookie | Account + roles hoặc 401 |
 | POST /auth/logout | Cookie + CSRF | Thu hồi session, clear cookie, 204 |
 | GET /garage | Cookie | Garage + ETag |
 | POST /vehicles | name,plate,type,year,baseOdo,image | Garage, 201 |

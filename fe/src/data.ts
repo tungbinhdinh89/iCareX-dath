@@ -43,17 +43,12 @@ export type Garage = {
     thresholdDays: number
   }
 }
-export type Account = {
-  id: string
-  name: string
-  email: string
-}
+export type Account = AccountResponse
 
 export const accounts: Account[] = [
-  { id: "minhanh", name: "Nguyễn Minh Anh", email: "minhanh@vehiclecare.vn" },
-  { id: "hoangnam", name: "Trần Hoàng Nam", email: "hoangnam@vehiclecare.vn" },
+  { id: "minhanh", name: "Nguyễn Minh Anh", email: "minhanh@vehiclecare.vn", phone: "", roles: ["User"] },
+  { id: "hoangnam", name: "Trần Hoàng Nam", email: "hoangnam@vehiclecare.vn", phone: "", roles: ["User"] },
 ]
-export const demoPassword = "VehicleCare@123"
 export const money = (n: number) =>
   new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -214,17 +209,59 @@ const stores: Record<string, Garage> = Object.fromEntries(
 )
 const copy = <T>(value: T): T => structuredClone(value)
 const delay = () => new Promise((resolve) => setTimeout(resolve, 350))
+let csrfToken = ""
+async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`/api/v1/auth${path}`, {
+    ...init,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  })
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    const fields = body?.errors as Record<string, string[]> | undefined
+    const message = fields
+      ? Object.values(fields).flat().join(" ")
+      : body?.detail ?? body?.title
+    throw new Error(message || "Yêu cầu xác thực thất bại.")
+  }
+  return response.status === 204 ? (undefined as T) : response.json()
+}
+async function csrf() {
+  const response = await authRequest<CsrfResponse>("/csrf")
+  csrfToken = response.token
+  return csrfToken
+}
+async function authMutation<T>(path: string, body?: unknown) {
+  if (!csrfToken) await csrf()
+  return authRequest<T>(path, {
+    method: "POST",
+    headers: { "X-CSRF-TOKEN": csrfToken },
+    body: JSON.stringify(body ?? {}),
+  })
+}
 export const api = {
   async login(email: string, password: string) {
-    await delay()
-    const account = accounts.find((a) => a.email === email.toLowerCase().trim())
-    if (!account || password !== demoPassword)
-      throw new Error("Email hoặc mật khẩu demo chưa đúng.")
-    return copy(account)
+    return authMutation<Account>("/login", { email, password } satisfies LoginRequest)
+  },
+  async register(request: RegisterRequest) {
+    return authMutation<Account>("/register", request)
+  },
+  async me() {
+    return authRequest<Account>("/me")
+  },
+  async logout() {
+    await authMutation<void>("/logout")
   },
   async get(id: string | null) {
     await delay()
-    return copy(stores[id ?? accounts[0].id])
+    const account = id
+      ? { id, name: "Tài khoản VehicleCare", email: "", phone: "", roles: ["User"] }
+      : accounts[0]
+    if (!stores[account.id]) stores[account.id] = seed(account)
+    return copy(stores[account.id])
   },
   async update(id: string, action: (data: Garage) => void) {
     await delay()
@@ -305,3 +342,9 @@ export function planState(plan: Plan, data: Garage) {
         : "good"
   return { dueDate, dueOdo, km, days, status, service }
 }
+import type {
+  AccountResponse,
+  CsrfResponse,
+  LoginRequest,
+  RegisterRequest,
+} from "../../shared/auth-contracts"

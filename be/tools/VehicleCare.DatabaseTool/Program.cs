@@ -1,13 +1,33 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
+using Serilog;
+using Serilog.Events;
 using VehicleCare.Domain;
 using VehicleCare.Infrastructure;
 
 var action = args.FirstOrDefault() ?? "check";
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .Enrich.WithProperty("Application", "VehicleCare.DatabaseTool")
+    .WriteTo.Console()
+    .WriteTo.File(
+        Path.Combine(AppContext.BaseDirectory, "logs", "vehiclecare-.log"),
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        shared: true)
+    .CreateLogger();
 try
 {
-    var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__VehicleCare")
-        ?? throw new InvalidOperationException("Missing database configuration.");
+    Log.Information("Database action started: {Action}", action);
+    var configuration = new ConfigurationBuilder()
+        .AddUserSecrets(typeof(Program).Assembly, optional: true)
+        .AddEnvironmentVariables()
+        .Build();
+    var connectionString = configuration.GetConnectionString("VehicleCare")
+        ?? throw new InvalidOperationException(
+            "Missing ConnectionStrings:VehicleCare. Configure it with dotnet user-secrets.");
     var settings = new NpgsqlConnectionStringBuilder(connectionString);
     if (action == "provision")
     {
@@ -22,9 +42,9 @@ try
         {
             await using var create = new NpgsqlCommand("CREATE DATABASE vehiclecare", admin);
             await create.ExecuteNonQueryAsync();
-            Console.WriteLine("Created database vehiclecare.");
+            Log.Information("Database vehiclecare created.");
         }
-        else Console.WriteLine("Database vehiclecare already exists; left unchanged.");
+        else Log.Information("Database vehiclecare already exists; left unchanged.");
         return;
     }
     await using var connection = new NpgsqlConnection(connectionString);
@@ -33,7 +53,8 @@ try
     await using (var reader = await query.ExecuteReaderAsync())
     {
         await reader.ReadAsync();
-        Console.WriteLine($"Database: {reader.GetString(0)}; Server: {reader.GetString(1)}; TLS: {reader.GetBoolean(2)}");
+        Log.Information("Database check succeeded for {Database}; server {Server}; TLS {Tls}",
+            reader.GetString(0), reader.GetString(1), reader.GetBoolean(2));
     }
     if (action == "check") return;
     if (action != "smoke") throw new InvalidOperationException("Unknown action.");
@@ -53,22 +74,28 @@ try
         {
             if (!await db.Accounts.AnyAsync(a => a.Id == id)) throw new InvalidOperationException("Persistence check failed.");
         }
-        Console.WriteLine("Persistence verified across separate DbContexts.");
+        Log.Information("Persistence verified across separate DbContexts.");
     }
     finally
     {
         await using var cleanup = new GarageDbContext(options);
         await cleanup.Users.Where(u => u.Id == id).ExecuteDeleteAsync();
     }
-    Console.WriteLine("Smoke fixture removed.");
+    Log.Information("Smoke fixture removed.");
 }
 catch (PostgresException e)
 {
-    Console.Error.WriteLine($"Database operation failed (SQLSTATE {e.SqlState}); check permissions/schema. No credentials printed.");
+    Log.Error(e, "Database operation failed (SQLSTATE {SqlState}); check permissions/schema. No credentials printed.",
+        e.SqlState);
     Environment.ExitCode = 1;
 }
 catch (Exception e)
 {
-    Console.Error.WriteLine($"Database operation failed ({e.GetType().Name}); check configuration and connectivity. No credentials printed.");
+    Log.Error(e, "Database operation failed ({ExceptionType}); check configuration and connectivity. No credentials printed.",
+        e.GetType().Name);
     Environment.ExitCode = 1;
+}
+finally
+{
+    await Log.CloseAndFlushAsync();
 }
