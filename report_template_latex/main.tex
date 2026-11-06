@@ -1,0 +1,19 @@
+% !TeX program = pdflatex
+\documentclass[a4paper,11pt]{article}
+\input{metadata.tex}
+\input{preamble.tex}
+\begin{document}
+\input{cover.tex}
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+% Bật khi báo cáo có hình hoặc bảng.
+% \listoffigures
+% \listoftables
+% \clearpage
+\pagenumbering{arabic}
+\input{sections/content.tex}
+% Bật khi đã thêm tài liệu tham khảo.
+% \clearpage
+% \input{references.tex}
+\end{document}

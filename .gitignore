@@ -5,11 +5,11 @@ build/
 .env*
 !.env.example
 !**/.env.example
-be/.tools/
+tools/.local/
 **/bin/
 **/obj/
 **/TestResults/
-be/.data-protection/
+**/.data-protection/
 .vite/
 vite.config.*.timestamp-*
 *.tsbuildinfo
@@ -26,10 +26,13 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
-
-
-/stephen-skills
-/.figma
+/.github/
+/doc/
+/stephen-skills/
+# Separate local clone with its own Git history and remote.
+/Vehicles_management_dath.wiki/
+/.figma/
 /.figaro
-/guidelines
 /node_modules
+# Python helper cache
+**/__pycache__/

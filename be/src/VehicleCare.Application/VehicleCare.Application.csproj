@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="../VehicleCare.Domain/VehicleCare.Domain.csproj" />
-    <PackageReference Include="FluentValidation" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-  </ItemGroup>
-</Project>

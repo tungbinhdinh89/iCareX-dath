@@ -1,0 +1,60 @@
+% Font VnTeX Computer Modern dùng với pdfLaTeX.
+\usepackage[T5]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage[a4paper,left=2.5cm,right=2.3cm,top=2.9cm,bottom=2.3cm,
+  headheight=32pt,headsep=9pt,footskip=24pt]{geometry}
+\usepackage{amsmath,amssymb,graphicx,xcolor}
+\usepackage{array,booktabs,longtable,ragged2e}
+\usepackage{setspace,titlesec,fancyhdr,caption,float,tikz,listings}
+\usepackage{enumitem}
+\usepackage{xurl}
+\definecolor{ReportBlue}{RGB}{10,44,167}
+\definecolor{HeadingColor}{RGB}{30,40,59}
+\usepackage[unicode,colorlinks=true,linkcolor=ReportBlue,citecolor=ReportBlue,
+  urlcolor=ReportBlue,hypertexnames=false]{hyperref}
+\hypersetup{
+  pdftitle={\ReportTitle},
+  pdfauthor={\ReportAuthor}}
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\listfigurename}{Danh sách hình vẽ}
+\renewcommand{\listtablename}{Danh sách bảng}
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\refname}{Tài liệu tham khảo}
+\setcounter{tocdepth}{2}
+\titleformat{\section}{\Large\bfseries\color{HeadingColor}}{\thesection}{.7em}{}
+\titleformat{\subsection}{\large\bfseries\color{HeadingColor}}{\thesubsection}{.7em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{.7em}{}
+\titlespacing*{\section}{0pt}{18pt}{10pt}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+\titlespacing*{\subsubsection}{0pt}{12pt}{6pt}
+\setstretch{1.15}
+\setlength{\parindent}{1cm}
+\setlength{\parskip}{3.3pt}
+\setlength{\LTpre}{8pt}
+\setlength{\LTpost}{10pt}
+\newcolumntype{P}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\captionsetup{font=small,labelfont=bf,skip=7pt}
+\setlist{leftmargin=1.8em,itemsep=4pt,topsep=4pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\begin{tabular}{@{}m{.95cm}@{\hspace{.4cm}}l@{}}
+  \includegraphics[width=.94cm]{figures/hcmut.png}&
+  \begin{tabular}{@{}l@{}}\small Trường Đại học Bách Khoa - ĐHQG TP.HCM\\[-2pt]
+  \small Khoa Khoa học và Kỹ thuật Máy tính\end{tabular}
+\end{tabular}}
+\fancyfoot[L]{\footnotesize \ReportFooter}
+\fancyfoot[R]{\footnotesize Trang \thepage}
+\renewcommand{\headrulewidth}{.4pt}
+\renewcommand{\footrulewidth}{.4pt}
+\lstdefinelanguage{TypeScript}{
+  keywords={type,interface,class,constructor,private,async,if,return,await,const,string,number,boolean,void},
+  sensitive=true,comment=[l]{//},morestring=[b]"}
+\lstset{language=TypeScript,basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\bfseries,commentstyle=\itshape\color{gray!70!black},
+  columns=fullflexible,keepspaces=true,showstringspaces=false,
+  breaklines=true,frame=single,backgroundcolor=\color{gray!4},
+  captionpos=t,aboveskip=10pt,belowskip=10pt,tabsize=2}
+\emergencystretch=2em
+\urlstyle{tt}

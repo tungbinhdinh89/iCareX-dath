@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+client_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$client_dir"
+exec pnpm run format -- "$@"

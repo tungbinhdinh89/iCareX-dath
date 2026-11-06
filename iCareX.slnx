@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/iCareX.Shared/iCareX.Shared.csproj" />
+    <Project Path="src/iCareX.Web/iCareX.Web.Api/iCareX.Web.Api.csproj" />
+    <Project Path="src/iCareX.Application/iCareX.Application.csproj" />
+    <Project Path="src/iCareX.Domain/iCareX.Domain.csproj" />
+    <Project Path="src/iCareX.Infrastructure/iCareX.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/tests/">
+    <Project Path="src/iCareX.IntegrationTests/iCareX.IntegrationTests.csproj" />
+    <Project Path="src/iCareX.UnitTests/iCareX.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/"><Project Path="tools/iCareX.DatabaseTool/iCareX.DatabaseTool.csproj" /></Folder>
+</Solution>

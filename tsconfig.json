@@ -1,23 +1,12 @@
 {
+  "extends": "./src/iCareX.Web/iCareX.Web.Client/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./fe/src/*"]
-    },
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "types": ["node"],
-    "strict": true,
-    "noFallthroughCasesInSwitch": true
+    "typeRoots": ["./src/iCareX.Web/iCareX.Web.Client/node_modules/@types"]
   },
-  "include": ["fe", "vite.config.ts"]
+  "include": [
+    "src/iCareX.Web/iCareX.Web.Client/src",
+    "src/iCareX.Web/iCareX.Web.Client/tests",
+    "src/iCareX.Web/iCareX.Web.Client/vite.config.ts",
+    "src/iCareX.Shared/typescript"
+  ]
 }

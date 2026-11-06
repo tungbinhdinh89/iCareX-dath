@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../iCareX.Shared/iCareX.Shared.csproj" />
+    <ProjectReference Include="../iCareX.Domain/iCareX.Domain.csproj" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+client_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$client_dir"
+pnpm run build --mode development
+exec figma make deploy-preview --build-dir dist "$@"
