@@ -10,7 +10,7 @@ namespace iCareX.UnitTests;
 public sealed class GarageRulesTests
 {
     private static readonly DateOnly Today = new(2026, 10, 30);
-    private readonly Vehicle vehicle = new() { AccountId = Guid.NewGuid(), BaseOdo = 100 };
+    private readonly Vehicle vehicle = new() { AccountId = Guid.NewGuid(), Odometer = 100 };
     private Entry Record(int day, decimal odo, EntryKind kind = EntryKind.Odo) => new()
     {
         VehicleId = vehicle.Id, AccountId = vehicle.AccountId, Title = "Bản ghi", Date = Today.AddDays(day),

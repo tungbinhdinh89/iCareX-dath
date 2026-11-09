@@ -2,7 +2,15 @@
 
 Web quản lý phương tiện cá nhân, ODO, chi phí và kế hoạch bảo dưỡng. Backend ASP.NET Core 10; frontend React 19/TypeScript/Vite; PostgreSQL qua EF Core.
 
+Vehicle registration/card đang có [thiết kế schema và contract mới](doc/.be/vehicle-registration-schema.md):
+type enum, brand/model FK ghép, metadata tùy chọn, form prefill và tab membership.
+Ngày 09/11/2026 đã xác nhận database hiện tại có migration `20261109090758`
+và `20261109123244`; API local đã restart đúng bản mới. Luôn triển khai
+schema/backend/frontend cùng phiên bản, restart API sau khi migrate.
+
 Authentication/Vehicle authorization hiện có: [runtime contract và cấu hình SMTP](doc/.be/access-control.md).
+Hồ sơ cá nhân lưu bằng `PUT /api/v1/auth/me` (name/phone, cookie + CSRF),
+form đã tích hợp API thật; [contract](doc/.be/api-contracts.md).
 Account mới phải xác thực email trước khi vào ứng dụng; setup `AccountEmail:*`
 bằng User Secrets/environment để gửi thư thật. Có permissions API, membership,
 invitation, verify/reset/change password; chưa có Fuel/Maintenance/Reminder CRUD

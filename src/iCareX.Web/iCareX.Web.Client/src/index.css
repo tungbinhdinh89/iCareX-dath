@@ -356,3 +356,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--brand-primary);
 .member-row:last-child { border-bottom: 0; }
 .member-row .MuiTypography-root { overflow-wrap: anywhere; }
 @media (max-width: 600px) { .member-row { align-items: flex-start; flex-direction: column; } }
+
+.vehicle-card-v2 { overflow: hidden; display: flex; flex-direction: column; }
+.vehicle-card-image { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: var(--bg-faint); }
+.vehicle-card-v2 .vehicle-body { padding: 24px; }
+.vehicle-card-actions { display: flex; justify-content: space-between; align-items: center; padding: 0 16px 12px; margin-top: auto; }

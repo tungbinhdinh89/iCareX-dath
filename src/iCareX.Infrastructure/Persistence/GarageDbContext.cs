@@ -10,7 +10,6 @@ public sealed class GarageDbContext(DbContextOptions<GarageDbContext> options)
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<UserSettings> Settings => Set<UserSettings>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
-    public DbSet<VehicleType> VehicleTypes => Set<VehicleType>();
     public DbSet<VehicleBrand> VehicleBrands => Set<VehicleBrand>();
     public DbSet<VehicleModel> VehicleModels => Set<VehicleModel>();
     public DbSet<OdometerReading> OdometerReadings => Set<OdometerReading>();
@@ -24,6 +23,32 @@ public sealed class GarageDbContext(DbContextOptions<GarageDbContext> options)
     public DbSet<MaintenancePlan> Plans => Set<MaintenancePlan>();
     public DbSet<AuthSession> Sessions => Set<AuthSession>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        NormalizeCatalogNames();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        NormalizeCatalogNames();
+        return base.SaveChanges();
+    }
+
+    private void NormalizeCatalogNames()
+    {
+        foreach (var entry in ChangeTracker.Entries<VehicleBrand>().Where(x => x.State is EntityState.Added or EntityState.Modified))
+        {
+            entry.Entity.Name = entry.Entity.Name.Trim();
+            entry.Entity.NormalizedName = iCareX.Domain.Common.VehicleRegistrationRules.NormalizeName(entry.Entity.Name);
+        }
+        foreach (var entry in ChangeTracker.Entries<VehicleModel>().Where(x => x.State is EntityState.Added or EntityState.Modified))
+        {
+            entry.Entity.Name = entry.Entity.Name.Trim();
+            entry.Entity.NormalizedName = iCareX.Domain.Common.VehicleRegistrationRules.NormalizeName(entry.Entity.Name);
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -45,56 +70,13 @@ public sealed class GarageDbContext(DbContextOptions<GarageDbContext> options)
             e.HasKey(x => x.AccountId);
             e.HasOne<Account>().WithOne().HasForeignKey<UserSettings>(x => x.AccountId).OnDelete(DeleteBehavior.Cascade);
         });
-        b.Entity<Vehicle>(e =>
-        {
-            e.ToTable("vehicles", t =>
-            {
-                t.HasCheckConstraint("ck_vehicle_odo", "\"BaseOdo\" BETWEEN 0 AND 9999999");
-                t.HasCheckConstraint("ck_vehicle_year", "\"Year\" >= 1980");
-            });
-            e.HasKey(x => x.Id);
-            e.HasAlternateKey(x => new { x.AccountId, x.Id });
-            e.HasIndex(x => new { x.AccountId, x.PlateNormalized }).IsUnique();
-            e.Property(x => x.Name).HasMaxLength(60);
-            e.Property(x => x.Plate).HasMaxLength(20);
-            e.Property(x => x.PlateNormalized).HasMaxLength(20);
-            e.Property(x => x.ImageUrl).HasMaxLength(2048);
-            e.Property(x => x.Version).IsConcurrencyToken();
-            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne(x => x.VehicleModel).WithMany().HasForeignKey(x => x.VehicleModelId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne<Account>().WithMany().HasForeignKey(x => x.AccountId).OnDelete(DeleteBehavior.Cascade);
-        });
-        b.Entity<VehicleType>(e =>
-        {
-            e.ToTable("vehicle_types");
-            e.HasKey(x => x.Id);
-            e.HasIndex(x => x.Code).IsUnique();
-            e.Property(x => x.Code).HasMaxLength(32);
-            e.Property(x => x.Name).HasMaxLength(60);
-            e.Property(x => x.Version).IsConcurrencyToken();
-        });
-        b.Entity<VehicleBrand>(e =>
-        {
-            e.ToTable("vehicle_brands");
-            e.HasKey(x => x.Id);
-            e.HasIndex(x => new { x.VehicleTypeId, x.Name }).IsUnique();
-            e.Property(x => x.Name).HasMaxLength(60);
-            e.Property(x => x.Version).IsConcurrencyToken();
-            e.HasOne(x => x.VehicleType).WithMany(x => x.Brands).HasForeignKey(x => x.VehicleTypeId).OnDelete(DeleteBehavior.Restrict);
-        });
-        b.Entity<VehicleModel>(e =>
-        {
-            e.ToTable("vehicle_models");
-            e.HasKey(x => x.Id);
-            e.HasIndex(x => new { x.VehicleBrandId, x.Name }).IsUnique();
-            e.Property(x => x.Name).HasMaxLength(60);
-            e.Property(x => x.Version).IsConcurrencyToken();
-            e.HasOne(x => x.VehicleBrand).WithMany(x => x.Models).HasForeignKey(x => x.VehicleBrandId).OnDelete(DeleteBehavior.Restrict);
-        });
+        b.ApplyConfiguration(new Configurations.VehicleConfiguration());
+        b.ApplyConfiguration(new Configurations.VehicleBrandConfiguration());
+        b.ApplyConfiguration(new Configurations.VehicleModelConfiguration());
         b.Entity<MaintenancePlan>(e =>
         {
             e.ToTable("maintenance_plans", t => t.HasCheckConstraint("ck_plan_intervals",
-                "\"DueOdo\" BETWEEN 1 AND 9999999 AND \"IntervalKm\" BETWEEN 1 AND 1000000 AND \"IntervalMonths\" BETWEEN 1 AND 120"));
+                "\"DueOdo\" BETWEEN 1 AND 9999999999.99 AND \"IntervalKm\" BETWEEN 1 AND 1000000 AND \"IntervalMonths\" BETWEEN 1 AND 120"));
             e.HasKey(x => x.Id);
             e.HasAlternateKey(x => new { x.AccountId, x.VehicleId, x.Id });
             e.Property(x => x.Title).HasMaxLength(100);
@@ -104,7 +86,7 @@ public sealed class GarageDbContext(DbContextOptions<GarageDbContext> options)
         });
         b.Entity<OdometerReading>(e =>
         {
-            e.ToTable("odometer_readings", t => t.HasCheckConstraint("ck_odometer_reading_odo", "\"Odo\" BETWEEN 0 AND 9999999"));
+            e.ToTable("odometer_readings", t => t.HasCheckConstraint("ck_odometer_reading_odo", "\"Odo\" BETWEEN 0 AND 9999999999.99"));
             e.HasKey(x => x.Id);
             e.Property(x => x.Note).HasMaxLength(500);
             e.HasIndex(x => new { x.AccountId, x.VehicleId, x.Date, x.Odo });
@@ -117,7 +99,7 @@ public sealed class GarageDbContext(DbContextOptions<GarageDbContext> options)
         {
             e.ToTable("fuel_entries", t =>
             {
-                t.HasCheckConstraint("ck_fuel_entry_numbers", "\"Odo\" BETWEEN 0 AND 9999999 AND \"Cost\" > 0 AND \"Liters\" > 0 AND \"Liters\" <= 500");
+                t.HasCheckConstraint("ck_fuel_entry_numbers", "\"Odo\" BETWEEN 0 AND 9999999999.99 AND \"Cost\" > 0 AND \"Liters\" > 0 AND \"Liters\" <= 500");
             });
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.AccountId, x.VehicleId, x.Date, x.Odo });
@@ -129,7 +111,7 @@ public sealed class GarageDbContext(DbContextOptions<GarageDbContext> options)
         b.Entity<MaintenanceRecord>(e =>
         {
             e.ToTable("maintenance_records", t => t.HasCheckConstraint("ck_maintenance_record_numbers",
-                "\"Odo\" BETWEEN 0 AND 9999999 AND \"Cost\" > 0"));
+                "\"Odo\" BETWEEN 0 AND 9999999999.99 AND \"Cost\" > 0"));
             e.HasKey(x => x.Id);
             e.Property(x => x.Title).HasMaxLength(100);
             e.Property(x => x.Note).HasMaxLength(500);
@@ -243,8 +225,8 @@ public sealed class GarageDbContext(DbContextOptions<GarageDbContext> options)
         {
             if (property.ClrType == typeof(decimal) || property.ClrType == typeof(decimal?))
             {
-                property.SetPrecision(20);
-                property.SetScale(6);
+                if (property.GetPrecision() is null) property.SetPrecision(20);
+                if (property.GetScale() is null) property.SetScale(6);
             }
         }
     }

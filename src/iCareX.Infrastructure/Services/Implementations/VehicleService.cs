@@ -1,3 +1,4 @@
+using iCareX.Domain.Enums;
 using System.Text.Json;
 using iCareX.Application.Features.Authorization.Contracts;
 using iCareX.Domain.Authorization;
@@ -46,24 +47,13 @@ public sealed class VehicleService(
         if (!await db.Users.AsNoTracking().AnyAsync(x => x.Id == accountId && x.EmailConfirmed
             && (!x.LockoutEnabled || x.LockoutEnd == null || x.LockoutEnd <= clock.UtcNow), cancellationToken))
             throw new VehicleAccessDeniedException();
-        ValidateVehicle(request.Name, request.Plate, request.Year, request.BaseOdo);
-        var model = await RequireActiveModel(request.VehicleModelId, cancellationToken);
-        var normalizedPlate = GarageRules.NormalizePlate(request.Plate);
-        if (await db.Vehicles.AnyAsync(x => x.AccountId == accountId && x.PlateNormalized == normalizedPlate, cancellationToken))
-            throw new VehicleConflictException("Biển số đã tồn tại trong tài khoản.");
-        var vehicle = new Vehicle
-        {
-            AccountId = accountId,
-            CreatedByUserId = accountId,
-            Name = request.Name.Trim(),
-            Plate = request.Plate.Trim().ToUpperInvariant(),
-            PlateNormalized = normalizedPlate,
-            VehicleModelId = model.Id,
-            VehicleModel = model,
-            Year = request.Year,
-            BaseOdo = request.BaseOdo,
-            ImageUrl = request.ImageUrl?.Trim() ?? ""
-        };
+        var vehicle = Candidate(request);
+        ValidateVehicle(vehicle);
+        vehicle.VehicleModel = await RequireModel(vehicle, true, cancellationToken);
+        vehicle.VehicleBrand = vehicle.VehicleModel.VehicleBrand;
+        vehicle.AccountId = accountId;
+        vehicle.CreatedByUserId = accountId;
+        await EnsureUniquePlate(vehicle.AccountId, vehicle.Id, vehicle.PlateNormalized, cancellationToken);
         repository.AddVehicle(vehicle);
         db.VehicleMembers.Add(new VehicleMember
         {
@@ -72,34 +62,38 @@ public sealed class VehicleService(
             Role = VehicleMemberRole.Owner
         });
         Audit(accountId, vehicle, "vehicle.created");
-        await repository.SaveChangesAsync(cancellationToken);
+        await SaveWithConcurrency(cancellationToken);
         logger.LogInformation("Vehicle created {VehicleId} for account {AccountId}", vehicle.Id, accountId);
         return ToResponse(vehicle, Array.Empty<OdometerReading>());
     }
 
     public async Task<VehicleResponse> UpdateAsync(Guid accountId, Guid vehicleId, UpdateVehicleRequest request, CancellationToken cancellationToken)
     {
-        ValidateVehicle(request.Name, request.Plate, request.Year, request.BaseOdo);
         await using var transaction = await VehicleWriteLock.BeginAsync(db, vehicleId, cancellationToken);
         var vehicle = await RequireVehicle(accountId, vehicleId, cancellationToken);
         await access.RequireAsync(accountId, vehicleId, VehiclePermissions.VehicleUpdate, cancellationToken);
         GarageRules.EnsureActive(vehicle);
         EnsureVersion(vehicle, request.Version);
-        var model = await RequireActiveModel(request.VehicleModelId, cancellationToken);
+        var candidate = Candidate(new CreateVehicleRequest(request.VehicleType, request.VehicleBrandId,
+            request.VehicleModelId, request.FuelType, request.OdometerUnit, request.Odometer,
+            request.Year, request.Name, request.Plate, request.Vin, request.RegistrationId, request.FuelCapacity,
+            request.PurchasePrice, request.SalePrice, request.Notes, request.ImageUrl));
+        ValidateVehicle(candidate);
+        var changedCatalog = candidate.VehicleModelId != vehicle.VehicleModelId || candidate.VehicleBrandId != vehicle.VehicleBrandId
+            || candidate.VehicleType != vehicle.VehicleType;
+        var model = await RequireModel(candidate, changedCatalog, cancellationToken);
         var readings = await repository.ReadingsAsync(vehicle.AccountId, vehicleId, cancellationToken);
-        GarageRules.ValidateBaseOdo(request.BaseOdo, readings.Select(ToEntry));
-        var normalizedPlate = GarageRules.NormalizePlate(request.Plate);
-        if (await db.Vehicles.AnyAsync(x => x.AccountId == vehicle.AccountId && x.Id != vehicleId &&
-            x.PlateNormalized == normalizedPlate, cancellationToken))
-            throw new VehicleConflictException("Biển số đã tồn tại trong tài khoản.");
-        vehicle.Name = request.Name.Trim();
-        vehicle.Plate = request.Plate.Trim().ToUpperInvariant();
-        vehicle.PlateNormalized = normalizedPlate;
-        vehicle.VehicleModelId = model.Id;
+        GarageRules.ValidateBaseOdo(candidate.Odometer, readings.Select(ToEntry));
+        if (candidate.OdometerUnit != vehicle.OdometerUnit && (readings.Count != 0
+            || await db.FuelEntries.AnyAsync(x => x.VehicleId == vehicleId, cancellationToken)
+            || await db.MaintenanceRecords.AnyAsync(x => x.VehicleId == vehicleId, cancellationToken)
+            || await db.Plans.AnyAsync(x => x.VehicleId == vehicleId, cancellationToken)
+            || await db.Reminders.AnyAsync(x => x.VehicleId == vehicleId, cancellationToken)))
+            throw new VehicleConflictException("Không thể đổi đơn vị ODO khi xe đã có lịch sử hoặc kế hoạch liên quan.");
+        await EnsureUniquePlate(vehicle.AccountId, vehicle.Id, candidate.PlateNormalized, cancellationToken);
+        ApplyDetails(vehicle, candidate);
         vehicle.VehicleModel = model;
-        vehicle.Year = request.Year;
-        vehicle.BaseOdo = request.BaseOdo;
-        vehicle.ImageUrl = request.ImageUrl?.Trim() ?? "";
+        vehicle.VehicleBrand = model.VehicleBrand;
         vehicle.Version++;
         vehicle.UpdatedAtUtc = clock.UtcNow;
         Audit(accountId, vehicle, "vehicle.changed");
@@ -216,6 +210,7 @@ public sealed class VehicleService(
     private async Task SaveWithConcurrency(CancellationToken cancellationToken)
     {
         try { await repository.SaveChangesAsync(cancellationToken); }
+        catch (DbUpdateException error) when (error.InnerException is Npgsql.PostgresException { SqlState: "23505" }) { throw new VehicleConflictException("Biển số đã tồn tại trong tài khoản."); }
         catch (DbUpdateConcurrencyException) { throw new VehicleConflictException("Dữ liệu đã thay đổi. Vui lòng tải lại."); }
     }
 
@@ -226,33 +221,56 @@ public sealed class VehicleService(
             throw new VehicleConflictException("Phiên bản dữ liệu không còn mới.");
     }
 
-    private async Task<VehicleModel> RequireActiveModel(Guid modelId, CancellationToken cancellationToken) =>
-        await db.VehicleModels.Include(x => x.VehicleBrand!).ThenInclude(x => x.VehicleType)
-            .SingleOrDefaultAsync(x => x.Id == modelId && x.IsActive &&
-                x.VehicleBrand!.IsActive && x.VehicleBrand.VehicleType!.IsActive, cancellationToken)
-            ?? throw new VehicleValidationException(["Hãng và dòng xe không hợp lệ hoặc đã ngừng sử dụng."]);
+    private async Task<VehicleModel> RequireModel(Vehicle candidate, bool requireActive, CancellationToken ct) =>
+        await db.VehicleModels.Include(x => x.VehicleBrand).SingleOrDefaultAsync(x => x.Id == candidate.VehicleModelId
+            && x.VehicleBrandId == candidate.VehicleBrandId && x.VehicleBrand!.VehicleType == candidate.VehicleType
+            && (!requireActive || x.IsActive && x.VehicleBrand.IsActive), ct)
+            ?? throw new VehicleValidationException(["Loại, hãng và dòng xe không khớp hoặc catalog mới chọn đã ngừng sử dụng."]);
 
-    private static void ValidateVehicle(string name, string plate, int year, decimal baseOdo)
+    private async Task EnsureUniquePlate(Guid owner, Guid vehicleId, string? plate, CancellationToken ct)
     {
-        if (name.Trim().Length is < 2 or > 60 || plate.Trim().Length is < 2 or > 20 ||
-            year is < 1980 or > 2100)
-            throw new VehicleValidationException(["Thông tin phương tiện không hợp lệ."]);
-        GarageRules.Number(baseOdo, 0, 9_999_999, "ODO ban đầu");
-        if (GarageRules.NormalizePlate(plate).Length < 2)
-            throw new VehicleValidationException(["Biển số không hợp lệ."]);
+        if (plate is not null && await db.Vehicles.AnyAsync(x => x.AccountId == owner && x.Id != vehicleId && x.PlateNormalized == plate, ct))
+            throw new VehicleConflictException("Biển số đã tồn tại trong tài khoản.");
     }
 
-    private static VehicleResponse ToResponse(Vehicle vehicle, IEnumerable<OdometerReading> readings) =>
-        new(vehicle.Id, vehicle.Name, vehicle.Plate,
-            vehicle.VehicleModel!.VehicleBrand!.VehicleType!.Id,
-            vehicle.VehicleModel.VehicleBrand.VehicleType.Name,
-            vehicle.VehicleModel.VehicleBrand.Id,
-            vehicle.VehicleModel.VehicleBrand.Name,
-            vehicle.VehicleModel.Id,
-            vehicle.VehicleModel.Name,
-            vehicle.Year,
-            vehicle.BaseOdo, GarageRules.CurrentOdo(vehicle, readings.Select(ToEntry)), vehicle.ImageUrl,
-            vehicle.ArchivedAtUtc is not null, vehicle.Version);
+    private void ValidateVehicle(Vehicle vehicle)
+    {
+        try { VehicleRegistrationRules.Validate(vehicle, clock.Today.Year); }
+        catch (iCareX.Domain.Exceptions.RuleViolation error) { throw new VehicleValidationException([error.Message]); }
+    }
+
+    private static Vehicle Candidate(CreateVehicleRequest r) => new()
+    {
+        VehicleType = VehicleCatalogService.ParseEnum<VehicleType>(r.VehicleType),
+        VehicleBrandId = r.VehicleBrandId, VehicleModelId = r.VehicleModelId,
+        FuelType = VehicleCatalogService.ParseEnum<FuelType>(r.FuelType),
+        OdometerUnit = VehicleCatalogService.ParseEnum<OdometerUnit>(r.OdometerUnit),
+        Odometer = r.Odometer, Year = r.Year,
+        Name = VehicleRegistrationRules.OptionalText(r.Name),
+        Plate = VehicleRegistrationRules.OptionalText(r.Plate)?.ToUpperInvariant(),
+        PlateNormalized = VehicleRegistrationRules.NormalizePlate(r.Plate),
+        VIN = VehicleRegistrationRules.NormalizeVin(r.Vin), RegistrationId = VehicleRegistrationRules.OptionalText(r.RegistrationId),
+        FuelCapacity = r.FuelCapacity, PurchasePrice = r.PurchasePrice, SalePrice = r.SalePrice,
+        Notes = VehicleRegistrationRules.OptionalText(r.Notes), ImageUrl = VehicleRegistrationRules.OptionalText(r.ImageUrl)
+    };
+
+    private static void ApplyDetails(Vehicle target, Vehicle source)
+    {
+        target.VehicleType = source.VehicleType; target.VehicleBrandId = source.VehicleBrandId; target.VehicleModelId = source.VehicleModelId;
+        target.FuelType = source.FuelType; target.OdometerUnit = source.OdometerUnit; target.Odometer = source.Odometer;
+        target.Year = source.Year; target.Name = source.Name;
+        target.Plate = source.Plate; target.PlateNormalized = source.PlateNormalized; target.VIN = source.VIN;
+        target.RegistrationId = source.RegistrationId; target.FuelCapacity = source.FuelCapacity;
+        target.PurchasePrice = source.PurchasePrice; target.SalePrice = source.SalePrice;
+        target.Notes = source.Notes; target.ImageUrl = source.ImageUrl;
+    }
+
+    private static VehicleResponse ToResponse(Vehicle v, IEnumerable<OdometerReading> readings) =>
+        new(v.Id, v.Name, v.Plate, v.VehicleType.ToString(), VehicleCatalogService.TypeLabel(v.VehicleType),
+            v.VehicleBrandId, v.VehicleModel!.VehicleBrand!.Name, v.VehicleModelId, v.VehicleModel.Name,
+            v.Year, v.Odometer, GarageRules.CurrentOdo(v, readings.Select(ToEntry)), v.FuelType.ToString(), v.FuelCapacity,
+            v.OdometerUnit.ToString(), v.VIN, v.RegistrationId, v.PurchasePrice, v.SalePrice,
+            v.Notes, v.ImageUrl, v.ArchivedAtUtc is not null, v.Version, v.CreatedAtUtc, v.UpdatedAtUtc);
 
     private static OdometerReadingResponse ToReadingResponse(OdometerReading reading) =>
         new(reading.Id, reading.VehicleId, reading.Date, reading.Odo, "Cập nhật ODO", reading.Note, reading.Version);

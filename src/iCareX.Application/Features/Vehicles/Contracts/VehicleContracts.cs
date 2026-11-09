@@ -19,10 +19,8 @@ public interface IVehicleService
 public interface IVehicleCatalogService
 {
     Task<IReadOnlyCollection<VehicleTypeResponse>> ListTypesAsync(CancellationToken cancellationToken);
-    Task<IReadOnlyCollection<VehicleBrandResponse>> ListBrandsAsync(Guid vehicleTypeId, CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<VehicleBrandResponse>> ListBrandsAsync(string vehicleType, CancellationToken cancellationToken);
     Task<IReadOnlyCollection<VehicleModelResponse>> ListModelsAsync(Guid vehicleBrandId, CancellationToken cancellationToken);
-    Task<VehicleTypeResponse> CreateTypeAsync(CreateVehicleTypeRequest request, CancellationToken cancellationToken);
-    Task<VehicleTypeResponse> UpdateTypeAsync(Guid id, UpdateVehicleTypeRequest request, CancellationToken cancellationToken);
     Task<VehicleBrandResponse> CreateBrandAsync(CreateVehicleBrandRequest request, CancellationToken cancellationToken);
     Task<VehicleBrandResponse> UpdateBrandAsync(Guid id, UpdateVehicleBrandRequest request, CancellationToken cancellationToken);
     Task<VehicleModelResponse> CreateModelAsync(CreateVehicleModelRequest request, CancellationToken cancellationToken);

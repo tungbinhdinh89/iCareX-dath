@@ -39,7 +39,7 @@ single-use dưới user lock; vehicle writes/revoke/accept dùng chung vehicle l
 
 - Transport DTO mới thuộc Shared; dùng camelCase JSON. Không trả persisted entity, Identity model/secrets, DbContext hoặc IQueryable cho frontend.
 - Sau đổi DTO, chạy generator từ root rồi `--check`; không sửa TypeScript sinh bằng tay.
-- Catalog hiện có `VehicleType → VehicleBrand → VehicleModel`. Vehicle nhận `VehicleModelId` và giữ tên hiển thị do người dùng đặt; type/brand suy ra từ model. Kiểm tra active và quyền Admin cho catalog mutation.
+- Catalog mới trong `doc/.be/vehicle-registration-schema.md`: VehicleType enum, Brand/Model entities, FK ghép model+brand và brand+type. Name/Plate/Year optional, giá VNĐ; không SpeedLimit/HasTwoTanks. Odometer baseline12,2 và đơn vị; không đổi unit khi đã có history. Kiểm active khi chọn catalog mới, không làm xe lịch sử mất hiệu lực vì catalog inactive. Giữ SystemAdmin/catalog role và CSRF.
 - Auth hiện là ASP.NET Core Identity + cookie/session DB; đọc `AuthController`, `AuthService`, `SessionCookieEvents` và Program để giữ CSRF, session revoke/expiry. Không chuyển sang JWT chỉ vì tài liệu đích mô tả JWT.
 - Vehicle/ODO hiện dùng `PUT`, request `version` và 409 khi stale; ODO delete nhận version ở query. Không thay bằng Garage ETag/If-Match hoặc envelope khác từ blueprint.
 - Fuel/service/plan/inbox có phần model/rule hoặc UI nhưng chưa đồng nghĩa có API hoàn chỉnh. Xác minh controller/service thực tế trước khi mở rộng.

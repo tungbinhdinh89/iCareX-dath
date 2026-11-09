@@ -29,7 +29,9 @@ public sealed partial class DatabaseTests : IAsyncLifetime
         var owner = Guid.NewGuid();
         db.Users.Add(new ApplicationUser { Id = owner, UserName = owner.ToString() });
         db.Accounts.Add(new Account { Id = owner, Name = "Test Owner" });
-        var vehicle = new Vehicle { AccountId = owner, CreatedByUserId = owner, Name = "Test car", Plate = "51A-12345", PlateNormalized = "51A12345", Year = 2020 };
+        var model = TestVehicleModel();
+        db.VehicleModels.Add(model);
+        var vehicle = new Vehicle { VehicleModelId = model.Id, VehicleBrandId = model.VehicleBrandId, VehicleType = iCareX.Domain.Enums.VehicleType.Car, FuelType = iCareX.Domain.Enums.FuelType.Gasoline, AccountId = owner, CreatedByUserId = owner, Name = "Test car", Plate = "51A-12345", PlateNormalized = "51A12345", Year = 2020 };
         db.Vehicles.Add(vehicle);
         db.VehicleMembers.Add(new VehicleMember { VehicleId = vehicle.Id, UserId = owner, Role = VehicleMemberRole.Owner });
         var plan = new MaintenancePlan { AccountId = owner, VehicleId = vehicle.Id, Title = "Thay dầu", DueDate = new(2026, 1, 1), DueOdo = 1000, IntervalKm = 1000, IntervalMonths = 1 };
@@ -83,7 +85,7 @@ public sealed partial class DatabaseTests : IAsyncLifetime
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
         db.ChangeTracker.Clear();
 
-        db.Vehicles.Add(new Vehicle { AccountId = owner, CreatedByUserId = owner, Name = "Duplicate", PlateNormalized = vehicle.PlateNormalized, Year = 2020 });
+        db.Vehicles.Add(new Vehicle { AccountId = owner, CreatedByUserId = owner, Name = "Duplicate", VehicleModelId = model.Id, VehicleBrandId = model.VehicleBrandId, VehicleType = iCareX.Domain.Enums.VehicleType.Car, FuelType = iCareX.Domain.Enums.FuelType.Gasoline, Plate = vehicle.Plate, PlateNormalized = vehicle.PlateNormalized, Year = 2020 });
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
         db.ChangeTracker.Clear();
         var wrongOwner = new OdometerReading { AccountId = Guid.NewGuid(), VehicleId = vehicle.Id, CreatedByUserId = owner, Date = new(2026, 1, 1) };

@@ -1,3 +1,4 @@
+import { vehicleFormDefaults } from "@/lib/models/vehiclePresentation"
 import LoginForm from "@/components/AuthForm"
 export { default as LoginForm } from "@/components/AuthForm"
 import { useEffect, useState } from "react"
@@ -29,9 +30,9 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   dateLabel,
-  defaultImage,
   number,
   odoOf,
+  odometerUnitLabel,
   today,
   validateEntry,
   type Entry,
@@ -352,33 +353,22 @@ function EntryForm({
     </Box>
   )
 }
+const optionalDecimal = (max: number, positive = false) => z.number().finite().min(positive ? 0.01 : 0).max(max)
+  .refine((n) => Math.abs(n * 100 - Math.round(n * 100)) < 0.0001, "Tối đa 2 chữ số thập phân.").nullable()
 const vehicleSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, "Nhập tên xe (ít nhất 2 ký tự).")
-    .max(60, "Tối đa 60 ký tự."),
-  plate: z
-    .string()
-    .trim()
-    .min(5, "Nhập biển số hợp lệ.")
-    .max(20, "Tối đa 20 ký tự.")
-    .regex(
-      /^[0-9A-Za-z.\-\s]+$/,
-      "Biển số chỉ gồm chữ, số, dấu chấm và gạch ngang.",
-    ),
+  name: z.string().trim().max(150, "Tối đa 150 ký tự."),
+  plate: z.string().trim().max(30, "Tối đa 30 ký tự."),
   vehicleTypeId: z.string().min(1, "Chọn loại phương tiện."),
   vehicleBrandId: z.string().min(1, "Chọn hãng xe."),
   vehicleModelId: z.string().min(1, "Chọn dòng xe."),
-  year: z
-    .number({ error: "Nhập năm sản xuất." })
-    .int("Năm sản xuất phải là số nguyên.")
-    .min(1980, "Năm từ 1980.")
-    .max(new Date().getFullYear() + 1, "Năm không hợp lệ."),
-  baseOdo: z
-    .number({ error: "Nhập số ODO." })
-    .min(0, "ODO không được âm.")
-    .max(9999999, "ODO quá lớn."),
+  year: z.number().int().min(1).max(new Date().getFullYear() + 1).nullable(),
+  baseOdo: z.number().min(0).max(9999999999.99).refine((n) => Math.abs(n * 100 - Math.round(n * 100)) < 0.0001, "Tối đa 2 chữ số thập phân."),
+  fuelType: z.string().min(1, "Chọn loại nhiên liệu."),
+  odometerUnit: z.enum(["Kilometres", "Miles", "Hours"]),
+  fuelCapacity: optionalDecimal(99999999.99, true),
+  purchasePrice: optionalDecimal(9999999999999999.99), salePrice: optionalDecimal(9999999999999999.99),
+  vin: z.string().trim().max(50), registrationId: z.string().trim().max(100),
+  notes: z.string().max(2000), imageUrl: z.string().trim().max(2048),
 })
 type VehicleFields = z.infer<typeof vehicleSchema>
 function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
@@ -388,7 +378,7 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
   const [types, setTypes] = useState<{ id: string; name: string }[]>([])
   const [brands, setBrands] = useState<{
     id: string
-    vehicleTypeId: string
+    vehicleType: string
     name: string
   }[]>([])
   const [models, setModels] = useState<{
@@ -405,15 +395,7 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
     formState: { errors },
   } = useForm<VehicleFields>({
     resolver: zodResolver(vehicleSchema),
-    defaultValues: vehicle ?? {
-      name: "",
-      plate: "",
-      vehicleTypeId: "",
-      vehicleBrandId: "",
-      vehicleModelId: "",
-      year: new Date().getFullYear(),
-      baseOdo: 0,
-    },
+    defaultValues: vehicleFormDefaults(vehicle),
   })
   const selectedTypeId = watch("vehicleTypeId")
   const selectedBrandId = watch("vehicleBrandId")
@@ -433,6 +415,8 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
     api
       .vehicleBrands(selectedTypeId)
       .then((items) => {
+        if (vehicle && selectedTypeId === vehicle.vehicleTypeId && !items.some((x) => x.id === vehicle.vehicleBrandId))
+          items = [...items, { id: vehicle.vehicleBrandId, vehicleType: vehicle.vehicleTypeId, name: `${vehicle.vehicleBrandName} (ngừng sử dụng)`, isActive: false, version: 0 }]
         setBrands(items)
         if (!items.some((item) => item.id === selectedBrandId)) {
           setValue("vehicleBrandId", "")
@@ -451,6 +435,8 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
     api
       .vehicleModels(selectedBrandId)
       .then((items) => {
+        if (vehicle && selectedBrandId === vehicle.vehicleBrandId && !items.some((x) => x.id === vehicle.vehicleModelId))
+          items = [...items, { id: vehicle.vehicleModelId, vehicleBrandId: vehicle.vehicleBrandId, name: `${vehicle.vehicleModelName} (ngừng sử dụng)` }]
         setModels(items)
         if (!items.some((item) => item.id === watch("vehicleModelId")))
           setValue("vehicleModelId", "")
@@ -465,7 +451,7 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
   const submit = handleSubmit(async (values) => {
     setError("")
     if (
-      data?.vehicles.some(
+      values.plate.trim() && data?.vehicles.some(
         (v) =>
           v.id !== vehicle?.id &&
           v.plate.replace(/\W/g, "").toUpperCase() ===
@@ -490,15 +476,12 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
         await api.updateVehicle(vehicle.id, {
           ...values,
           version: vehicle.version,
-          image: defaultImage(vehicle.type),
+          image: values.imageUrl,
         })
       } else {
         await api.createVehicle({
           ...values,
-          image: defaultImage(
-            types.find((item) => item.id === values.vehicleTypeId)?.name ??
-              "Ô tô",
-          ),
+          image: values.imageUrl,
         })
       }
       await refetch()
@@ -528,7 +511,7 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
             description="Đặt tên dễ nhớ và chọn đúng loại, hãng, dòng xe của bạn."
           />
           <TextField
-            label="Tên phương tiện *"
+            label="Tên phương tiện (tùy chọn)"
             placeholder="VD: Toyota Vios"
             className="full"
             {...register("name")}
@@ -595,21 +578,21 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
             )}
           />
           <TextField
-            label="Biển số *"
-            placeholder="51G-123.45"
+            label="Biển số (tùy chọn)"
+            placeholder="51G-12345"
             {...register("plate")}
             error={!!errors.plate}
-            helperText={errors.plate?.message}
+            helperText={errors.plate?.message ?? "Ví dụ: 51G-12345"}
           />
           <TextField
-            label="Năm sản xuất *"
+            label="Năm sản xuất (tùy chọn)"
             type="number"
-            {...register("year", { valueAsNumber: true })}
+            {...register("year", { setValueAs: (v) => v === "" ? null : Number(v) })}
             error={!!errors.year}
             helperText={errors.year?.message}
           />
           <TextField
-            label="ODO ban đầu (km) *"
+            label="ODO ban đầu *"
             type="number"
             {...register("baseOdo", { valueAsNumber: true })}
             error={!!errors.baseOdo}
@@ -617,6 +600,23 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
               errors.baseOdo?.message ?? "ODO lúc bắt đầu theo dõi xe"
             }
           />
+          <Controller name="fuelType" control={control} render={({ field }) => (
+            <TextField {...field} select label="Loại nhiên liệu *" error={!!errors.fuelType} helperText={errors.fuelType?.message}>
+              {Object.entries({ Gasoline: "Xăng", Diesel: "Dầu diesel", Electric: "Điện", Hybrid: "Hybrid", PlugInHybrid: "Plug-in hybrid", Ethanol: "Ethanol", Biodiesel: "Biodiesel", LPG: "LPG", CNG: "CNG", Hydrogen: "Hydrogen", Other: "Khác" }).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
+            </TextField>
+          )} />
+          <Controller name="odometerUnit" control={control} render={({ field }) => (
+            <TextField {...field} select label="Đơn vị ODO *">
+              <MenuItem value="Kilometres">Kilômét (km)</MenuItem><MenuItem value="Miles">Dặm (mi)</MenuItem><MenuItem value="Hours">Giờ vận hành</MenuItem>
+            </TextField>
+          )} />
+          {([['fuelCapacity', 'Dung tích nhiên liệu (US gallon)'], ['purchasePrice', 'Giá mua (VNĐ)'], ['salePrice', 'Giá bán (VNĐ)']] as const).map(([key, label]) => (
+            <TextField key={key} label={label} type="number" {...register(key, { setValueAs: (v) => v === "" ? null : Number(v) })} error={!!errors[key]} helperText={errors[key]?.message} />
+          ))}
+          <TextField label="VIN (tùy chọn)" {...register("vin")} error={!!errors.vin} helperText={errors.vin?.message} />
+          <TextField label="Số đăng ký (tùy chọn)" {...register("registrationId")} error={!!errors.registrationId} helperText={errors.registrationId?.message} />
+          <TextField label="Đường dẫn ảnh (tùy chọn)" className="full" {...register("imageUrl")} error={!!errors.imageUrl} helperText={errors.imageUrl?.message} />
+          <TextField label="Ghi chú (tùy chọn)" multiline minRows={2} className="full" {...register("notes")} error={!!errors.notes} helperText={errors.notes?.message} />
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>

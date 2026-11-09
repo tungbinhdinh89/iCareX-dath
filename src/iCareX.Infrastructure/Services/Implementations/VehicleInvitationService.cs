@@ -25,7 +25,7 @@ public sealed class VehicleInvitationService(GarageDbContext db, IVehicleAccessS
     {
         var membership = await access.RequireAsync(actor, vehicleId, VehiclePermissions.VehicleRead, ct);
         if (membership.Role != VehicleMemberRole.Owner) throw new VehicleAccessDeniedException();
-        var name = await db.Vehicles.Where(x => x.Id == vehicleId).Select(x => x.Name).SingleAsync(ct);
+        var name = await db.Vehicles.Where(x => x.Id == vehicleId).Select(x => x.Name ?? x.VehicleModel!.Name).SingleAsync(ct);
         var invitations = await db.VehicleInvitations.AsNoTracking().Where(x => x.VehicleId == vehicleId)
             .OrderByDescending(x => x.CreatedAtUtc).ToArrayAsync(ct);
         return invitations.Select(x => Projection(x, name)).ToArray();
@@ -63,7 +63,7 @@ public sealed class VehicleInvitationService(GarageDbContext db, IVehicleAccessS
         db.VehicleInvitations.Add(invitation);
         Audit(actor, invitation, "vehicle.invitation.created");
         await db.SaveChangesAsync(ct);
-        var name = await db.Vehicles.Where(x => x.Id == vehicleId).Select(x => x.Name).SingleAsync(ct);
+        var name = await db.Vehicles.Where(x => x.Id == vehicleId).Select(x => x.Name ?? x.VehicleModel!.Name).SingleAsync(ct);
         var link = settings.Value.Link($"loi-moi/{invitation.Id}", $"token={Uri.EscapeDataString(token)}");
         await email.SendAsync(address.Address, "iCareX - Lời mời chia sẻ xe",
             $"Bạn được mời tham gia xe {name} với vai trò {role}.\n{link}\nLiên kết có hiệu lực 7 ngày. Bạn cần đăng nhập đúng email đã xác thực và chủ động chấp nhận lời mời.", ct);
@@ -95,7 +95,7 @@ public sealed class VehicleInvitationService(GarageDbContext db, IVehicleAccessS
         EnsurePending(invitation);
         var vehicle = await db.Vehicles.AsNoTracking().SingleAsync(x => x.Id == invitation.VehicleId, ct);
         if (vehicle.ArchivedAtUtc != null) throw new VehicleConflictException("Xe đang được lưu trữ.");
-        return Projection(invitation, vehicle.Name);
+        return Projection(invitation, vehicle.Name ?? await db.VehicleModels.Where(x => x.Id == vehicle.VehicleModelId).Select(x => x.Name).SingleAsync(ct));
     }
 
     public async Task<IReadOnlyCollection<VehicleInvitationResponse>> InboxAsync(Guid actor, CancellationToken ct)
@@ -107,7 +107,7 @@ public sealed class VehicleInvitationService(GarageDbContext db, IVehicleAccessS
                       where invitation.NormalizedInvitedEmail == user.NormalizedEmail && invitation.Status == VehicleInvitationStatus.Pending
                           && invitation.ExpiresAtUtc > clock.UtcNow && vehicle.ArchivedAtUtc == null
                       orderby invitation.CreatedAtUtc descending
-                      select new VehicleInvitationResponse(invitation.Id, vehicle.Id, vehicle.Name, invitation.Role.ToString(),
+                      select new VehicleInvitationResponse(invitation.Id, vehicle.Id, vehicle.Name ?? vehicle.VehicleModel!.Name, invitation.Role.ToString(),
                           "Pending", invitation.ExpiresAtUtc, invitation.Version)).ToArrayAsync(ct);
     }
 

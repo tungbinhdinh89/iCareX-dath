@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
+import { matchesVehicleTab, vehicleFormDefaults, vehicleMaintenanceSummary } from '../src/lib/models/vehiclePresentation.ts'
 import {
   odoOf,
   today,
@@ -39,7 +40,7 @@ const vehicle: Vehicle = {
   vehicleModelId: "model-vios",
   vehicleModelName: "Vios",
   year: 2021,
-  baseOdo: 30000,
+  baseOdo: 30000, fuelType: "Gasoline", odometerUnit: "Kilometres",
   currentOdo: 30000,
   image: "/images/car.jpg",
   isArchived: false,
@@ -61,16 +62,42 @@ test("vehicle writes send only the Shared DTO fields, excluding form/catalog met
     globalThis.fetch = async (input, init) => {
       if (String(input).endsWith("/csrf")) return Response.json({ token: "csrf-test" })
       bodies.push(JSON.parse(String(init?.body)))
-      return Response.json({ id: "saved-vehicle", vehicleTypeName: "Ô tô" })
+      return Response.json({ id: "saved-vehicle", vehicleTypeName: "Ô tô", vehicleType: "Car", odometer: 50000, currentOdo: 50000, fuelType: "Gasoline", odometerUnit: "Kilometres" })
     }
     const form = { name: "Ford EcoSport 2019", plate: "51G-87624",
       vehicleModelId: "30000000-0000-0000-0000-000000000003", year: 2019, baseOdo: 50000,
-      image: "/images/car.jpg", vehicleTypeId: "internal-type", vehicleBrandId: "internal-brand" }
+      image: "/images/car.jpg", vehicleTypeId: "Car", vehicleBrandId: "internal-brand", fuelType: "Gasoline", odometerUnit: "Kilometres" }
     await api.createVehicle(form)
     await api.updateVehicle("saved-vehicle", { ...form, version: 3 })
     const expected = { name: form.name, plate: form.plate, vehicleModelId: form.vehicleModelId,
-      year: form.year, baseOdo: form.baseOdo, imageUrl: form.image }
+      year: form.year, odometer: form.baseOdo, imageUrl: form.image, vehicleType: form.vehicleTypeId, vehicleBrandId: form.vehicleBrandId, fuelType: form.fuelType, odometerUnit: form.odometerUnit }
     assert.deepEqual(bodies, [expected, { ...expected, version: 3 }])
+  } finally {
+    globalThis.fetch = originalFetch
+    resetSessionRequests()
+  }
+})
+
+test("profile updates whitelist editable fields, send cookie CSRF and refetch current user", async () => {
+  const originalFetch = globalThis.fetch
+  resetSessionRequests()
+  const requests: Array<{ url: string; init?: RequestInit }> = []
+  const saved = { id: "actor", name: "Tên mới", email: "original@example.test", phone: "0912345678", roles: ["User"], accountStatus: "Active", emailVerified: true }
+  try {
+    globalThis.fetch = async (input, init) => {
+      const url = String(input)
+      requests.push({ url, init })
+      return Response.json(url.endsWith("/csrf") ? { token: "csrf-profile" } : saved)
+    }
+    const result = await api.updateProfile({ name: saved.name, phone: saved.phone, userId: "victim", roles: ["SystemAdmin"] } as Parameters<typeof api.updateProfile>[0])
+    assert.equal(result.email, saved.email)
+    const write = requests.find((r) => r.init?.method === "PUT")!
+    assert.equal(write.url, "/api/v1/auth/me")
+    assert.equal(write.init?.credentials, "include")
+    assert.equal((write.init?.headers as Record<string, string>)["X-CSRF-TOKEN"], "csrf-profile")
+    assert.deepEqual(JSON.parse(String(write.init?.body)), { name: saved.name, phone: saved.phone })
+    assert.equal(requests.at(-1)?.url, "/api/v1/auth/me")
+    assert.equal(requests.at(-1)?.init?.method, undefined)
   } finally {
     globalThis.fetch = originalFetch
     resetSessionRequests()
@@ -82,6 +109,40 @@ test("registration reports durable account creation separately from email delive
   assert.match(registrationNotice(false), /chưa thể gửi email/)
   assert.match(registrationNotice(false), /vẫn cần xác thực/)
   assert.match(registrationNotice(true), /Kiểm tra email/)
+})
+
+test("vehicle grouping uses membership role and keeps archives in their own tab", () => {
+  assert.equal(matchesVehicleTab({ isArchived: false }, 'Owner', 'owned'), true)
+  assert.equal(matchesVehicleTab({ isArchived: false }, 'Viewer', 'owned'), false)
+  assert.equal(matchesVehicleTab({ isArchived: false }, 'Manager', 'shared'), true)
+  assert.equal(matchesVehicleTab({ isArchived: true }, 'Owner', 'all'), false)
+  assert.equal(matchesVehicleTab({ isArchived: true }, 'Viewer', 'archived'), true)
+  assert.equal(matchesVehicleTab({ isArchived: false }, undefined, 'all'), false)
+})
+
+test("editing prefills optional metadata and VND prices while blank new fields stay optional", () => {
+  const values = vehicleFormDefaults({ ...vehicle, registrationName: 'Xe của tôi', year: null,
+    fuelCapacity: 12.5, vin: 'ABC123', registrationId: 'DK123', purchasePrice: 120000000, salePrice: 0, notes: 'Đã có ghi chú' })
+  assert.equal(values.name, 'Xe của tôi')
+  assert.equal(values.year, null)
+  assert.equal(values.purchasePrice, 120000000)
+  assert.equal(values.salePrice, 0)
+  assert.equal(values.vin, 'ABC123')
+  assert.equal(values.registrationId, 'DK123')
+  assert.equal(values.fuelCapacity, 12.5)
+  assert.equal(values.notes, 'Đã có ghi chú')
+  assert.equal(vehicleFormDefaults().year, null)
+  assert.equal(vehicleFormDefaults().plate, '')
+  assert.equal('speedLimit' in values, false)
+  assert.equal('hasTwoTanks' in values, false)
+})
+
+test("maintenance status is derived only when a real schedule source is available", () => {
+  const schedule = { id: 'schedule', vehicleId: vehicle.id, title: 'Thay dầu', dueDate: today(), dueOdo: 30000, intervalKm: 1000, intervalMonths: 1 }
+  assert.equal(vehicleMaintenanceSummary({ ...garage, plans: [schedule] }, vehicle), null)
+  assert.equal(vehicleMaintenanceSummary({ ...garage, maintenanceAvailable: true }, vehicle)?.status, 'NoSchedule')
+  assert.equal(vehicleMaintenanceSummary({ ...garage, maintenanceAvailable: true, plans: [schedule] }, vehicle)?.status, 'Due')
+  assert.equal(vehicleMaintenanceSummary({ ...garage, maintenanceAvailable: true, plans: [{ ...schedule, dueOdo: 29999 }] }, vehicle)?.status, 'Overdue')
 })
 
 test("guest garage contains no seeded mock data", async () => {

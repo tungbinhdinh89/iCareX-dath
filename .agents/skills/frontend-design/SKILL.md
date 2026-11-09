@@ -45,6 +45,13 @@ thương hiệu mặc định của Astra:
 
 ## Hướng dẫn thiết kế tổng quát
 
+Vehicle registration/card đọc `doc/.be/vehicle-registration-schema.md`: card ảnh
+16:9, tên+brand/model, nhận diện nếu có, ODO đúng đơn vị, fuel+membership role;
+metadata/VNĐ/timestamps nằm trong Details. Tab owned/shared lấy membership Owner,
+không dùng creator. Form edit prefill toàn bộ, số tùy chọn nullable và giữ 0,
+plate optional có ví dụ, nhãn Số đăng ký; không SpeedLimit/HasTwoTanks.
+Không mock maintenance status hoặc bật action CRUD khi API chưa có.
+
 Kỹ năng này hướng dẫn tạo giao diện người dùng có dấu ấn riêng, sẵn sàng dùng trong thực tế. Khi có design system do người dùng chọn, độ chính xác và tính nhất quán với system đó là ưu tiên.
 
 Người dùng cung cấp yêu cầu về thành phần giao diện, trang web, ứng dụng hoặc giao diện cần xây dựng. Họ cũng có thể cung cấp bối cảnh về mục đích, đối tượng sử dụng hoặc các ràng buộc kỹ thuật.

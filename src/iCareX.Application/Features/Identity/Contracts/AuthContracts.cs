@@ -9,6 +9,7 @@ public interface IAuthService
         LoginRequest request,
         CancellationToken cancellationToken);
     Task<AccountResponse?> GetAccountAsync(Guid accountId, CancellationToken cancellationToken);
+    Task<AccountResponse?> UpdateProfileAsync(Guid accountId, UpdateProfileRequest request, CancellationToken cancellationToken);
     Task RevokeSessionAsync(Guid accountId, Guid sessionId, CancellationToken cancellationToken);
 }
 

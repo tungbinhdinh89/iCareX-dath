@@ -23,6 +23,9 @@ import {
   type Vehicle,
 } from "@/lib/apis/iCareXApi"
 import type {
+  UpdateProfileRequest,
+} from "@shared/auth-contracts"
+import type {
   CurrentUserPermissionsResponse,
   VehiclePermissionsResponse,
 } from "@shared/vehicle-contracts"
@@ -83,6 +86,7 @@ type ContextValue = {
   login: (account: Account) => void
   logout: () => Promise<void>
   save: (action: (d: Garage) => void, message?: string) => Promise<boolean>
+  updateProfile: (request: UpdateProfileRequest) => Promise<boolean>
   pending: boolean
   notify: (text: string, severity?: "success" | "error" | "info") => void
   refetch: () => Promise<void>
@@ -354,8 +358,34 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
       }
     },
   })
-  const notify: ContextValue["notify"] = (text, severity = "success") =>
-    setToast({ id: crypto.randomUUID(), text, severity })
+  const notify = useCallback<ContextValue["notify"]>((text, severity = "success") =>
+    setToast({ id: crypto.randomUUID(), text, severity }), [])
+  const profileMutation = useMutation({
+    mutationFn: (request: UpdateProfileRequest) => api.updateProfile(request),
+    onSuccess: async (account) => {
+      if (currentAccount.current !== account.id) return
+      await client.cancelQueries({ queryKey: ["garage", account.id] })
+      if (currentAccount.current !== account.id) return
+      setSession(account)
+      client.setQueryData<Garage>(["garage", account.id], (old) => old ? {
+        ...old, profile: { name: account.name, phone: account.phone, email: account.email },
+      } : old)
+      await client.invalidateQueries({ queryKey: ["garage", account.id], refetchType: "none" })
+    },
+  })
+  const updateProfile: ContextValue["updateProfile"] = async (request) => {
+    if (!session) return false
+    const actor = session.id
+    try {
+      await profileMutation.mutateAsync(request)
+      if (currentAccount.current !== actor) return false
+      notify("Đã cập nhật hồ sơ cá nhân.")
+      return true
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Không thể cập nhật hồ sơ. Vui lòng thử lại.", "error")
+      return false
+    }
+  }
   const open = (m: ModalState) => {
     if (m && m.type !== "login" && m.type !== "help" && !session) {
       setModal({ type: "login" })
@@ -435,7 +465,8 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
         modal,
         setModal,
         open,
-        pending: mutation.isPending,
+        pending: mutation.isPending || profileMutation.isPending,
+        updateProfile,
         save,
         notify,
         login: (account) => {
