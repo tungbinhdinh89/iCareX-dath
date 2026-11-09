@@ -52,10 +52,12 @@ public static class VehicleAuthorizationRegistration
     {
         services.AddAuthorization(options =>
         {
+            options.AddPolicy("VerifiedAccount", policy => policy.RequireAuthenticatedUser().AddRequirements(new VerifiedAccountRequirement()));
             foreach (var permission in VehiclePermissions.All)
                 options.AddPolicy(permission, policy => policy.RequireAuthenticatedUser().AddRequirements(new VehiclePermissionRequirement(permission)));
         });
         services.AddScoped<IAuthorizationHandler, VehiclePermissionHandler>();
+        services.AddScoped<IAuthorizationHandler, VerifiedAccountHandler>();
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, VehicleAuthorizationResultHandler>();
         return services;
     }

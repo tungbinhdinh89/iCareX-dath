@@ -8,7 +8,7 @@ using iCareX.Web.Api.Authorization;
 
 namespace iCareX.Web.Api.Controllers;
 
-[ApiController, Authorize]
+[ApiController, Authorize(Policy = "VerifiedAccount")]
 [Route("api/v1/vehicles/{vehicleId:guid}")]
 [ServiceFilter(typeof(VehicleCsrfFilter))]
 public sealed class VehicleMembersController(IVehicleAccessService access, IVehicleMemberService members) : ControllerBase

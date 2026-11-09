@@ -9,12 +9,47 @@ ASP.NET Core API. Đây là stack hiện tại; `reference.md` có mô tả Next
 Auth/vehicle access business requirements are maintained in
 [the shared specification](../../../doc/authentication-authorization.md) and
 [the access skill](../../../.agents/skills/icarex-access-control/SKILL.md).
-The current API is owner-only; per-vehicle roles, membership, invitation and
-ownership transfer are target behavior, not available endpoints. Permission
-UI must use account + vehicle + resource capabilities, preserve creator-only
-Contributor edits, and refresh access/cache after membership changes.
+The authorization implementation now integrates generated per-vehicle
+permission grants, membership APIs and email invitation APIs. Ownership
+transfer remains outside this implementation. Permission UI uses account +
+vehicle + resource capabilities and preserves creator-only Contributor edits.
+Database deployment and SMTP delivery must be verified separately; source
+implementation is not proof that a running API/database has been updated.
 Manager can read members but cannot invite/change/remove them; Viewer cannot
 write. Keep the existing session gate, cookie/CSRF client and Vietnamese design.
+
+## Authentication and authorization routes
+
+- `/dang-nhap`, `/dang-ky`: validated login and registration; registration does
+  not sign the user in automatically.
+- `/xac-thuc-email`: explicit email verification/resend and session refresh.
+  The application requires actual `emailVerified` and `Active` account status.
+- `/quen-mat-khau`, `/dat-lai-mat-khau`: generic recovery confirmation and
+  password reset; `/ho-so/doi-mat-khau` changes the current password.
+- `/xe/:id/thanh-vien`: Owner/Manager member list, Owner-only role changes,
+  revocation and invitation management; Owner cannot be changed here.
+- `/loi-moi`: invitation inbox; `/loi-moi/:id` previews a link and preserves
+  the secret in component memory across inline login before explicit response.
+
+Email action secrets arrive in fragments, are removed from the address bar,
+and travel only in CSRF-protected POST bodies. They are never stored in
+localStorage or login return paths. Reloading a consumed link requires opening
+the original email again. Cookie sessions continue to use `credentials: include`.
+
+`useGarage` exposes `authUser`, `globalRoles`, `permissions`, `vehicleAccess`,
+`can`, `hasRole`, `canAccessVehicle`, permission loading/error and
+`refreshPermissions`. Conditional grants require resource creator/assignee
+metadata. There is no Owner fallback. Permissions refresh on window focus and
+every 30 seconds; 403/404 immediately cancel queries, remove related cached
+vehicles/records/plans/member data and close open dialogs before revalidation.
+Late reads and mutations are sanitized against the latest account permissions.
+Server checks remain authoritative between refreshes.
+See the [backend runtime contract](../../../doc/.be/access-control.md) for
+implemented endpoints, deployment prerequisites and validation limits.
+
+Vehicle/ODO/member/invitation actions use real APIs. ODO writes remain Owner-only
+until a shared-write policy is specified. Fuel, Maintenance, Plan and Reminder
+CRUD are not added by this task; their unsupported write controls stay hidden.
 
 - UI: MUI Community 7, Material Icons, Astra Make Kit.
 - Styling: Tailwind CSS v4 và token/font tập trung tại `src/index.css`.

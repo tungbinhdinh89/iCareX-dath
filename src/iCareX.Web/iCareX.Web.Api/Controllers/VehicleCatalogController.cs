@@ -25,32 +25,32 @@ public sealed class VehicleCatalogController(IVehicleCatalogService catalog) : C
         catalog.ListModelsAsync(vehicleBrandId, cancellationToken);
 
     [HttpPost("types")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin,Admin", Policy = "VerifiedAccount")]
     public Task<VehicleTypeResponse> CreateType(CreateVehicleTypeRequest request, CancellationToken cancellationToken) =>
         catalog.CreateTypeAsync(request, cancellationToken);
 
     [HttpPut("types/{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin,Admin", Policy = "VerifiedAccount")]
     public Task<VehicleTypeResponse> UpdateType(Guid id, UpdateVehicleTypeRequest request, CancellationToken cancellationToken) =>
         catalog.UpdateTypeAsync(id, request, cancellationToken);
 
     [HttpPost("brands")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin,Admin", Policy = "VerifiedAccount")]
     public Task<VehicleBrandResponse> CreateBrand(CreateVehicleBrandRequest request, CancellationToken cancellationToken) =>
         catalog.CreateBrandAsync(request, cancellationToken);
 
     [HttpPut("brands/{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin,Admin", Policy = "VerifiedAccount")]
     public Task<VehicleBrandResponse> UpdateBrand(Guid id, UpdateVehicleBrandRequest request, CancellationToken cancellationToken) =>
         catalog.UpdateBrandAsync(id, request, cancellationToken);
 
     [HttpPost("models")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin,Admin", Policy = "VerifiedAccount")]
     public Task<VehicleModelResponse> CreateModel(CreateVehicleModelRequest request, CancellationToken cancellationToken) =>
         catalog.CreateModelAsync(request, cancellationToken);
 
     [HttpPut("models/{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin,Admin", Policy = "VerifiedAccount")]
     public Task<VehicleModelResponse> UpdateModel(Guid id, UpdateVehicleModelRequest request, CancellationToken cancellationToken) =>
         catalog.UpdateModelAsync(id, request, cancellationToken);
 }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using iCareX.Application.Features.Identity.Contracts;
 using iCareX.Shared.Contracts.Identity;
 
@@ -35,6 +36,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("register")]
+    [EnableRateLimiting("auth-actions")]
     public async Task<ActionResult<AccountResponse>> Register(
         [FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {
@@ -71,6 +73,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth-actions")]
     public async Task<ActionResult<AccountResponse>> Login(
         [FromBody] LoginRequest request, CancellationToken cancellationToken)
     {

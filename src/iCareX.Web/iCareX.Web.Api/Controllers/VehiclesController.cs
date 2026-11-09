@@ -11,7 +11,7 @@ using iCareX.Domain.Exceptions;
 namespace iCareX.Web.Api.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Policy = "VerifiedAccount")]
 [Route("api/v1/vehicles")]
 [ServiceFilter(typeof(VehicleCsrfFilter))]
 public sealed class VehiclesController(IVehicleService vehicles) : ControllerBase

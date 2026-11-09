@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using iCareX.Web.Api.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -68,6 +70,14 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             return Task.CompletedTask;
         };
     });
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = TimeSpan.FromHours(1));
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+    options.AddPolicy("auth-actions", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+});
 builder.Services.AddVehicleAuthorization();
 builder.Services.AddScoped<VehicleCsrfFilter>();
 builder.Services.AddControllers(options => options.Filters.Add<VehicleApiExceptionFilter>());
@@ -80,6 +90,14 @@ app.UseSerilogRequestLogging(options =>
     options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
 });
 app.UseExceptionHandler();
+app.Use(async (context, next) =>
+{
+    if (new[] { "/api/v1/auth", "/api/v1/me", "/api/v1/vehicles", "/api/v1/invitations" }
+        .Any(prefix => context.Request.Path.StartsWithSegments(prefix)))
+        context.Response.Headers.CacheControl = "no-store";
+    await next();
+});
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 if (app.Environment.IsDevelopment())

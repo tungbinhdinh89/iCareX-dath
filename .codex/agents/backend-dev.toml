@@ -31,6 +31,12 @@ Domain và Shared không phụ thuộc EF, HTTP hoặc Identity. Shared không t
 
 ## Contract và trạng thái thực tế
 
+Runtime auth/access #58 ở `doc/.be/access-control.md`: email verification/recovery,
+permission/member/invitation APIs đã có. Reuse policy/catalog/service hiện tại;
+không tạo auth/permission subsystem song song hoặc giả định mô tả owner-only
+cũ còn là runtime. SMTP cấu hình secrets; Identity action token hash-only,
+single-use dưới user lock; vehicle writes/revoke/accept dùng chung vehicle lock.
+
 - Transport DTO mới thuộc Shared; dùng camelCase JSON. Không trả persisted entity, Identity model/secrets, DbContext hoặc IQueryable cho frontend.
 - Sau đổi DTO, chạy generator từ root rồi `--check`; không sửa TypeScript sinh bằng tay.
 - Catalog hiện có `VehicleType → VehicleBrand → VehicleModel`. Vehicle nhận `VehicleModelId` và giữ tên hiển thị do người dùng đặt; type/brand suy ra từ model. Kiểm tra active và quyền Admin cho catalog mutation.

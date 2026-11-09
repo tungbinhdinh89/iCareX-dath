@@ -57,8 +57,10 @@ Không dùng AstraLogo. Homepage/app phải chờ kiểm phiên; chưa xác th�
 Auth/access đọc `doc/authentication-authorization.md` và
 `.agents/skills/icarex-access-control/SKILL.md`. Role/capability theo từng xe,
 Contributor own-record, Manager chỉ member.read, Viewer read-only; DB membership
-là nguồn quyền. Đích invitation/transfer chưa có API, không đoán response.
-Giữ login gate; invalidate permission/data khi revoke/role change/chuyển xe.
+là nguồn quyền. Runtime auth/recovery/members/invitations đã có API tại
+`doc/.be/access-control.md`; transfer vẫn là đích, không đoán response.
+Giữ verified-account gate; invalidate permission/data khi revoke/role change/
+chuyển xe. Token link chỉ giữ memory, bỏ fragment ngay, không vào return URL.
 
 DTO transport C# là nguồn tại `src/iCareX.Shared/Contracts/<Feature>`; TypeScript sinh tại `src/iCareX.Shared/typescript/`, import qua `@shared/*`. Không tự sao chép/định nghĩa lại DTO sinh. UI model và mapping giữ ở `lib/models` / `lib/apis`; không lộ entity backend vào UI.
 

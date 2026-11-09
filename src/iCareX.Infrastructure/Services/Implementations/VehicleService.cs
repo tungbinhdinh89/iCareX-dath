@@ -43,6 +43,9 @@ public sealed class VehicleService(
 
     public async Task<VehicleResponse> CreateAsync(Guid accountId, CreateVehicleRequest request, CancellationToken cancellationToken)
     {
+        if (!await db.Users.AsNoTracking().AnyAsync(x => x.Id == accountId && x.EmailConfirmed
+            && (!x.LockoutEnabled || x.LockoutEnd == null || x.LockoutEnd <= clock.UtcNow), cancellationToken))
+            throw new VehicleAccessDeniedException();
         ValidateVehicle(request.Name, request.Plate, request.Year, request.BaseOdo);
         var model = await RequireActiveModel(request.VehicleModelId, cancellationToken);
         var normalizedPlate = GarageRules.NormalizePlate(request.Plate);

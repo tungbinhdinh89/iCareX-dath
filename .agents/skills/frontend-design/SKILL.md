@@ -10,7 +10,8 @@ hoặc test quyền, đọc `doc/authentication-authorization.md` và
 `.agents/skills/icarex-access-control/SKILL.md`. Thiết kế đích có bốn role theo
 xe; không dùng global role hoặc equality owner==session cho mọi nút. Manager
 xem members nhưng không quản lý; Contributor sửa/xóa own; Viewer không write.
-Hiện API owner-only chưa có sharing, không mock permission hoặc đoán endpoint.
+API sharing/auth hiện có được mô tả tại `doc/.be/access-control.md`; dùng DTO
+TypeScript được sinh từ Shared. Không mock permission hoặc đoán endpoint.
 
 Trong repository iCareX, đọc `doc/rules.md` và `doc/guidelines/Guidelines.md`.
 Nguồn thị giác là `Design/Design_system_1.png` (component/trạng thái) và

@@ -2,6 +2,13 @@
 
 Web quản lý phương tiện cá nhân, ODO, chi phí và kế hoạch bảo dưỡng. Backend ASP.NET Core 10; frontend React 19/TypeScript/Vite; PostgreSQL qua EF Core.
 
+Authentication/Vehicle authorization hiện có: [runtime contract và cấu hình SMTP](doc/.be/access-control.md).
+Account mới phải xác thực email trước khi vào ứng dụng; setup `AccountEmail:*`
+bằng User Secrets/environment để gửi thư thật. Có permissions API, membership,
+invitation, verify/reset/change password; chưa có Fuel/Maintenance/Reminder CRUD
+hoặc ownership transfer. Các migration sharing hiện có phải được áp dụng chủ
+động; ứng dụng không tự migrate lúc startup.
+
 ## Cấu trúc
 
 - `src/`: Domain, Application, Infrastructure, Shared, Web và hai project test.

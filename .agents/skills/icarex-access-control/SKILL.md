@@ -12,10 +12,12 @@ phải một hệ thống authentication mới. Phân biệt source hiện tại
 
 ## Invariant chung
 
-- Reuse Identity/Account cùng Guid, cookie/session DB và CSRF. Đăng ký hiện
-  không tự login; EmailConfirmed=true là hiện trạng, chưa có mail verification.
+- Reuse Identity/Account cùng Guid, cookie/session DB và CSRF. Đăng ký
+  không tự login; account mới EmailConfirmed=false, email verification bắt buộc
+  trước khi vào API phương tiện. Đọc runtime contract `doc/.be/access-control.md`.
   Sáu account states là đích: PendingVerification/Active/Suspended/Locked/
-  DeletionPending/Deleted; verification là policy có điều kiện.
+  DeletionPending/Deleted; runtime hiện chỉ derive Active/PendingVerification/
+  Locked từ Identity, không giả trạng thái chưa có dữ liệu.
 - Role Owner/Manager/Contributor/Viewer theo **từng Vehicle**. Identity Admin
   catalog không làm thành Owner mọi xe. Một account có nhiều role khác nhau.
 - Mỗi xe đúng một Owner active. Creator bất biến không phải owner hiện tại.

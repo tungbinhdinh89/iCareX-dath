@@ -17,3 +17,11 @@ public sealed record VehicleMemberResponse(
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record UpdateVehicleMemberRequest(string Role, long Version);
+
+public sealed record VehicleInvitationResponse(Guid Id, Guid VehicleId, string VehicleName,
+    string Role, string Status, DateTimeOffset ExpiresAtUtc, long Version);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record CreateVehicleInvitationRequest(string Email, string Role);
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record InvitationTokenRequest(string Token);

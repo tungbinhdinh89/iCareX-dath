@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,9 @@ namespace iCareX.Infrastructure.Services.Implementations;
 
 public sealed class AuthService(
     IAuthRepository repository,
+    GarageDbContext db,
+    IAccountSecurityService security,
+    IAccountEmailSender emailSender,
     UserManager<ApplicationUser> users,
     RoleManager<IdentityRole<Guid>> roles,
     IDataProtectionProvider protectionProvider,
@@ -22,6 +26,7 @@ public sealed class AuthService(
     {
         logger.LogInformation("Registration requested for {Email}", MaskEmail(request.Email?.Trim() ?? ""));
         ValidateRequest(request);
+        emailSender.EnsureConfigured();
         var email = request.Email?.Trim() ?? "";
         if (await users.FindByEmailAsync(email) is not null)
         {
@@ -32,7 +37,7 @@ public sealed class AuthService(
         var account = new Account { Name = request.Name.Trim(), Phone = request.Phone?.Trim() ?? "" };
         var user = new ApplicationUser
         {
-            Id = account.Id, Email = email, UserName = email, EmailConfirmed = true
+            Id = account.Id, Email = email, UserName = email, EmailConfirmed = false
         };
         await using var transaction = await repository.BeginTransactionAsync(cancellationToken);
         var result = await users.CreateAsync(user, request.Password);
@@ -54,9 +59,10 @@ public sealed class AuthService(
         repository.AddAccount(account);
         repository.AddSettings(new UserSettings { AccountId = account.Id });
         await repository.SaveChangesAsync(cancellationToken);
+        await security.SendVerificationAsync(email, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("Registration succeeded for account {AccountId} ({Email})", account.Id, MaskEmail(email));
-        return ToResponse(account, email, ["User"]);
+        return ToResponse(account, user, ["User"]);
     }
 
     public async Task<(AccountResponse Account, Guid SessionId)?> LoginAsync(
@@ -70,14 +76,19 @@ public sealed class AuthService(
         }
         logger.LogInformation("Login requested for {Email}", MaskEmail(email));
         var user = await users.FindByEmailAsync(email);
-        if (user is null || await users.IsLockedOutAsync(user))
+        if (user is null)
         {
             logger.LogWarning("Login failed for {Email}: user missing or locked", MaskEmail(email));
             return null;
         }
+        await using var transaction = await repository.BeginTransactionAsync(cancellationToken);
+        await db.Users.FromSqlInterpolated($"SELECT * FROM \"AspNetUsers\" WHERE \"Id\" = {user.Id} FOR UPDATE").AsNoTracking().SingleAsync(cancellationToken);
+        await db.Entry(user).ReloadAsync(cancellationToken);
+        if (await users.IsLockedOutAsync(user)) return null;
         if (!await users.CheckPasswordAsync(user, request.Password))
         {
             await users.AccessFailedAsync(user);
+            await transaction.CommitAsync(cancellationToken);
             logger.LogWarning("Login failed for {Email}: invalid password", MaskEmail(email));
             return null;
         }
@@ -97,7 +108,8 @@ public sealed class AuthService(
             clock.UtcNow.AddHours(8));
         await repository.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Login succeeded for account {AccountId} ({Email})", account.Id, MaskEmail(email));
-        return (ToResponse(account, user.Email ?? email, await users.GetRolesAsync(user)), sessionId);
+        await transaction.CommitAsync(cancellationToken);
+        return (ToResponse(account, user, await users.GetRolesAsync(user)), sessionId);
     }
 
     public async Task<AccountResponse?> GetAccountAsync(Guid accountId, CancellationToken cancellationToken)
@@ -106,7 +118,7 @@ public sealed class AuthService(
         var user = await users.FindByIdAsync(accountId.ToString());
         if (account is null || user is null)
             return null;
-        return ToResponse(account, user.Email ?? "", await users.GetRolesAsync(user));
+        return ToResponse(account, user, await users.GetRolesAsync(user));
     }
 
     public async Task RevokeSessionAsync(Guid accountId, Guid sessionId, CancellationToken cancellationToken)
@@ -138,8 +150,10 @@ public sealed class AuthService(
             throw new AuthValidationException(["Số điện thoại không hợp lệ."]);
     }
 
-    private static AccountResponse ToResponse(Account account, string email, IEnumerable<string> roles) =>
-        new(account.Id, account.Name, email, account.Phone, roles.ToArray());
+    private AccountResponse ToResponse(Account account, ApplicationUser user, IEnumerable<string> roles) =>
+        new(account.Id, account.Name, user.Email ?? "", account.Phone, roles.ToArray(),
+            user.LockoutEnabled && user.LockoutEnd > clock.UtcNow ? "Locked" : user.EmailConfirmed ? "Active" : "PendingVerification",
+            user.EmailConfirmed);
 
     private static string MaskEmail(string email)
     {

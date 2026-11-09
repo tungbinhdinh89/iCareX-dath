@@ -32,6 +32,25 @@ export type UpdateVehicleMemberRequest = {
   version: number
 }
 
+export type VehicleInvitationResponse = {
+  id: string
+  vehicleId: string
+  vehicleName: string
+  role: string
+  status: string
+  expiresAtUtc: string
+  version: number
+}
+
+export type CreateVehicleInvitationRequest = {
+  email: string
+  role: string
+}
+
+export type InvitationTokenRequest = {
+  token: string
+}
+
 export type VehicleResponse = {
   id: string
   name: string

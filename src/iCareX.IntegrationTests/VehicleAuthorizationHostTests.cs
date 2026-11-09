@@ -4,6 +4,8 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +18,7 @@ using iCareX.Domain.Authorization;
 using iCareX.Domain.Entities;
 using iCareX.Shared.Contracts.Identity;
 using iCareX.Shared.Contracts.Vehicles;
+using iCareX.Web.Api.Authorization;
 using Xunit;
 
 namespace iCareX.IntegrationTests;
@@ -62,12 +65,16 @@ public sealed class VehicleAuthorizationHostTests
         { ["ConnectionStrings:iCareX"] = "Host=127.0.0.1;Port=1;Database=unavailable;Username=test;Password=test;Timeout=1" }));
         b.ConfigureServices(services =>
         {
+            services.AddSingleton<IDataProtectionProvider>(new EphemeralDataProtectionProvider());
             services.AddAuthentication(o => { o.DefaultAuthenticateScheme = "Test"; o.DefaultChallengeScheme = "Test"; o.DefaultForbidScheme = "Test"; })
                 .AddScheme<AuthenticationSchemeOptions, TestAuthentication>("Test", _ => { });
             services.RemoveAll<IVehicleAccessService>();
             services.AddSingleton<IVehicleAccessService>(new AccessDouble(role));
             services.RemoveAll<IVehicleMemberService>();
             services.AddSingleton<IVehicleMemberService, MembersDouble>();
+            services.Remove(services.Single(x => x.ServiceType == typeof(IAuthorizationHandler)
+                && x.ImplementationType == typeof(VerifiedAccountHandler)));
+            services.AddSingleton<IAuthorizationHandler, VerifiedDouble>();
         });
     });
 
@@ -78,6 +85,12 @@ public sealed class VehicleAuthorizationHostTests
             new AuthenticationTicket(new ClaimsPrincipal(new ClaimsIdentity([
                 new Claim(ClaimTypes.NameIdentifier, "b192b10a-4005-40ef-b650-4dcfcb503172"),
                 new Claim(ClaimTypes.Role, "SystemAdmin")], "Test")), "Test")));
+    }
+
+    private sealed class VerifiedDouble : AuthorizationHandler<VerifiedAccountRequirement>
+    {
+        protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, VerifiedAccountRequirement requirement)
+        { context.Succeed(requirement); return Task.CompletedTask; }
     }
 
     private sealed class AccessDouble(VehicleMemberRole? role) : IVehicleAccessService

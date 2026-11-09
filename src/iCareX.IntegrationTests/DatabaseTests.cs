@@ -101,8 +101,10 @@ public sealed partial class DatabaseTests : IAsyncLifetime
             await tx.CommitAsync();
         }
         Assert.Equal(500, (await db.MaintenanceRecords.SingleAsync(e => e.Id == entry.Id)).Cost);
-        await db.Vehicles.Where(v => v.Id == vehicle.Id).ExecuteDeleteAsync();
-        Assert.False(await db.MaintenanceRecords.AnyAsync(e => e.Id == entry.Id));
+        // Invitations/reminders/audit retain vehicle history; physical deletion is restricted.
+        var deletion = await Assert.ThrowsAsync<Npgsql.PostgresException>(() => db.Vehicles.Where(v => v.Id == vehicle.Id).ExecuteDeleteAsync());
+        Assert.Equal("23503", deletion.SqlState);
+        Assert.True(await db.MaintenanceRecords.AnyAsync(e => e.Id == entry.Id));
     }
 
     [Fact]

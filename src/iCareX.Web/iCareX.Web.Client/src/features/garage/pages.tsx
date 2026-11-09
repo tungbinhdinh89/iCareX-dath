@@ -34,7 +34,12 @@ import SearchRounded from "@mui/icons-material/SearchRounded"
 import ArrowBackRounded from "@mui/icons-material/ArrowBackRounded"
 import ShieldOutlined from "@mui/icons-material/ShieldOutlined"
 import CheckCircleOutline from "@mui/icons-material/CheckCircleOutline"
-import { useNavigate, useParams, useSearchParams } from "react-router"
+import {
+  Link as RouterLink,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -58,6 +63,7 @@ import {
   VehicleCard,
   VehicleFilter,
 } from "@/components/shared"
+import { api } from "@/lib/apis/iCareXApi"
 import { useGarage } from "@/lib/state/store"
 function Heading({
   title,
@@ -119,47 +125,16 @@ function Stat({
   )
 }
 function AddRecordButton() {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
-  const { open } = useGarage()
+  const { open, canManageOdo } = useGarage()
+  if (!canManageOdo()) return null
   return (
-    <>
-      <Button
-        variant="contained"
-        startIcon={<AddRounded />}
-        aria-haspopup="menu"
-        aria-expanded={!!anchor}
-        onClick={(e) => setAnchor(e.currentTarget)}
-      >
-        Thêm ghi nhận
-      </Button>
-      <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
-        {[
-          [
-            "fuel",
-            "Đổ nhiên liệu",
-            <LocalGasStationOutlined key="fuel" fontSize="small" />,
-          ],
-          [
-            "service",
-            "Bảo dưỡng / sửa chữa",
-            <BuildOutlined key="service" fontSize="small" />,
-          ],
-          ["odo", "Cập nhật ODO", <SpeedOutlined key="odo" fontSize="small" />],
-        ].map(([kind, title, icon]) => (
-          <MenuItem
-            key={String(kind)}
-            onClick={() => {
-              setAnchor(null)
-              open({ type: "entry", kind: kind as Entry["kind"] })
-            }}
-            sx={{ gap: 1.5, fontSize: "var(--text-small-size)" }}
-          >
-            {icon}
-            {title}
-          </MenuItem>
-        ))}
-      </Menu>
-    </>
+    <Button
+      variant="contained"
+      startIcon={<SpeedOutlined />}
+      onClick={() => open({ type: "entry", kind: "odo" })}
+    >
+      Ghi ODO
+    </Button>
   )
 }
 function currentEntries(data: Garage, vehicle: string, month: string) {
@@ -190,8 +165,9 @@ function driven(data: Garage, vehicle: string, month: string) {
       return sum + Math.max(0, Math.max(...entries.map((e) => e.odo)) - before)
     }, 0)
 }
+
 export default function Dashboard() {
-  const { data, open, month, selectedVehicle } = useGarage()
+  const { data, open, month, selectedVehicle, canManageOdo } = useGarage()
   const navigate = useNavigate()
   if (!data) return null
   const activeMonth = month === "all" ? today().slice(0, 7) : month
@@ -218,13 +194,15 @@ export default function Dashboard() {
             : (vehicles[0]?.name ?? "Phương tiện đã chọn")
         }`}
       >
-        <Button
-          variant="contained"
-          startIcon={<AddRounded />}
-          onClick={() => open({ type: "entry", kind: "odo" })}
-        >
-          Ghi ODO
-        </Button>
+        {canManageOdo() && (
+          <Button
+            variant="contained"
+            startIcon={<AddRounded />}
+            onClick={() => open({ type: "entry", kind: "odo" })}
+          >
+            Ghi ODO
+          </Button>
+        )}
       </Heading>
       <Box className="filters filter-panel dashboard-toolbar">
         <VehicleFilter />
@@ -327,19 +305,21 @@ export default function Dashboard() {
                     ? `Cập nhật ${dateLabel(latestReading.date)} · Nhập thủ công`
                     : "Mốc ODO ban đầu"}
                 </Typography>
-                <Button
-                  variant="outlined"
-                  sx={{ mt: 2 }}
-                  onClick={() =>
-                    open({
-                      type: "entry",
-                      kind: "odo",
-                      vehicleId: focusVehicle.id,
-                    })
-                  }
-                >
-                  Cập nhật ODO
-                </Button>
+                {canManageOdo(focusVehicle.id) && (
+                  <Button
+                    variant="outlined"
+                    sx={{ mt: 2 }}
+                    onClick={() =>
+                      open({
+                        type: "entry",
+                        kind: "odo",
+                        vehicleId: focusVehicle.id,
+                      })
+                    }
+                  >
+                    Cập nhật ODO
+                  </Button>
+                )}
               </>
             ) : (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
@@ -391,6 +371,7 @@ export default function Dashboard() {
     </Box>
   )
 }
+
 export function Vehicles() {
   const { data, open } = useGarage()
   const [search, setSearch] = useState("")
@@ -504,11 +485,14 @@ export function Vehicles() {
     </Box>
   )
 }
+
 export function VehicleDetail() {
   const { id } = useParams()
-  const { data, open } = useGarage()
+  const { data, open, can, canManageOdo, permissions, refetch, notify } =
+    useGarage()
   const navigate = useNavigate()
   const [tab, setTab] = useState(0)
+  const [restoring, setRestoring] = useState(false)
   if (!data) return null
   const vehicle = data.vehicles.find((v) => v.id === id)
   if (!vehicle)
@@ -539,31 +523,68 @@ export function VehicleDetail() {
         title={vehicle.name}
         subtitle={`${vehicle.plate} · ${vehicle.type} · Năm ${vehicle.year}`}
       >
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Tooltip title="Chỉnh sửa xe">
-            <IconButton
-              aria-label="Chỉnh sửa xe"
-              onClick={() => open({ type: "vehicle", vehicle })}
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          {can("vehicle.member.read", vehicle.id) && (
+            <Button
+              variant="outlined"
+              onClick={() => navigate(`/xe/${vehicle.id}/thanh-vien`)}
             >
-              <EditOutlined />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Lưu trữ phương tiện">
-            <IconButton
-              aria-label="Lưu trữ phương tiện"
-              color="error"
-              onClick={() =>
-                open({
-                  type: "delete",
-                  entity: "vehicle",
-                  id: vehicle.id,
-                  title: vehicle.name,
-                })
-              }
+              Thành viên
+            </Button>
+          )}
+          {can("vehicle.restore", vehicle.id) && (
+            <Button
+              variant="outlined"
+              disabled={restoring}
+              onClick={async () => {
+                setRestoring(true)
+                try {
+                  await api.restoreVehicle(vehicle.id, vehicle.version)
+                  await refetch()
+                  notify("Đã khôi phục phương tiện.")
+                } catch (error) {
+                  notify(
+                    error instanceof Error
+                      ? error.message
+                      : "Không thể khôi phục xe.",
+                    "error",
+                  )
+                } finally {
+                  setRestoring(false)
+                }
+              }}
             >
-              <DeleteOutline />
-            </IconButton>
-          </Tooltip>
+              {restoring ? "Đang khôi phục…" : "Khôi phục xe"}
+            </Button>
+          )}
+          {can("vehicle.update", vehicle.id) && (
+            <Tooltip title="Chỉnh sửa xe">
+              <IconButton
+                aria-label="Chỉnh sửa xe"
+                onClick={() => open({ type: "vehicle", vehicle })}
+              >
+                <EditOutlined />
+              </IconButton>
+            </Tooltip>
+          )}
+          {can("vehicle.archive", vehicle.id) && (
+            <Tooltip title="Lưu trữ phương tiện">
+              <IconButton
+                aria-label="Lưu trữ phương tiện"
+                color="error"
+                onClick={() =>
+                  open({
+                    type: "delete",
+                    entity: "vehicle",
+                    id: vehicle.id,
+                    title: vehicle.name,
+                  })
+                }
+              >
+                <DeleteOutline />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </Heading>
       <Box className="panel detail-identity">
@@ -574,6 +595,13 @@ export function VehicleDetail() {
           alt={`Ảnh minh họa ${vehicle.name}`}
         />
         <Box className="detail-identity-copy">
+          <Typography variant="caption" color="text.secondary">
+            {
+              permissions?.vehicles.find(
+                (access) => access.vehicleId === vehicle.id,
+              )?.role
+            }
+          </Typography>
           <Typography className="section-kicker">HỒ SƠ PHƯƠNG TIỆN</Typography>
           <Typography variant="h5" component="h2">
             {vehicle.vehicleBrandName} {vehicle.vehicleModelName}
@@ -590,16 +618,18 @@ export function VehicleDetail() {
             Ảnh minh họa phương tiện
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<SpeedOutlined />}
-          disabled={vehicle.isArchived}
-          onClick={() =>
-            open({ type: "entry", kind: "odo", vehicleId: vehicle.id })
-          }
-        >
-          Cập nhật ODO
-        </Button>
+        {canManageOdo(vehicle.id) && (
+          <Button
+            variant="contained"
+            startIcon={<SpeedOutlined />}
+            disabled={vehicle.isArchived}
+            onClick={() =>
+              open({ type: "entry", kind: "odo", vehicleId: vehicle.id })
+            }
+          >
+            Cập nhật ODO
+          </Button>
+        )}
       </Box>
       <Box className="detail-metrics" sx={{ mb: 3 }}>
         <Stat
@@ -625,39 +655,33 @@ export function VehicleDetail() {
       </Box>
       <Box className="panel">
         <Box className="filters">
-          {(["fuel", "service", "odo"] as const).map((kind) => (
-            <Button
-              key={kind}
-              disabled={vehicle.isArchived}
-              variant={kind === "fuel" ? "contained" : "outlined"}
-              onClick={() =>
-                open({ type: "entry", kind, vehicleId: vehicle.id })
-              }
-              startIcon={
-                kind === "fuel" ? (
-                  <LocalGasStationOutlined />
-                ) : kind === "service" ? (
-                  <BuildOutlined />
-                ) : (
-                  <SpeedOutlined />
-                )
-              }
-            >
-              {kind === "fuel"
-                ? "Đổ nhiên liệu"
-                : kind === "service"
-                  ? "Thêm dịch vụ"
-                  : "Cập nhật ODO"}
-            </Button>
-          ))}
-          <Button
-            variant="outlined"
-            startIcon={<AddRounded />}
-            disabled={vehicle.isArchived}
-            onClick={() => open({ type: "plan", vehicleId: vehicle.id })}
-          >
-            Tạo kế hoạch
-          </Button>
+          {(["fuel", "service", "odo"] as const)
+            .filter((kind) => kind === "odo" && canManageOdo(vehicle.id))
+            .map((kind) => (
+              <Button
+                key={kind}
+                disabled={vehicle.isArchived}
+                variant={kind === "fuel" ? "contained" : "outlined"}
+                onClick={() =>
+                  open({ type: "entry", kind, vehicleId: vehicle.id })
+                }
+                startIcon={
+                  kind === "fuel" ? (
+                    <LocalGasStationOutlined />
+                  ) : kind === "service" ? (
+                    <BuildOutlined />
+                  ) : (
+                    <SpeedOutlined />
+                  )
+                }
+              >
+                {kind === "fuel"
+                  ? "Đổ nhiên liệu"
+                  : kind === "service"
+                    ? "Thêm dịch vụ"
+                    : "Cập nhật ODO"}
+              </Button>
+            ))}
         </Box>
         <Tabs
           className="detail-tabs"
@@ -669,16 +693,21 @@ export function VehicleDetail() {
           aria-label="Thông tin phương tiện"
         >
           <Tab
+            value={0}
             label="Lịch sử chăm sóc"
             id="vehicle-tab-0"
             aria-controls="vehicle-panel-0"
           />
+          {can("maintenance_plan.read", vehicle.id) && (
+            <Tab
+              value={1}
+              label="Kế hoạch bảo dưỡng"
+              id="vehicle-tab-1"
+              aria-controls="vehicle-panel-1"
+            />
+          )}
           <Tab
-            label="Kế hoạch bảo dưỡng"
-            id="vehicle-tab-1"
-            aria-controls="vehicle-panel-1"
-          />
-          <Tab
+            value={2}
             label="Thông tin xe"
             id="vehicle-tab-2"
             aria-controls="vehicle-panel-2"
@@ -693,6 +722,7 @@ export function VehicleDetail() {
             <HistoryTable entries={entries} editable={!vehicle.isArchived} />
           )}
           {tab === 1 &&
+            can("maintenance_plan.read", vehicle.id) &&
             (plans.length ? (
               plans.map((p) => <Reminder key={p.id} plan={p} data={data} />)
             ) : (
@@ -728,6 +758,7 @@ export function VehicleDetail() {
     </Box>
   )
 }
+
 export function Records({ kind }: { kind?: Entry["kind"] }) {
   const { data, month, selectedVehicle, open, setMonth } = useGarage()
   const [params] = useSearchParams()
@@ -779,17 +810,7 @@ export function Records({ kind }: { kind?: Entry["kind"] }) {
               : "Toàn bộ hành trình chăm sóc xe, được sắp xếp rõ ràng."
         }
       >
-        {kind ? (
-          <Button
-            variant="contained"
-            startIcon={<AddRounded />}
-            onClick={() => open({ type: "entry", kind })}
-          >
-            {kind === "fuel" ? "Thêm lần đổ xăng" : "Thêm dịch vụ"}
-          </Button>
-        ) : (
-          <AddRecordButton />
-        )}
+        {!kind && <AddRecordButton />}
       </Heading>
       {kind && (
         <Alert severity="info" sx={{ mb: 3 }}>
@@ -940,6 +961,7 @@ export function Records({ kind }: { kind?: Entry["kind"] }) {
     </Box>
   )
 }
+
 export function Plans({ reminders = false }: { reminders?: boolean }) {
   const { data, open, selectedVehicle, save, pending } = useGarage()
   const [status, setStatus] = useState(reminders ? "attention" : "all")
@@ -966,15 +988,7 @@ export function Plans({ reminders = false }: { reminders?: boolean }) {
             ? "Một chút quan tâm hôm nay, an tâm cho chặng đường dài."
             : "Lên lịch theo thời gian và số km. Không bỏ lỡ kỳ chăm sóc nào."
         }
-      >
-        <Button
-          variant="contained"
-          startIcon={<AddRounded />}
-          onClick={() => open({ type: "plan" })}
-        >
-          Tạo kế hoạch
-        </Button>
-      </Heading>
+      ></Heading>
       <Alert severity="info" sx={{ mb: 3 }}>
         Kế hoạch và nhắc bảo dưỡng đang được hoàn thiện. Bạn sẽ có thể lên lịch
         chăm sóc xe trong phiên bản tiếp theo.
@@ -1086,33 +1100,7 @@ export function Plans({ reminders = false }: { reminders?: boolean }) {
                   <Box className="icon-box amber">
                     <BuildOutlined fontSize="small" />
                   </Box>
-                  <Box>
-                    <Tooltip title="Sửa kế hoạch">
-                      <IconButton
-                        size="small"
-                        aria-label={`Sửa kế hoạch ${p.title}`}
-                        onClick={() => open({ type: "plan", plan: p })}
-                      >
-                        <EditOutlined fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Xóa kế hoạch">
-                      <IconButton
-                        size="small"
-                        aria-label={`Xóa kế hoạch ${p.title}`}
-                        onClick={() =>
-                          open({
-                            type: "delete",
-                            entity: "plan",
-                            id: p.id,
-                            title: p.title,
-                          })
-                        }
-                      >
-                        <DeleteOutline fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
+                  <Box></Box>
                 </Box>
                 <Reminder plan={p} data={data} />
                 <Divider sx={{ my: 2 }} />
@@ -1158,52 +1146,14 @@ export function Plans({ reminders = false }: { reminders?: boolean }) {
                 : "Chưa có kế hoạch phù hợp"
             }
             description="Tạo kế hoạch hoặc thay đổi bộ lọc để xem hạng mục khác."
-            action={
-              <Button onClick={() => open({ type: "plan" })}>
-                Tạo kế hoạch mới
-              </Button>
-            }
+            action={undefined}
           />
-        </Box>
-      )}
-      {reminders && (
-        <Box className="panel section-space">
-          <Typography variant="subtitle1">Tùy chọn nhắc nhở</Typography>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={data.settings.reminders}
-                disabled={pending}
-                onChange={(_, value) => {
-                  void save(
-                    (d) => {
-                      d.settings.reminders = value
-                    },
-                    value
-                      ? "Đã bật nhắc bảo dưỡng trong ứng dụng."
-                      : "Đã tắt nhắc bảo dưỡng trong ứng dụng.",
-                  )
-                }}
-              />
-            }
-            label={
-              <Typography variant="body2">
-                Hiện số nhắc nhở trên thanh điều hướng
-              </Typography>
-            }
-          />
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block" }}
-          >
-            Các bản ghi và kế hoạch vẫn được giữ nguyên khi tắt nhắc nhở.
-          </Typography>
         </Box>
       )}
     </Box>
   )
 }
+
 export function Reports() {
   const { data, selectedVehicle, month, notify } = useGarage()
   if (!data) return null
@@ -1442,8 +1392,9 @@ const profileSchema = z.object({
       "Nhập số điện thoại Việt Nam gồm 10 chữ số.",
     ),
 })
+
 export function Profile() {
-  const { data, session, save, pending, open } = useGarage()
+  const { data, session, save, pending, open, globalRoles } = useGarage()
   const {
     register,
     handleSubmit,
@@ -1508,7 +1459,7 @@ export function Profile() {
             <Box>
               <Typography variant="h6">{data?.profile.name}</Typography>
               <Chip
-                label="Chủ phương tiện"
+                label={globalRoles.join(" \u00b7 ") || "T\u00e0i kho\u1ea3n"}
                 size="small"
                 color="primary"
                 variant="outlined"
@@ -1536,6 +1487,23 @@ export function Profile() {
           </Box>
         </Box>
         <Box className="settings-stack">
+          <Box className="panel">
+            <Typography variant="h6" component="h2">
+              Bảo mật tài khoản
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ my: 2 }}>
+              {session.emailVerified
+                ? "Email đã được xác thực"
+                : "Email chưa xác thực"}
+            </Typography>
+            <Button
+              variant="outlined"
+              component={RouterLink}
+              to="/ho-so/doi-mat-khau"
+            >
+              Đổi mật khẩu
+            </Button>
+          </Box>
           <Box
             component="form"
             className="panel"
@@ -1592,6 +1560,7 @@ export function Profile() {
     </Box>
   )
 }
+
 export function Settings() {
   const { data, session, save, pending, open } = useGarage()
   const [days, setDays] = useState(data?.settings.thresholdDays ?? 30)
@@ -1748,6 +1717,7 @@ export function Settings() {
     </Box>
   )
 }
+
 export function NotFound() {
   const navigate = useNavigate()
   return (

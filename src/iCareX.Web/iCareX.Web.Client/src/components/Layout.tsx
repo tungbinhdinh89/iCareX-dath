@@ -32,36 +32,67 @@ import HelpOutlineRounded from "@mui/icons-material/HelpOutlineRounded"
 import KeyboardArrowDownRounded from "@mui/icons-material/KeyboardArrowDownRounded"
 import MenuRounded from "@mui/icons-material/MenuRounded"
 import CloseRounded from "@mui/icons-material/CloseRounded"
+import ShieldOutlined from "@mui/icons-material/ShieldOutlined"
 import LogoutRounded from "@mui/icons-material/LogoutRounded"
-import { Link as RouterLink, Outlet, useLocation, useNavigate } from "react-router"
+import {
+  Link as RouterLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router"
 import { planState } from "@/lib/models/garage"
 import { useGarage } from "@/lib/state/store"
 import Dialogs from "@/components/Dialogs"
-
 const items: {
   to: string
   label: string
   icon: ReactNode
   count?: boolean
+  permission?: string
 }[] = [
   { to: "/", label: "Tổng quan", icon: <GridViewOutlined /> },
   { to: "/xe", label: "Xe của tôi", icon: <DirectionsCarOutlined /> },
-  { to: "/nhien-lieu", label: "Nhiên liệu", icon: <LocalGasStationOutlined /> },
-  { to: "/bao-duong", label: "Dịch vụ", icon: <BuildOutlined /> },
-  { to: "/ke-hoach", label: "Kế hoạch bảo dưỡng", icon: <EventNoteOutlined /> },
+  {
+    to: "/nhien-lieu",
+    permission: "fuel.read",
+    label: "Nhiên liệu",
+    icon: <LocalGasStationOutlined />,
+  },
+  {
+    to: "/bao-duong",
+    permission: "maintenance.read",
+    label: "Dịch vụ",
+    icon: <BuildOutlined />,
+  },
+  {
+    to: "/ke-hoach",
+    permission: "maintenance_plan.read",
+    label: "Kế hoạch bảo dưỡng",
+    icon: <EventNoteOutlined />,
+  },
   {
     to: "/nhac-bao-duong",
+    permission: "reminder.read",
     label: "Hộp thư",
     icon: <NotificationsNoneOutlined />,
     count: true,
   },
-  { to: "/lich-su", label: "Lịch sử hoạt động", icon: <HistoryOutlined /> },
-  { to: "/bao-cao", label: "Báo cáo", icon: <InsertChartOutlined /> },
+  {
+    to: "/lich-su",
+    permission: "vehicle.read",
+    label: "Lịch sử hoạt động",
+    icon: <HistoryOutlined />,
+  },
+  {
+    to: "/bao-cao",
+    permission: "vehicle.read",
+    label: "Báo cáo",
+    icon: <InsertChartOutlined />,
+  },
 ]
 const assetBase = import.meta.env.BASE_URL
-
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { data, open } = useGarage()
+  const { data, open, can } = useGarage()
   const location = useLocation()
   const navigate = useNavigate()
   const count = data?.settings.reminders
@@ -128,7 +159,21 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         aria-label="Quản lý xe"
         disablePadding
       >
-        {items.map(link)}
+        {items
+          .filter(
+            (item) =>
+              !item.permission ||
+              can(
+                item.permission,
+                /^\/xe\/([^/]+)/.exec(location.pathname)?.[1],
+              ),
+          )
+          .map(link)}
+        {link({
+          to: "/loi-moi",
+          label: "Lời mời chia sẻ",
+          icon: <NotificationsNoneOutlined />,
+        })}
       </List>
       <Box className="sidebar-bottom">
         <List component="nav" aria-label="Tài khoản" disablePadding>
@@ -167,7 +212,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export default function Layout() {
-  const { data, session, loading, error, refetch, logout } = useGarage()
+  const { data, session, loading, error, refetch, logout, can } = useGarage()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobile, setMobile] = useState(false)
@@ -249,16 +294,18 @@ export default function Layout() {
             </Breadcrumbs>
           </Box>
           <Box className="topbar-actions">
-            <Tooltip title="Hộp thư">
-              <IconButton
-                aria-label={`Hộp thư, ${count} nhắc nhở`}
-                onClick={() => navigate("/nhac-bao-duong")}
-              >
-                <Badge badgeContent={count} color="error">
-                  <NotificationsNoneOutlined />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+            {can("reminder.read") && (
+              <Tooltip title="Hộp thư">
+                <IconButton
+                  aria-label={`Hộp thư, ${count} nhắc nhở`}
+                  onClick={() => navigate("/nhac-bao-duong")}
+                >
+                  <Badge badgeContent={count} color="error">
+                    <NotificationsNoneOutlined />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+            )}
             <Button
               className="topbar-account"
               color="inherit"
@@ -287,6 +334,16 @@ export default function Layout() {
               >
                 <PersonOutlineRounded fontSize="small" />
                 Hồ sơ cá nhân
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setAccountAnchor(null)
+                  navigate("/ho-so/doi-mat-khau")
+                }}
+                sx={{ gap: 1 }}
+              >
+                <ShieldOutlined fontSize="small" />
+                Đổi mật khẩu
               </MenuItem>
               <MenuItem
                 onClick={async () => {

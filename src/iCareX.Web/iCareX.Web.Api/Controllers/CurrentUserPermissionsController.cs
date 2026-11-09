@@ -6,7 +6,7 @@ using iCareX.Shared.Contracts.Vehicles;
 
 namespace iCareX.Web.Api.Controllers;
 
-[ApiController, Authorize, Route("api/v1/me/permissions")]
+[ApiController, Authorize(Policy = "VerifiedAccount"), Route("api/v1/me/permissions")]
 public sealed class CurrentUserPermissionsController(IVehicleAccessService access) : ControllerBase
 {
     [HttpGet]
