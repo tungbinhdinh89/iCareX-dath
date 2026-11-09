@@ -1,0 +1,332 @@
+% !TeX program = lualatex
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{fontspec}
+\setsansfont{be-vietnam-pro-400.ttf}[Path=assets/fonts/,BoldFont=be-vietnam-pro-600.ttf]
+\setmainfont{be-vietnam-pro-400.ttf}[Path=assets/fonts/,BoldFont=be-vietnam-pro-600.ttf]
+\newfontfamily{\SymbolFont}{TeX Gyre Heros}
+\newcommand{\ArrowText}{{\SymbolFont →}}
+\usepackage[main=vietnamese]{babel}
+\usepackage{tikz,graphicx}
+\usetikzlibrary{arrows.meta,calc,shapes.geometric}
+\usefonttheme{professionalfonts}
+\definecolor{Blue}{HTML}{2264B0}
+\definecolor{DeepBlue}{HTML}{163E69}
+\definecolor{Green}{HTML}{2F6B4A}
+\definecolor{Ink}{HTML}{172D45}
+\definecolor{Muted}{HTML}{566B80}
+\definecolor{Line}{HTML}{DCE5EE}
+\definecolor{PaleBlue}{HTML}{EFF5FC}
+\definecolor{PaleGreen}{HTML}{EDF6F0}
+\definecolor{Canvas}{HTML}{F7F9FC}
+\setbeamercolor{normal text}{fg=Ink,bg=white}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{}
+\hypersetup{pdftitle={iCareX — Hệ thống quản lý và bảo dưỡng phương tiện trên web},
+ pdfauthor={Nhóm 2: Nguyễn Thanh Tùng, Ngô Minh Triết, Nông Thế Vinh},
+ colorlinks=true,urlcolor=Blue}
+
+% Editable text and TikZ diagrams; 16 x 9 cm, coordinates from top left.
+\newcommand{\T}[5][]{%
+ \pgfmathsetlengthmacro{\TextWidth}{(#4)*1cm}%
+ \node[anchor=north west,inner sep=0,outer sep=0,align=left,
+ text width=\TextWidth,text=Ink,font=\fontsize{9}{12}\selectfont,#1] at (#2,#3) {#5};}
+\newcommand{\Panel}[6]{\filldraw[fill=#5,draw=#6,rounded corners=4pt] (#1,#2) rectangle (#1+#3,#2+#4);}
+\newcommand{\Rule}[4]{\draw[#4,line width=2pt] (#1,#2)--(#1+#3,#2);}
+\newcommand{\Footer}{%
+ \draw[Line,line width=.5pt] (.65,8.47)--(15.35,8.47);
+ \T[font=\fontsize{7}{9}\selectfont,text=Muted]{.65}{8.63}{10}{iCareX\enspace /\enspace Đồ án tổng hợp\enspace /\enspace Nhóm 2}
+ \T[font=\fontsize{7}{9}\selectfont,text=Muted,align=flush right]{13.6}{8.63}{1.75}{\insertframenumber\,/\,\inserttotalframenumber}}
+\newcommand{\Header}[2]{%
+ \T[font=\fontsize{8}{9}\selectfont\bfseries,text=Green]{.65}{.38}{14.7}{#1}
+ \T[font=\fontsize{18}{23}\selectfont\bfseries,text=Blue]{.65}{.94}{14.7}{#2}
+ \Rule{.65}{1.96}{.75}{Green}}
+\newcommand{\CanvasStart}[2]{%
+ \begin{tikzpicture}[remember picture,overlay]
+ \begin{scope}[shift={(current page.north west)},x=1cm,y=-1cm]
+ \fill[white] (0,0) rectangle (16,9);
+ \Header{#1}{#2}\Footer
+}
+\newcommand{\CanvasEnd}{\end{scope}\end{tikzpicture}}
+\newcommand{\Card}[8]{%
+ \Panel{#1}{#2}{#3}{#4}{white}{Line}
+ \Rule{#1+.16}{#2+.03}{#3-.32}{#5}
+ \T[font=\fontsize{8}{9}\selectfont\bfseries,text=#5]{#1+.26}{#2+.29}{#3-.52}{#6}
+ \T[font=\fontsize{11}{15}\selectfont\bfseries]{#1+.26}{#2+.82}{#3-.52}{#7}
+ \T[text=Muted]{#1+.26}{#2+1.55}{#3-.52}{#8}}
+\newcommand{\Step}[6]{%
+ \Panel{#1}{#2}{#3}{1.17}{#4}{#4}
+ \T[font=\fontsize{8}{9}\selectfont\bfseries,text=white]{#1+.20}{#2+.16}{#3-.4}{#5}
+ \T[font=\fontsize{9}{12}\selectfont\bfseries,text=white]{#1+.20}{#2+.52}{#3-.4}{#6}}
+\newcommand{\Arrow}[4]{\draw[-{Stealth[length=4pt,width=4pt]},Blue,line width=1pt] (#1,#2)--(#3,#4);}
+\newcommand{\Bullet}[5]{%
+ \fill[#5] (#1,#2+.12) circle (.045);
+ \T{#1+.18}{#2}{#3}{#4}}
+\newcommand{\Browser}[5]{%
+ \Panel{#1}{#2}{#3}{#4}{Canvas}{Line}
+ \fill[Line] (#1+.02,#2+.35) rectangle (#1+#3-.02,#2+.37);
+ \foreach \dx in {.18,.33,.48}{\fill[Muted!45] (#1+\dx,#2+.18) circle (.035);}
+ \T[font=\fontsize{6}{8}\selectfont,text=Muted,align=center]{#1+.7}{#2+.09}{#3-1.4}{iCareX\enspace /\enspace Giao diện web}
+ \node[anchor=north,inner sep=0] at (#1+#3/2,#2+.5)
+ {\includegraphics[width=\dimexpr #3cm-.32cm\relax,height=\dimexpr #4cm-.65cm\relax,keepaspectratio]{assets/#5}};}
+
+\begin{document}
+
+% 01 — title and complete student information.
+\begin{frame}[plain]
+\CanvasStart{ĐỒ ÁN TỔNG HỢP · NHÓM 2}{}
+\fill[PaleBlue] (9.75,0) rectangle (16,8.46);
+\fill[Blue] (15.65,0) rectangle (16,9);
+\fill[Green] (15.65,5.9) rectangle (16,9);
+\node[anchor=north west,inner sep=0] at (.65,.95) {\includegraphics[width=2.6cm]{assets/logo-light.png}};
+\T[font=\fontsize{24}{30}\selectfont\bfseries,text=DeepBlue]{.65}{2.1}{9.1}{Quản lý phương tiện\newline\& nhắc lịch\newline bảo dưỡng}
+\T[font=\fontsize{12}{16}\selectfont,text=Green]{.65}{5.28}{8.8}{Ứng dụng web iCareX}
+\T[text=Muted]{.65}{6.05}{8.7}{Theo dõi lịch sử sử dụng, kiểm soát chi phí\newline và chủ động chăm sóc phương tiện cá nhân.}
+\T[font=\fontsize{8}{10}\selectfont,text=Muted]{.65}{7.08}{8.8}{GIẢNG VIÊN HƯỚNG DẪN}
+\T[font=\fontsize{11}{14}\selectfont\bfseries]{.65}{7.53}{8.8}{PHAN TRUNG HIẾU}
+\T[font=\fontsize{9}{11}\selectfont\bfseries,text=Blue]{10.2}{1.37}{4.65}{THÀNH VIÊN NHÓM 2}
+\foreach \yy/\name/\sid in {2.25/Nguyễn Thanh Tùng/2449106,3.7/Ngô Minh Triết/2313562,5.15/Nông Thế Vinh/2115302}{
+ \T[font=\fontsize{11}{14}\selectfont\bfseries]{10.2}{\yy}{4.7}{\name}
+ \T[font=\fontsize{9}{12}\selectfont,text=Muted]{10.2}{\yy+.58}{4.7}{MSSV: \sid}
+ \draw[Line] (10.2,\yy+1.12)--(14.95,\yy+1.12);}
+\T[font=\fontsize{8}{10}\selectfont,text=Muted]{10.2}{7.55}{4.65}{Trường Đại học Bách khoa\newline ĐHQG TP. Hồ Chí Minh}
+\CanvasEnd
+\end{frame}
+
+% 02 — paired problem / solution, as in the reference.
+\begin{frame}[plain]
+\CanvasStart{01 / TỔNG QUAN}{Bối cảnh \& mục tiêu giải pháp}
+\Card{.65}{2.35}{7.15}{4.85}{Blue}{VẤN ĐỀ}{Thông tin còn phân tán}{Hóa đơn, số km và lịch sửa chữa\newline được ghi ở nhiều nơi.\par\vspace{.23cm}Khó đối chiếu tổng chi phí theo xe.\par\vspace{.23cm}Dễ bỏ lỡ kỳ bảo dưỡng tiếp theo.}
+\Card{8.2}{2.35}{7.15}{4.85}{Green}{GIẢI PHÁP}{Nhật ký tập trung}{Tập trung dữ liệu sử dụng và chi phí.\par\vspace{.23cm}Liên kết số km với kỳ bảo dưỡng.\par\vspace{.23cm}Hiển thị rõ lý do và mốc nhắc hạn.}
+\T[font=\fontsize{10}{12}\selectfont\bfseries,text=DeepBlue,align=center]{.65}{7.62}{14.7}{Xe đã chi bao nhiêu? Đã làm những gì? Khi nào cần bảo dưỡng?}
+\CanvasEnd
+\end{frame}
+
+% 03 — users and web business journey.
+\begin{frame}[plain]
+\CanvasStart{01 / TỔNG QUAN}{Người dùng \& hành trình nghiệp vụ}
+\Panel{.65}{2.35}{5.2}{2.08}{PaleBlue}{PaleBlue}
+\T[font=\fontsize{12}{16}\selectfont\bfseries,text=Blue]{.95}{2.65}{4.6}{Chủ xe cá nhân}
+\T[text=Muted]{.95}{3.35}{4.6}{Theo dõi xe máy và ô tô\newline qua trình duyệt web.}
+\Panel{6.2}{2.35}{9.15}{2.08}{PaleGreen}{PaleGreen}
+\T[font=\fontsize{11}{15}\selectfont\bfseries,text=Green]{6.5}{2.65}{8.55}{Nhu cầu xuyên suốt}
+\T{6.5}{3.35}{8.55}{Quản lý nhiều xe, tra cứu lịch sử\newline và chủ động theo dõi các công việc đến hạn.}
+\T[font=\fontsize{11}{14}\selectfont\bfseries]{.65}{4.98}{14.7}{Luồng nghiệp vụ cốt lõi}
+\Step{.65}{5.77}{2.65}{Blue}{01}{Thêm xe}
+\Step{3.66}{5.77}{2.65}{Blue}{02}{Ghi nhật ký}
+\Step{6.67}{5.77}{2.65}{Blue}{03}{Theo dõi hạn}
+\Step{9.68}{5.77}{2.65}{Green}{04}{Bảo dưỡng}
+\Step{12.69}{5.77}{2.65}{Green}{05}{Tra cứu}
+\foreach \xx in {3.3,6.31,9.32,12.33}{\Arrow{\xx+.07}{6.36}{\xx+.27}{6.36}}
+\T[text=Muted,align=center]{.65}{7.55}{14.7}{Mọi hoạt động và khoản chi đều gắn với đúng phương tiện.}
+\CanvasEnd
+\end{frame}
+
+% 04 — four feature cards.
+\begin{frame}[plain]
+\CanvasStart{01 / TỔNG QUAN}{Bốn nhóm chức năng cốt lõi}
+\Card{.65}{2.35}{7.15}{2.65}{Blue}{01 / PHƯƠNG TIỆN}{Hồ sơ xe \& số km}{Thêm xe, cập nhật ODO, lưu trữ và khôi phục.}
+\Card{8.2}{2.35}{7.15}{2.65}{Green}{02 / BẢO DƯỠNG}{Kế hoạch \& nhắc hạn}{Theo ngày, số km hoặc điều kiện đến trước.}
+\Card{.65}{5.35}{7.15}{2.65}{Blue}{03 / NHẬT KÝ}{Nhiên liệu \& dịch vụ}{Ghi khoản chi, hạng mục sửa chữa và bảo dưỡng.}
+\Card{8.2}{5.35}{7.15}{2.65}{Green}{04 / TRA CỨU}{Lịch sử \& báo cáo}{Lọc theo xe, thời gian; đối chiếu các khoản đã ghi.}
+\CanvasEnd
+\end{frame}
+
+% 05 — editable reminder logic diagram.
+\begin{frame}[plain]
+\CanvasStart{02 / THIẾT KẾ NGHIỆP VỤ}{Logic nhắc lịch bảo dưỡng}
+\Panel{.65}{2.4}{14.7}{1.22}{PaleBlue}{PaleBlue}
+\Panel{.65}{3.82}{14.7}{2.68}{Canvas}{Canvas}
+\Panel{.65}{6.72}{14.7}{1.13}{PaleGreen}{PaleGreen}
+\T[font=\fontsize{9}{11}\selectfont\bfseries,text=Blue]{.88}{2.76}{2.1}{CHỦ XE}
+\T[font=\fontsize{9}{11}\selectfont\bfseries,text=Muted]{.88}{4.65}{2.1}{HỆ THỐNG}
+\T[font=\fontsize{9}{11}\selectfont\bfseries,text=Green]{.88}{7.06}{2.1}{THÔNG BÁO}
+\Panel{3.35}{2.57}{4.1}{.86}{white}{Line}
+\T[align=center]{3.5}{2.79}{3.8}{Cập nhật ODO}
+\Panel{3.35}{4.28}{4.1}{1.4}{white}{Line}
+\T[align=center]{3.55}{4.51}{3.7}{Đối chiếu kế hoạch\newline theo km, thời gian}
+\Arrow{5.4}{3.43}{5.4}{4.28}
+\node[diamond,aspect=2.1,draw=Blue,fill=white,minimum width=2.6cm,minimum height=1.5cm,inner sep=0,font=\fontsize{9}{12}\selectfont,align=center,text=Ink] at (9.65,4.98) {Đủ điều kiện\\nhắc?};
+\Arrow{7.45}{4.98}{8.25}{4.98}
+\Panel{12.05}{4.54}{2.87}{.88}{white}{Line}
+\T[font=\fontsize{9}{11}\selectfont,align=center]{12.15}{4.74}{2.67}{Theo dõi tiếp}
+\Arrow{11.05}{4.98}{12.05}{4.98}
+\T[font=\fontsize{8}{9}\selectfont,text=Muted]{11.1}{4.47}{1}{Không}
+\Panel{7.7}{6.87}{3.9}{.81}{white}{Line}
+\T[font=\fontsize{9}{11}\selectfont,align=center]{7.85}{7.08}{3.6}{Nhắc trong inbox}
+\Arrow{9.65}{5.73}{9.65}{6.87}
+\T[font=\fontsize{8}{9}\selectfont,text=Green]{9.83}{6.1}{1}{Có}
+\draw[-{Stealth[length=4pt]},Green,line width=1pt] (11.6,7.28)--(14.55,7.28)--(14.55,3.0)--(7.45,3.0);
+\T[font=\fontsize{8}{10}\selectfont,text=Green]{11.82}{6.56}{2.42}{Xem và xử lý}
+\CanvasEnd
+\end{frame}
+
+% 06 — web screenshot in a browser frame.
+\begin{frame}[plain]
+\CanvasStart{03 / THIẾT KẾ GIAO DIỆN}{Một trang xe, đầy đủ ngữ cảnh}
+\Browser{.65}{2.33}{9.35}{5.57}{vehicle-overview.png}
+\T[font=\fontsize{8}{10}\selectfont\bfseries,text=Green]{10.45}{2.51}{4.9}{GIAO DIỆN WEB}
+\T[font=\fontsize{12}{16}\selectfont\bfseries]{10.45}{3.02}{4.9}{Ưu tiên thông tin\newline cần ra quyết định}
+\Bullet{10.48}{4.18}{4.5}{Điều hướng theo chức năng.}{Blue}
+\Bullet{10.48}{5.01}{4.5}{Số km, chi phí, kế hoạch\newline trong cùng trang xe.}{Blue}
+\Bullet{10.48}{6.13}{4.5}{Trạng thái có chữ\newline và căn cứ tính hạn.}{Green}
+\T[font=\fontsize{8}{10}\selectfont,text=Muted]{10.45}{7.48}{4.9}{Ảnh giao diện từ thiết kế iCareX.}
+\CanvasEnd
+\end{frame}
+
+% 07 — runtime tiers and source responsibilities.
+\begin{frame}[plain]
+\CanvasStart{04 / KIẾN TRÚC \& CÔNG NGHỆ}{Kiến trúc hệ thống web}
+\Card{.65}{2.36}{4.6}{2.7}{Blue}{01 / GIAO DIỆN}{Trình duyệt web}{React SPA\newline Hiển thị và tương tác.}
+\Card{5.7}{2.36}{4.6}{2.7}{Blue}{02 / XỬ LÝ}{ASP.NET Core API}{Xác thực, kiểm tra dữ liệu\newline và điều phối nghiệp vụ.}
+\Card{10.75}{2.36}{4.6}{2.7}{Green}{03 / LƯU TRỮ}{PostgreSQL}{Hồ sơ xe và hoạt động.\newline Phiên đăng nhập.}
+\Arrow{5.29}{3.56}{5.65}{3.56}\Arrow{10.34}{3.56}{10.7}{3.56}
+\T[font=\fontsize{8}{10}\selectfont,text=Muted,align=center]{.65}{5.04}{14.7}{HTTPS / JSON giữa giao diện và API\enspace ·\enspace EF Core giữa API và cơ sở dữ liệu}
+\Panel{.65}{5.7}{14.7}{2.3}{Canvas}{Line}
+\T[font=\fontsize{9}{12}\selectfont\bfseries,text=Blue]{.95}{5.96}{14.1}{TỔ CHỨC MÃ NGUỒN THEO CLEAN ARCHITECTURE}
+\T{.95}{6.63}{4.3}{\textbf{Domain}\newline Quy tắc và mô hình.}
+\T{5.85}{6.63}{4.3}{\textbf{Application}\newline Interface và hợp đồng nội bộ.}
+\T{10.75}{6.63}{4.3}{\textbf{Infrastructure}\newline Dịch vụ và truy cập dữ liệu.}
+\CanvasEnd
+\end{frame}
+
+% 08 — technology, from actual repository manifests.
+\begin{frame}[plain]
+\CanvasStart{04 / KIẾN TRÚC \& CÔNG NGHỆ}{Công nghệ sử dụng}
+\Card{.65}{2.4}{3.45}{4.65}{Blue}{FRONTEND}{Giao diện}{\textbf{React 19}\newline TypeScript\par\vspace{.28cm}Vite 8\newline Tailwind CSS 4\par\vspace{.28cm}MUI · Astra UI}
+\Card{4.4}{2.4}{3.45}{4.65}{Blue}{BACKEND}{Nghiệp vụ}{\textbf{ASP.NET Core 10}\newline ASP.NET Identity\par\vspace{.28cm}Shared DTO\newline OpenAPI / Scalar}
+\Card{8.15}{2.4}{3.45}{4.65}{Green}{DATABASE}{Dữ liệu}{\textbf{PostgreSQL}\newline EF Core 10\par\vspace{.28cm}Npgsql\newline Migration tường minh}
+\Card{11.9}{2.4}{3.45}{4.65}{Green}{QUALITY}{Kiểm thử}{\textbf{xUnit}\newline Testcontainers\par\vspace{.28cm}TypeScript check\newline Frontend build}
+\Panel{.65}{7.36}{14.7}{.64}{PaleBlue}{PaleBlue}
+\T[font=\fontsize{9}{11}\selectfont,text=DeepBlue,align=center]{.85}{7.53}{14.3}{C\# DTO \ArrowText\ sinh hợp đồng TypeScript \ArrowText\ thống nhất dữ liệu giữa API và web.}
+\CanvasEnd
+\end{frame}
+
+% 09 — deployment, without environment preparation instructions.
+\begin{frame}[plain]
+\CanvasStart{04 / KIẾN TRÚC \& CÔNG NGHỆ}{Triển khai ứng dụng web}
+\Step{.65}{2.6}{4.3}{Blue}{NGƯỜI DÙNG}{Trình duyệt · HTTPS}
+\Step{5.85}{2.6}{4.3}{Blue}{WEB / REVERSE PROXY}{React + API cùng origin}
+\Step{11.05}{2.6}{4.3}{Green}{DỮ LIỆU / MẠNG RIÊNG}{PostgreSQL}
+\Arrow{4.95}{3.18}{5.85}{3.18}\Arrow{10.15}{3.18}{11.05}{3.18}
+\Card{.65}{4.48}{7.15}{3.2}{Blue}{MÔI TRƯỜNG PHÁT TRIỂN}{Tách giao diện và API}{Vite :8443 chuyển tiếp /api tới :5080.\newline Cấu hình kết nối qua User Secrets.}
+\Card{8.2}{4.48}{7.15}{3.2}{Green}{VẬN HÀNH}{Giữ dữ liệu bền vững}{Bảo vệ kết nối, lưu khóa phiên\newline và quản lý bản sao lưu cơ sở dữ liệu.}
+\CanvasEnd
+\end{frame}
+
+% 10 — design requirements; no unrun test results.
+\begin{frame}[plain]
+\CanvasStart{05 / NGUYÊN TẮC THIẾT KẾ}{Bảo vệ tài khoản và dữ liệu}
+\Card{.65}{2.4}{4.6}{4.75}{Blue}{01 / TRUY CẬP}{Đúng tài khoản}{Cookie HttpOnly.\newline Phiên lưu trong DB.\newline CSRF cho thao tác ghi.\par\vspace{.3cm}Mỗi xe và bản ghi\newline thuộc đúng chủ sở hữu.}
+\Card{5.7}{2.4}{4.6}{4.75}{Blue}{02 / LỊCH SỬ}{Đúng lịch sử}{ODO phù hợp các mốc\newline trước và sau.\par\vspace{.3cm}Khi sửa lịch sử, số tổng\newline và kỳ bảo dưỡng liên quan\newline cần được tính lại.}
+\Card{10.75}{2.4}{4.6}{4.75}{Green}{03 / THAO TÁC GHI}{Tránh ghi trùng}{Transaction cho các\newline thay đổi liên quan.\par\vspace{.3cm}RequestId khi gửi lại;\newline version khi có cập nhật\newline đồng thời.}
+\T[font=\fontsize{9}{12}\selectfont,text=Muted,align=center]{.65}{7.56}{14.7}{Đây là các nguyên tắc thiết kế và tiêu chí cần kiểm chứng khi hoàn thiện luồng.}
+\CanvasEnd
+\end{frame}
+
+% 11 — user flow 01.
+\begin{frame}[plain]
+\CanvasStart{06 / USER FLOW 01 · QUẢN LÝ PHƯƠNG TIỆN}{Theo dõi tổng quan phương tiện}
+\Browser{.65}{2.3}{9.6}{4.5}{demo-vehicle.png}
+\T[font=\fontsize{9}{11}\selectfont\bfseries,text=Green]{10.68}{2.44}{4.5}{YAMAHA NVX 155 · 01/10}
+\T[font=\fontsize{20}{25}\selectfont\bfseries,text=Blue]{10.68}{3.03}{4.5}{12.699 km}
+\T[text=Muted]{10.68}{4.03}{4.5}{ODO đang theo dõi.}
+\T[font=\fontsize{18}{23}\selectfont\bfseries,text=Green]{10.68}{4.87}{4.5}{Còn 301 km}
+\T[text=Muted]{10.68}{5.8}{4.5}{Thay dầu tại 13.000 km.\newline Ngưỡng nhắc: 300 km.}
+\Step{.65}{7.02}{4.6}{Blue}{BƯỚC 1}{Đăng nhập}
+\Step{5.7}{7.02}{4.6}{Blue}{BƯỚC 2}{Chọn phương tiện}
+\Step{10.75}{7.02}{4.6}{Green}{KẾT QUẢ}{Hiển thị tổng quan xe}
+\Arrow{5.3}{7.61}{5.64}{7.61}\Arrow{10.35}{7.61}{10.69}{7.61}
+\CanvasEnd
+\end{frame}
+
+% 12 — user flow 02.
+\begin{frame}[plain]
+\CanvasStart{06 / USER FLOW 02 · NHẬT KÝ NHIÊN LIỆU}{Ghi nhận nhiên liệu}
+\Browser{.65}{2.3}{9.6}{4.5}{demo-fuel.png}
+\T[font=\fontsize{9}{11}\selectfont\bfseries,text=Green]{10.68}{2.44}{4.5}{02/10 · ODO 12.700 KM}
+\T[font=\fontsize{21}{27}\selectfont\bfseries,text=Blue]{10.68}{3.08}{4.5}{8 lít}
+\T[font=\fontsize{18}{23}\selectfont\bfseries,text=Green]{10.68}{4.18}{4.5}{200.000 VNĐ}
+\T[text=Muted]{10.68}{5.32}{4.5}{Lịch sử có hoạt động mới.\newline Chi phí tháng: 200.000 VNĐ.\newline Thay dầu còn 300 km.}
+\Step{.65}{7.02}{4.6}{Blue}{BƯỚC 1}{Chọn “Ghi nhiên liệu”}
+\Step{5.7}{7.02}{4.6}{Blue}{BƯỚC 2}{Nhập ngày, ODO, lít, tiền}
+\Step{10.75}{7.02}{4.6}{Green}{KẾT QUẢ}{Lưu và cập nhật trang xe}
+\Arrow{5.3}{7.61}{5.64}{7.61}\Arrow{10.35}{7.61}{10.69}{7.61}
+\CanvasEnd
+\end{frame}
+
+% 13 — user flow 03.
+\begin{frame}[plain]
+\CanvasStart{06 / USER FLOW 03 · NHẮC BẢO DƯỠNG}{Xem và xử lý nhắc bảo dưỡng}
+\Browser{.65}{2.3}{5.8}{5.84}{demo-inbox.png}
+\T[font=\fontsize{9}{11}\selectfont\bfseries,text=Green]{6.9}{2.46}{8.45}{15/10 · KẾ HOẠCH THAY DẦU}
+\T[font=\fontsize{17}{23}\selectfont\bfseries,text=Blue]{6.9}{3.08}{8.45}{10.000 + 3.000 = 13.000}
+\T[text=Muted]{6.9}{4.06}{8.45}{ODO chạm 13.000 km \ArrowText\ kế hoạch đến hạn.}
+\Panel{6.9}{4.85}{8.45}{1.31}{PaleBlue}{PaleBlue}
+\T[font=\fontsize{10}{12}\selectfont\bfseries,text=Blue]{7.16}{5.08}{7.93}{Đánh dấu đã đọc}
+\T[font=\fontsize{9}{12}\selectfont]{7.16}{5.61}{7.93}{Giảm nhắc chưa đọc; kỳ bảo dưỡng giữ nguyên.}
+\Panel{6.9}{6.43}{8.45}{1.31}{PaleGreen}{PaleGreen}
+\T[font=\fontsize{10}{12}\selectfont\bfseries,text=Green]{7.16}{6.66}{7.93}{Ghi nhận bảo dưỡng}
+\T[font=\fontsize{9}{12}\selectfont]{7.16}{7.19}{7.93}{Mở dịch vụ đã liên kết đúng xe và đúng kế hoạch.}
+\CanvasEnd
+\end{frame}
+
+% 14 — user flow 04.
+\begin{frame}[plain]
+\CanvasStart{06 / USER FLOW 04 · HOÀN THÀNH BẢO DƯỠNG}{Hoàn thành và chuyển kỳ bảo dưỡng}
+\Panel{.65}{2.35}{8.7}{2.58}{PaleBlue}{PaleBlue}
+\T[font=\fontsize{9}{11}\selectfont\bfseries,text=Blue]{.95}{2.66}{8.1}{16/10 · THAY DẦU TẠI 13.000 KM}
+\T[font=\fontsize{21}{27}\selectfont\bfseries,text=DeepBlue]{.95}{3.38}{8.1}{13.000 \ArrowText\ \textcolor{Green}{16.000 km}}
+\T[text=Muted]{.95}{4.39}{8.1}{Mốc mới từ lần bảo dưỡng đã liên kết.}
+\T[font=\fontsize{11}{14}\selectfont\bfseries]{.65}{5.51}{8.7}{Dịch vụ gồm hai hạng mục}
+\Bullet{.69}{6.22}{8.2}{Sửa chữa: 100.000 VNĐ.}{Blue}
+\Bullet{.69}{6.88}{8.2}{Bảo dưỡng: 150.000 VNĐ.}{Green}
+\T[font=\fontsize{9}{11}\selectfont,text=Muted]{.65}{7.63}{8.7}{Sửa lịch sử cần cập nhật lại kỳ hạn và số tổng liên quan.}
+\Panel{9.8}{2.35}{5.55}{5.65}{PaleGreen}{PaleGreen}
+\T[font=\fontsize{9}{11}\selectfont\bfseries,text=Green]{10.15}{2.75}{4.85}{TỔNG CHI PHÍ THÁNG 10}
+\T[font=\fontsize{27}{34}\selectfont\bfseries,text=Green]{10.15}{3.6}{4.85}{450.000}
+\T[font=\fontsize{10}{12}\selectfont,text=Green]{10.15}{4.75}{4.85}{VNĐ}
+\draw[Green!20] (10.15,5.51)--(15,5.51);
+\T{10.15}{5.9}{4.85}{200.000 nhiên liệu\newline + 250.000 dịch vụ}
+\T[font=\fontsize{9}{11}\selectfont,text=Muted]{10.15}{7.13}{4.85}{Tổng hợp từ các dòng chi phí;\newline mỗi khoản được tính một lần.}
+\CanvasEnd
+\end{frame}
+
+% 15 — scope and actual maturity.
+\begin{frame}[plain]
+\CanvasStart{07 / PHẠM VI \& HƯỚNG PHÁT TRIỂN}{Phạm vi và mức độ hoàn thiện}
+\Card{.65}{2.4}{4.6}{4.72}{Blue}{NỀN TẢNG HIỆN CÓ}{Nền tảng cơ sở}{Tài khoản và phiên.\newline Danh mục phương tiện.\newline Quản lý xe.\newline ODO thủ công.}
+\Card{5.7}{2.4}{4.6}{4.72}{Green}{LUỒNG CẦN HOÀN THIỆN}{Luồng xuyên suốt}{Nhiên liệu và dịch vụ.\newline Kế hoạch và nhắc hạn.\newline Inbox và báo cáo chi phí.\par\vspace{.22cm}Đối chiếu thiết kế với API.}
+\Card{10.75}{2.4}{4.6}{4.72}{Blue}{TRỌNG TÂM PHIÊN BẢN}{Phiên bản web}{Chủ xe cá nhân.\newline Giao diện tiếng Việt.\newline Số km do người dùng nhập.\newline Đơn vị: km, lít, VNĐ.}
+\T[font=\fontsize{9}{12}\selectfont,text=Muted,align=center]{.65}{7.53}{14.7}{Các user flow minh họa hành vi thiết kế; mức hoàn thiện được đánh giá theo luồng chạy thực tế.}
+\CanvasEnd
+\end{frame}
+
+% 16 — roadmap, without meeting approval requests.
+\begin{frame}[plain]
+\CanvasStart{07 / PHẠM VI \& HƯỚNG PHÁT TRIỂN}{Lộ trình hoàn thiện}
+\draw[Line,line width=4pt] (1.0,3.12)--(15,3.12);
+\foreach \xx/\cc/\num in {1.05/Blue/1,6.08/Blue/2,11.1/Green/3}{
+ \fill[\cc] (\xx,3.12) circle (.25);
+ \node[font=\fontsize{9}{11}\selectfont\bfseries,text=white] at (\xx,3.12) {\num};}
+\Card{.65}{3.85}{4.6}{3.52}{Blue}{GIAI ĐOẠN 1}{Hoàn thiện}{Kết nối API với giao diện.\newline Liên kết dịch vụ, kế hoạch\newline và nhắc bảo dưỡng.}
+\Card{5.7}{3.85}{4.6}{3.52}{Blue}{GIAI ĐOẠN 2}{Kiểm thử}{Quyền của hai tài khoản.\newline Lịch sử và tổng chi phí.\newline Gửi lại, cập nhật đồng thời.}
+\Card{10.75}{3.85}{4.6}{3.52}{Green}{GIAI ĐOẠN 3}{Triển khai}{Đóng gói ứng dụng web.\newline Kiểm chứng luồng sử dụng.\newline Ghi nhận kết quả thực thi.}
+\T[font=\fontsize{9}{12}\selectfont,text=Muted,align=center]{.65}{7.75}{14.7}{Tiêu chí: dữ liệu đúng, thao tác rõ ràng, truy vết được từ hoạt động đến chi phí và kỳ hạn.}
+\CanvasEnd
+\end{frame}
+
+% 17 — intentionally just a thank-you.
+\begin{frame}[plain]
+\begin{tikzpicture}[remember picture,overlay]
+\begin{scope}[shift={(current page.north west)},x=1cm,y=-1cm]
+\fill[PaleBlue] (0,0) rectangle (16,9);
+\fill[Blue] (0,0) rectangle (.18,9);
+\fill[Green] (0,5.8) rectangle (.18,9);
+\Rule{7.35}{3.08}{1.3}{Green}
+\T[font=\fontsize{28}{36}\selectfont\bfseries,text=DeepBlue,align=center]{1.0}{3.78}{14}{Cảm ơn thầy và các bạn\newline đã lắng nghe!}
+\end{scope}
+\end{tikzpicture}
+\end{frame}
+
+\end{document}

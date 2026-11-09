@@ -1,0 +1,104 @@
+﻿[
+    {
+        "asset":  "assets/logo-light.png",
+        "source":  "report_template_latex/figures/design/logo-light.png",
+        "operation":  "exact copy",
+        "sha256":  "70ae23f81b4f3a5aaa6b298b83941e00fe4333efa6b50274c68a82e95bfcf95f"
+    },
+    {
+        "asset":  "assets/logo-dark.png",
+        "source":  "report_template_latex/figures/design/logo-dark.png",
+        "operation":  "exact copy",
+        "sha256":  "8592e116077eb3a53827b20b36e28b7b5e0f22c708acf438b9f7a482f4dfb441"
+    },
+    {
+        "asset":  "assets/symbol-dark.png",
+        "source":  "report_template_latex/figures/design/symbol-dark.png",
+        "operation":  "exact copy",
+        "sha256":  "7a52c60ce61fab71bfab87bd30f623e3cca4c7279fb1c625b2ce5369831194b0"
+    },
+    {
+        "asset":  "assets/vehicle-overview.png",
+        "source":  "report_template_latex/figures/design/vehicle-overview.png",
+        "operation":  "exact copy",
+        "sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1"
+    },
+    {
+        "asset":  "assets/fuel-create.png",
+        "source":  "report_template_latex/figures/design/fuel-create.png",
+        "operation":  "exact copy",
+        "sha256":  "6a24f162f3f13dd4119d12e2500eb8b974a30f525a58c25e7574b45801793be2"
+    },
+    {
+        "asset":  "assets/notifications.png",
+        "source":  "report_template_latex/figures/design/notifications.png",
+        "operation":  "exact copy",
+        "sha256":  "c89abd90a2fd397b27346a8e79bb8a0b80d7696b87438f7c91feb10eee14d9e5"
+    },
+    {
+        "asset":  "assets/status-badges.png",
+        "source":  "report_template_latex/figures/design/status-badges.png",
+        "operation":  "exact copy",
+        "sha256":  "a660e479d10a72acc80efda979b947959549f9e3d640851b0ed08195cdd87cbb"
+    },
+    {
+        "asset":  "assets/card-expenses.png",
+        "source":  "report_template_latex/figures/design/card-expenses.png",
+        "operation":  "exact copy",
+        "sha256":  "9f1d490bbbeb74085791e3bd140285a50661bb7b4c0c74011c598dfe385194d5"
+    },
+    {
+        "asset":  "assets/card-reminder.png",
+        "source":  "report_template_latex/figures/design/card-reminder.png",
+        "operation":  "exact copy",
+        "sha256":  "bd2bdae6e15d2d5551194484a7061d4f65eff33602566ba783dfea11e006c29a"
+    },
+    {
+        "asset":  "assets/demo-vehicle.png",
+        "source":  "report_template_latex/figures/design/vehicle-overview.png",
+        "operation":  "exact pixel crop",
+        "crop_xywh":  [
+                          490,
+                          180,
+                          2340,
+                          1530
+                      ],
+        "sha256":  "99b94254b471aa513d272b7acdc2a4adf2ebba7fd00e379da61ef26e72ca9a2f"
+    },
+    {
+        "asset":  "assets/demo-fuel.png",
+        "source":  "report_template_latex/figures/design/fuel-create.png",
+        "operation":  "exact pixel crop",
+        "crop_xywh":  [
+                          540,
+                          710,
+                          1510,
+                          790
+                      ],
+        "sha256":  "b72a337788548234adf7ff138f0e71c9e2e14e3fa2219daea6448f3b2825cfd4"
+    },
+    {
+        "asset":  "assets/demo-inbox.png",
+        "source":  "report_template_latex/figures/design/notifications.png",
+        "operation":  "exact pixel crop",
+        "crop_xywh":  [
+                          1410,
+                          600,
+                          1410,
+                          1500
+                      ],
+        "sha256":  "c96e9bff84595325ee4310396574b02eb4ad29ab4c66c728592c48d601129978"
+    },
+    {
+        "asset":  "assets/fonts/be-vietnam-pro-400.ttf",
+        "source":  "src/iCareX.Web/iCareX.Web.Client/public/fonts/be-vietnam-pro-400.ttf",
+        "operation":  "exact copy",
+        "sha256":  "4ad53eac036092be79a34b5fa0aa32d0ebb3c7e5df4bc058764f5614fbf148a0"
+    },
+    {
+        "asset":  "assets/fonts/be-vietnam-pro-600.ttf",
+        "source":  "src/iCareX.Web/iCareX.Web.Client/public/fonts/be-vietnam-pro-600.ttf",
+        "operation":  "exact copy",
+        "sha256":  "cbf437bf71c8536a7aaed632dce2583ea5ec97c07efffc625c31991d1027ba3b"
+    }
+]
