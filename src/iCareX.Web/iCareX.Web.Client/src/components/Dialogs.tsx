@@ -19,6 +19,11 @@ import ShieldOutlined from "@mui/icons-material/ShieldOutlined"
 import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined"
 import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined"
 import CheckCircleOutline from "@mui/icons-material/CheckCircleOutline"
+import DirectionsCarOutlined from "@mui/icons-material/DirectionsCarOutlined"
+import SpeedOutlined from "@mui/icons-material/SpeedOutlined"
+import EventNoteOutlined from "@mui/icons-material/EventNoteOutlined"
+import HelpOutlineRounded from "@mui/icons-material/HelpOutlineRounded"
+import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import { useForm, Controller } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -35,7 +40,6 @@ import {
 } from "@/lib/models/garage"
 import { api } from "@/lib/apis/iCareXApi"
 import { useGarage, type ModalState } from "@/lib/state/store"
-
 const entrySchema = z.object({
   vehicleId: z.string().min(1, "Vui lòng chọn xe."),
   title: z
@@ -68,6 +72,22 @@ const entrySchema = z.object({
   note: z.string().max(500, "Tối đa 500 ký tự."),
 })
 type EntryFields = z.infer<typeof entrySchema>
+function FormSection({
+  title,
+  description,
+}: {
+  title: string
+  description: string
+}) {
+  return (
+    <Box className="full dialog-form-section">
+      <Typography variant="subtitle2">{title}</Typography>
+      <Typography variant="body2" color="text.secondary">
+        {description}
+      </Typography>
+    </Box>
+  )
+}
 function EntryForm({
   modal,
 }: {
@@ -83,7 +103,7 @@ function EntryForm({
     control,
     handleSubmit,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setValue,
   } = useForm<EntryFields>({
     resolver: zodResolver(entrySchema),
@@ -184,6 +204,10 @@ function EntryForm({
           </Alert>
         )}
         <Box className="form-grid">
+          <FormSection
+            title="Thông tin ghi nhận"
+            description="Chọn phương tiện và ghi lại số km tại thời điểm thực hiện."
+          />
           <Controller
             name="vehicleId"
             control={control}
@@ -294,19 +318,19 @@ function EntryForm({
         <Button
           color="inherit"
           onClick={() => setModal(null)}
-          disabled={pending}
+          disabled={pending || isSubmitting}
         >
           Hủy
         </Button>
         <Button
           type="submit"
           variant="contained"
-          disabled={pending || !data.vehicles.length}
+          disabled={pending || isSubmitting || !data.vehicles.length}
           startIcon={
-            pending ? <CircularProgress size={16} color="inherit" /> : undefined
+            pending || isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined
           }
         >
-          {pending
+          {pending || isSubmitting
             ? "Đang lưu..."
             : modal.plan
               ? "Lưu dịch vụ & hoàn tất"
@@ -350,8 +374,16 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
   const [types, setTypes] = useState<{ id: string; name: string }[]>([])
-  const [brands, setBrands] = useState<{ id: string; vehicleTypeId: string; name: string }[]>([])
-  const [models, setModels] = useState<{ id: string; vehicleBrandId: string; name: string }[]>([])
+  const [brands, setBrands] = useState<{
+    id: string
+    vehicleTypeId: string
+    name: string
+  }[]>([])
+  const [models, setModels] = useState<{
+    id: string
+    vehicleBrandId: string
+    name: string
+  }[]>([])
   const {
     register,
     control,
@@ -374,28 +406,52 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
   const selectedTypeId = watch("vehicleTypeId")
   const selectedBrandId = watch("vehicleBrandId")
   useEffect(() => {
-    api.vehicleTypes().then(setTypes).catch((e) => notify(e instanceof Error ? e.message : "Không thể tải loại xe.", "error"))
+    api
+      .vehicleTypes()
+      .then(setTypes)
+      .catch((e) =>
+        notify(
+          e instanceof Error ? e.message : "Không thể tải loại xe.",
+          "error",
+        ),
+      )
   }, [notify])
   useEffect(() => {
     if (!selectedTypeId) return
-    api.vehicleBrands(selectedTypeId).then((items) => {
-      setBrands(items)
-      if (!items.some((item) => item.id === selectedBrandId)) {
-        setValue("vehicleBrandId", "")
-        setValue("vehicleModelId", "")
-      }
-    }).catch((e) => notify(e instanceof Error ? e.message : "Không thể tải hãng xe.", "error"))
+    api
+      .vehicleBrands(selectedTypeId)
+      .then((items) => {
+        setBrands(items)
+        if (!items.some((item) => item.id === selectedBrandId)) {
+          setValue("vehicleBrandId", "")
+          setValue("vehicleModelId", "")
+        }
+      })
+      .catch((e) =>
+        notify(
+          e instanceof Error ? e.message : "Không thể tải hãng xe.",
+          "error",
+        ),
+      )
   }, [selectedTypeId, notify])
   useEffect(() => {
     if (!selectedBrandId) return
-    api.vehicleModels(selectedBrandId).then((items) => {
-      setModels(items)
-      if (!items.some((item) => item.id === watch("vehicleModelId"))) setValue("vehicleModelId", "")
-    }).catch((e) => notify(e instanceof Error ? e.message : "Không thể tải dòng xe.", "error"))
+    api
+      .vehicleModels(selectedBrandId)
+      .then((items) => {
+        setModels(items)
+        if (!items.some((item) => item.id === watch("vehicleModelId")))
+          setValue("vehicleModelId", "")
+      })
+      .catch((e) =>
+        notify(
+          e instanceof Error ? e.message : "Không thể tải dòng xe.",
+          "error",
+        ),
+      )
   }, [selectedBrandId, notify])
   const submit = handleSubmit(async (values) => {
     setError("")
-    setPending(true)
     if (
       data?.vehicles.some(
         (v) =>
@@ -416,6 +472,7 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
       setError("ODO ban đầu không thể lớn hơn ODO đã có trong lịch sử.")
       return
     }
+    setPending(true)
     try {
       if (vehicle) {
         await api.updateVehicle(vehicle.id, {
@@ -426,7 +483,10 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
       } else {
         await api.createVehicle({
           ...values,
-          image: defaultImage(types.find((item) => item.id === values.vehicleTypeId)?.name ?? "Ô tô"),
+          image: defaultImage(
+            types.find((item) => item.id === values.vehicleTypeId)?.name ??
+              "Ô tô",
+          ),
         })
       }
       await refetch()
@@ -434,7 +494,10 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
       setModal(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Không thể lưu phương tiện.")
-      notify(e instanceof Error ? e.message : "Không thể lưu phương tiện.", "error")
+      notify(
+        e instanceof Error ? e.message : "Không thể lưu phương tiện.",
+        "error",
+      )
     } finally {
       setPending(false)
     }
@@ -448,6 +511,10 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
           </Alert>
         )}
         <Box className="form-grid">
+          <FormSection
+            title="Nhận diện phương tiện"
+            description="Đặt tên dễ nhớ và chọn đúng loại, hãng, dòng xe của bạn."
+          />
           <TextField
             label="Tên phương tiện *"
             placeholder="VD: Toyota Vios"
@@ -456,21 +523,65 @@ function VehicleForm({ vehicle }: { vehicle?: Vehicle }) {
             error={!!errors.name}
             helperText={errors.name?.message}
           />
-          <Controller name="vehicleTypeId" control={control} render={({ field }) => (
-            <TextField {...field} select label="Loại phương tiện *" error={!!errors.vehicleTypeId} helperText={errors.vehicleTypeId?.message}>
-              {types.map((item) => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}
-            </TextField>
-          )} />
-          <Controller name="vehicleBrandId" control={control} render={({ field }) => (
-            <TextField {...field} select label="Hãng xe *" error={!!errors.vehicleBrandId} helperText={errors.vehicleBrandId?.message} disabled={!selectedTypeId}>
-              {brands.map((item) => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}
-            </TextField>
-          )} />
-          <Controller name="vehicleModelId" control={control} render={({ field }) => (
-            <TextField {...field} select label="Dòng xe *" error={!!errors.vehicleModelId} helperText={errors.vehicleModelId?.message} disabled={!selectedBrandId}>
-              {models.map((item) => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}
-            </TextField>
-          )} />
+          <Controller
+            name="vehicleTypeId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                label="Loại phương tiện *"
+                error={!!errors.vehicleTypeId}
+                helperText={errors.vehicleTypeId?.message}
+              >
+                {types.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>
+                    {item.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+          <Controller
+            name="vehicleBrandId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                label="Hãng xe *"
+                error={!!errors.vehicleBrandId}
+                helperText={errors.vehicleBrandId?.message}
+                disabled={!selectedTypeId}
+              >
+                {brands.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>
+                    {item.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
+          <Controller
+            name="vehicleModelId"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                select
+                label="Dòng xe *"
+                error={!!errors.vehicleModelId}
+                helperText={errors.vehicleModelId?.message}
+                disabled={!selectedBrandId}
+              >
+                {models.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>
+                    {item.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          />
           <TextField
             label="Biển số *"
             placeholder="51G-123.45"
@@ -576,6 +687,10 @@ function PlanForm({ modal }: { modal: Extract<ModalState, { type: "plan" }> }) {
           theo tính từ dịch vụ gần nhất.
         </Alert>
         <Box className="form-grid">
+          <FormSection
+            title="Thiết lập lịch chăm xe"
+            description="Chọn hạng mục và mốc đầu tiên, sau đó đặt chu kỳ lặp lại."
+          />
           <Controller
             name="vehicleId"
             control={control}
@@ -648,7 +763,7 @@ function PlanForm({ modal }: { modal: Extract<ModalState, { type: "plan" }> }) {
     </Box>
   )
 }
-function LoginForm() {
+export function LoginForm() {
   const { login, notify } = useGarage()
   const [registerMode, setRegisterMode] = useState(false)
   const [name, setName] = useState("")
@@ -683,95 +798,124 @@ function LoginForm() {
         }
       }}
     >
-      <DialogContent sx={{ pt: 0 }}>
-        <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", mb: 2 }}>
-          <Box className="icon-box green">
-            <ShieldOutlined />
-          </Box>
+      <DialogContent className="auth-content">
+        <Box className="auth-intro">
+          <Typography variant="h6" component="h3">
+            {registerMode
+              ? "Bắt đầu hành trình chăm xe"
+              : "Rất vui được gặp lại bạn"}
+          </Typography>
           <Typography variant="body2" color="text.secondary">
             {registerMode
-              ? "Tạo tài khoản mới. Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."
-              : "Đăng nhập bằng tài khoản đã lưu trong PostgreSQL."}
+              ? "Tạo tài khoản để quản lý phương tiện và ghi lại lịch sử chăm sóc xe của riêng bạn."
+              : "Đăng nhập để trở về garage và tiếp tục theo dõi phương tiện của bạn."}
           </Typography>
         </Box>
-        {registerMode && (
-          <>
-            <TextField
-              label="Họ và tên"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="Số điện thoại"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              helperText="Không bắt buộc, 10 chữ số bắt đầu bằng 0"
-              sx={{ mb: 2 }}
-            />
-          </>
-        )}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        <TextField
-          label="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="username"
-          sx={{ mb: 2.5 }}
-        />
-        <TextField
-          label="Mật khẩu"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          type={show ? "text" : "password"}
-          autoComplete="current-password"
-          slotProps={{
-            input: {
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShow(!show)}
-                    edge="end"
-                    aria-label={show ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                  >
-                    {show ? (
-                      <VisibilityOffOutlined fontSize="small" />
-                    ) : (
-                      <VisibilityOutlined fontSize="small" />
-                    )}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            },
+        <Box
+          className="auth-fields"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2xl)",
           }}
-          helperText={
-            registerMode
-              ? "Mật khẩu tối thiểu 12 ký tự, gồm hoa/thường/số/ký tự đặc biệt."
-              : undefined
-          }
-        />
-        {!registerMode && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            Phiên dùng cookie HttpOnly; dữ liệu tài khoản được xác thực ở backend.
-          </Alert>
-        )}
+        >
+          {registerMode && (
+            <>
+              <TextField
+                label="Họ và tên"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+              />
+              <TextField
+                label="Số điện thoại"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                helperText="Không bắt buộc, 10 chữ số bắt đầu bằng 0"
+                type="tel"
+                autoComplete="tel"
+              />
+            </>
+          )}
+          {error && <Alert severity="error">{error}</Alert>}
+          <TextField
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="username"
+            placeholder="ban@example.com"
+          />
+          <TextField
+            label="Mật khẩu"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            type={show ? "text" : "password"}
+            autoComplete={registerMode ? "new-password" : "current-password"}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShow(!show)}
+                      edge="end"
+                      aria-label={show ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    >
+                      {show ? (
+                        <VisibilityOffOutlined fontSize="small" />
+                      ) : (
+                        <VisibilityOutlined fontSize="small" />
+                      )}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            helperText={
+              registerMode
+                ? "Mật khẩu tối thiểu 12 ký tự, gồm hoa/thường/số/ký tự đặc biệt."
+                : undefined
+            }
+          />
+        </Box>
+        <Box
+          className="auth-security"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-md)",
+            mt: "var(--space-2xl)",
+            color: "text.secondary",
+          }}
+        >
+          <ShieldOutlined fontSize="small" />
+          <Typography variant="caption">
+            Không gian riêng cho bạn và những chiếc xe.
+          </Typography>
+        </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button type="button" onClick={() => setRegisterMode(!registerMode)} disabled={pending}>
+        <Button
+          type="button"
+          onClick={() => {
+            setRegisterMode(!registerMode)
+            setError("")
+          }}
+          disabled={pending}
+        >
           {registerMode ? "Đã có tài khoản" : "Tạo tài khoản"}
         </Button>
         <Button type="submit" variant="contained" disabled={pending}>
           {pending
-            ? registerMode ? "Đang tạo..." : "Đang đăng nhập..."
-            : registerMode ? "Đăng ký" : "Đăng nhập & bắt đầu"}
+            ? registerMode
+              ? "Đang tạo..."
+              : "Đang đăng nhập..."
+            : registerMode
+              ? "Đăng ký"
+              : "Đăng nhập & bắt đầu"}
         </Button>
       </DialogActions>
     </Box>
@@ -797,25 +941,75 @@ export default function Dialogs() {
             ? `${modal.plan ? "Chỉnh sửa" : "Tạo"} kế hoạch bảo dưỡng`
             : modal.type === "help"
               ? "Đồng hành cùng chiếc xe của bạn"
-              : "Xác nhận xóa"
+              : modal.entity === "vehicle"
+                ? "Lưu trữ phương tiện"
+                : "Xóa bản ghi"
+  const description =
+    modal.type === "login"
+      ? "CHĂM XE · AN TÂM MỖI NGÀY"
+      : modal.type === "vehicle"
+        ? "Mỗi chiếc xe, một hành trình được chăm sóc."
+        : modal.type === "entry"
+          ? "Lưu lại hôm nay, dễ dàng theo dõi ngày mai."
+          : modal.type === "plan"
+            ? "Chủ động lên lịch cho lần chăm xe tiếp theo."
+            : modal.type === "help"
+              ? "Một nơi để quản lý hành trình chăm xe."
+              : "Kiểm tra thông tin trước khi xác nhận."
+  const icon =
+    modal.type === "login" ? (
+      <ShieldOutlined />
+    ) : modal.type === "vehicle" ? (
+      <DirectionsCarOutlined />
+    ) : modal.type === "entry" ? (
+      <SpeedOutlined />
+    ) : modal.type === "plan" ? (
+      <EventNoteOutlined />
+    ) : modal.type === "help" ? (
+      <HelpOutlineRounded />
+    ) : (
+      <DeleteOutline />
+    )
   return (
     <Dialog
+      className={`icarex-dialog dialog-${modal.type}`}
       open
       onClose={() => !pending && setModal(null)}
       fullWidth
       maxWidth={modal.type === "delete" ? "xs" : "sm"}
       aria-labelledby="dialog-title"
+      aria-describedby="dialog-description"
     >
-      <DialogTitle
-        id="dialog-title"
-        sx={{ pr: 6, fontWeight: 600, fontSize: "var(--text-heading-size)" }}
-      >
-        {title}
+      <DialogTitle className="dialog-header" component="div">
+        <Box
+          className={`icon-box dialog-heading-icon ${
+            modal.type === "delete" ? "red" : ""
+          }`}
+        >
+          {icon}
+        </Box>
+        <Box>
+          <Typography id="dialog-title" component="h2" variant="h6">
+            {title}
+          </Typography>
+          <Typography
+            id="dialog-description"
+            variant="body2"
+            color="text.secondary"
+          >
+            {description}
+          </Typography>
+        </Box>
         <IconButton
           aria-label="Đóng hộp thoại"
           disabled={pending}
           onClick={() => setModal(null)}
-          sx={{ position: "absolute", right: 12, top: 12 }}
+          className="dialog-close"
+          sx={{
+            position: "absolute",
+            right: "var(--space-lg)",
+            top: "var(--space-lg)",
+          }}
         >
           <CloseRounded fontSize="small" />
         </IconButton>
@@ -828,11 +1022,14 @@ export default function Dialogs() {
         <>
           <DialogContent>
             <Typography variant="body2">
-              Bạn có chắc muốn xóa “{modal.title}”?
+              {modal.entity === "vehicle"
+                ? "Bạn muốn lưu trữ"
+                : "Bạn có chắc muốn xóa"}{" "}
+              “{modal.title}”?
             </Typography>
             <Alert severity="warning" sx={{ mt: 2 }}>
               {modal.entity === "vehicle"
-                ? "Toàn bộ lịch sử và kế hoạch của xe này cũng sẽ bị xóa. Thao tác không thể hoàn tác."
+                ? "Phương tiện sẽ được lưu trữ. Lịch sử đã ghi nhận được giữ lại."
                 : modal.entity === "entry"
                   ? "ODO, chi phí và hạn bảo dưỡng liên quan sẽ được tính lại. Xóa dịch vụ hoàn tất có thể làm kế hoạch đến hạn trở lại."
                   : "Kế hoạch sẽ bị xóa, các dịch vụ đã ghi nhận vẫn được giữ trong lịch sử."}
@@ -849,26 +1046,45 @@ export default function Dialogs() {
               onClick={async () => {
                 if (modal.entity === "vehicle") {
                   try {
-                    await api.archiveVehicle(modal.id, data?.vehicles.find((v) => v.id === modal.id)?.version ?? 0)
+                    await api.archiveVehicle(
+                      modal.id,
+                      data?.vehicles.find((v) => v.id === modal.id)?.version ??
+                        0,
+                    )
                     await refetch()
                     notify("Đã lưu trữ phương tiện.", "success")
                     setModal(null)
                   } catch (e) {
-                    notify(e instanceof Error ? e.message : "Không thể lưu trữ phương tiện.", "error")
+                    notify(
+                      e instanceof Error
+                        ? e.message
+                        : "Không thể lưu trữ phương tiện.",
+                      "error",
+                    )
                   }
                   return
                 }
-                const entry = modal.entity === "entry"
-                  ? data?.entries.find((item) => item.id === modal.id)
-                  : undefined
+                const entry =
+                  modal.entity === "entry"
+                    ? data?.entries.find((item) => item.id === modal.id)
+                    : undefined
                 if (entry?.kind === "odo") {
                   try {
-                    await api.deleteOdometerReading(entry.vehicleId, entry.id, entry.version ?? 0)
+                    await api.deleteOdometerReading(
+                      entry.vehicleId,
+                      entry.id,
+                      entry.version ?? 0,
+                    )
                     await refetch()
                     notify("Đã xóa bản ghi ODO.")
                     setModal(null)
                   } catch (e) {
-                    notify(e instanceof Error ? e.message : "Không thể xóa bản ghi ODO.", "error")
+                    notify(
+                      e instanceof Error
+                        ? e.message
+                        : "Không thể xóa bản ghi ODO.",
+                      "error",
+                    )
                   }
                   return
                 }
@@ -887,7 +1103,11 @@ export default function Dialogs() {
                   setModal(null)
               }}
             >
-              {pending ? "Đang xóa..." : "Xóa vĩnh viễn"}
+              {pending
+                ? "Đang xử lý..."
+                : modal.entity === "vehicle"
+                  ? "Lưu trữ xe"
+                  : "Xác nhận xóa"}
             </Button>
           </DialogActions>
         </>
@@ -896,8 +1116,8 @@ export default function Dialogs() {
         <>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              iCareX giúp bạn theo dõi nhiều phương tiện trong một không
-              gian. Bắt đầu chỉ với vài bước:
+              iCareX giúp bạn theo dõi nhiều phương tiện trong một không gian.
+              Bắt đầu chỉ với vài bước:
             </Typography>
             {[
               [
@@ -916,8 +1136,24 @@ export default function Dialogs() {
                 "Tạo kế hoạch theo ngày và km; ghi dịch vụ để hoàn tất.",
               ],
             ].map(([n, t, s]) => (
-              <Box key={n} sx={{ display: "flex", gap: 2, mb: 3 }}>
-                <Box className="icon-box">{n}</Box>
+              <Box
+                key={n}
+                className="help-step"
+                sx={{
+                  display: "flex",
+                  gap: "var(--space-xl)",
+                  mb: "var(--space-2xl)",
+                  p: "var(--space-xl)",
+                  bgcolor: "var(--bg-faint)",
+                  borderRadius: "var(--corner-md)",
+                }}
+              >
+                <Box
+                  className="icon-box"
+                  sx={{ bgcolor: "var(--surface-bg)", fontWeight: 600 }}
+                >
+                  {n}
+                </Box>
                 <Box>
                   <Typography variant="subtitle2">{t}</Typography>
                   <Typography variant="body2" color="text.secondary">

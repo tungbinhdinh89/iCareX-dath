@@ -14,6 +14,24 @@ export type VehicleBrandOption = { id: string; vehicleTypeId: string; name: stri
 export type VehicleModelOption = { id: string; vehicleBrandId: string; name: string }
 
 let csrfToken = ""
+let sessionGeneration = 0
+export function resetSessionRequests() {
+  sessionGeneration += 1
+  csrfToken = ""
+}
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+  }
+}
+const unauthorizedListeners = new Set<() => void>()
+export function onUnauthorized(listener: () => void) {
+  unauthorizedListeners.add(listener)
+  return () => { unauthorizedListeners.delete(listener) }
+}
 async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api/v1/auth${path}`, {
     ...init,
@@ -23,10 +41,11 @@ async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const body = await response.json().catch(() => null)
     const fields = body?.errors as Record<string, string[]> | undefined
-    throw new Error(
+    throw new ApiError(
       fields
         ? Object.values(fields).flat().join(" ")
         : body?.detail ?? body?.title ?? "Yêu cầu xác thực thất bại.",
+      response.status,
     )
   }
   return response.status === 204 ? (undefined as T) : response.json()
@@ -45,18 +64,21 @@ async function authMutation<T>(path: string, body?: unknown) {
   })
 }
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const generation = sessionGeneration
   const response = await fetch(`/api/v1${path}`, {
     ...init,
     credentials: "include",
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   })
   if (!response.ok) {
+    if (response.status === 401 && generation === sessionGeneration) unauthorizedListeners.forEach((listener) => listener())
     const body = await response.json().catch(() => null)
     const fields = body?.errors as Record<string, string[]> | undefined
-    throw new Error(
+    throw new ApiError(
       fields
         ? Object.values(fields).flat().join(" ")
         : body?.detail ?? body?.title ?? "Yêu cầu API thất bại.",
+      response.status,
     )
   }
   return response.status === 204 ? (undefined as T) : response.json()

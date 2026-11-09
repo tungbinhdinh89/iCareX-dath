@@ -27,8 +27,6 @@ import SpeedOutlined from "@mui/icons-material/SpeedOutlined"
 import AccountBalanceWalletOutlined from "@mui/icons-material/AccountBalanceWalletOutlined"
 import NotificationsNoneOutlined from "@mui/icons-material/NotificationsNoneOutlined"
 import CalendarMonthOutlined from "@mui/icons-material/CalendarMonthOutlined"
-import EastRounded from "@mui/icons-material/EastRounded"
-import InfoOutlined from "@mui/icons-material/InfoOutlined"
 import EditOutlined from "@mui/icons-material/EditOutlined"
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import FileDownloadOutlined from "@mui/icons-material/FileDownloadOutlined"
@@ -61,7 +59,6 @@ import {
   VehicleFilter,
 } from "@/components/shared"
 import { useGarage } from "@/lib/state/store"
-
 function Heading({
   title,
   subtitle,
@@ -77,7 +74,12 @@ function Heading({
         <Typography variant="h4" component="h1">
           {title}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.7 }}>
+        <Typography
+          className="section-subtitle"
+          variant="body2"
+          color="text.secondary"
+          sx={{ mt: 0.7 }}
+        >
           {subtitle}
         </Typography>
       </Box>
@@ -124,6 +126,8 @@ function AddRecordButton() {
       <Button
         variant="contained"
         startIcon={<AddRounded />}
+        aria-haspopup="menu"
+        aria-expanded={!!anchor}
         onClick={(e) => setAnchor(e.currentTarget)}
       >
         Thêm ghi nhận
@@ -187,331 +191,180 @@ function driven(data: Garage, vehicle: string, month: string) {
     }, 0)
 }
 export default function Dashboard() {
-  const { data, session, open, month, selectedVehicle } = useGarage()
+  const { data, open, month, selectedVehicle } = useGarage()
   const navigate = useNavigate()
   if (!data) return null
   const activeMonth = month === "all" ? today().slice(0, 7) : month
-  const allEntries = currentEntries(data, selectedVehicle, "all")
   const entries = currentEntries(data, selectedVehicle, activeMonth)
   const vehicles = data.vehicles.filter(
     (v) => selectedVehicle === "all" || v.id === selectedVehicle,
   )
-  const plans = data.plans
-    .filter((p) => selectedVehicle === "all" || p.vehicleId === selectedVehicle)
-    .sort((a, b) => planState(a, data).days - planState(b, data).days)
-  const due = plans.filter((p) => planState(p, data).status !== "good")
-  const fuel = entries
-    .filter((e) => e.kind === "fuel")
-    .reduce((s, e) => s + e.cost, 0)
-  const service = entries
-    .filter((e) => e.kind === "service")
-    .reduce((s, e) => s + e.cost, 0)
+  const focusVehicle = vehicles.find((v) => !v.isArchived)
+  const latestReading = focusVehicle
+    ? [...data.entries]
+        .filter((e) => e.vehicleId === focusVehicle.id)
+        .sort((a, b) => b.date.localeCompare(a.date) || b.odo - a.odo)[0]
+    : undefined
   const latest = [...entries]
     .sort((a, b) => b.date.localeCompare(a.date) || b.odo - a.odo)
-    .slice(0, 4)
+    .slice(0, 5)
   return (
-    <Box className="route-fade">
-      <Box className="page-heading">
-        <Box>
-          <Box className="eyebrow">
-            {session
-              ? `Rất vui được gặp lại, ${data.profile.name.split(" ").slice(-2).join(" ")}!`
-              : "Mọi chiếc xe. Một nơi chăm sóc."}
-          </Box>
-          <Typography variant="h4" component="h1">
-            Tổng quan phương tiện
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.7 }}>
-            Chăm xe chủ động, an tâm trên mọi hành trình.
-          </Typography>
-        </Box>
-        <AddRecordButton />
-      </Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 1.5,
-          mb: 2.5,
-          flexWrap: "wrap",
-        }}
+    <Box className="route-fade dashboard-page">
+      <Heading
+        title="Tổng quan"
+        subtitle={`${monthLabel(activeMonth)} · ${
+          selectedVehicle === "all"
+            ? "Tất cả phương tiện"
+            : (vehicles[0]?.name ?? "Phương tiện đã chọn")
+        }`}
       >
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1.5,
-            "& .MuiTextField-root": { width: { xs: 157, sm: 190 } },
-          }}
+        <Button
+          variant="contained"
+          startIcon={<AddRounded />}
+          onClick={() => open({ type: "entry", kind: "odo" })}
         >
-          <VehicleFilter />
-          <MonthFilter all={false} />
-        </Box>
-        <Box
-          className="desktop-date"
-          sx={{
-            display: { xs: "none", md: "flex" },
-            alignItems: "center",
-            gap: 0.8,
-            color: "text.secondary",
-          }}
+          Ghi ODO
+        </Button>
+      </Heading>
+      <Box className="filters filter-panel dashboard-toolbar">
+        <VehicleFilter />
+        <MonthFilter all={false} />
+        <Typography
+          className="results-count"
+          variant="body2"
+          color="text.secondary"
         >
-          <CalendarMonthOutlined sx={{ fontSize: 16 }} />
-          <Typography variant="caption">{dateLabel(today())}</Typography>
-        </Box>
+          {dateLabel(today())}
+        </Typography>
       </Box>
-      <Box className="stats-grid">
+      <Box className="detail-metrics overview-metrics">
         <Stat
-          title="Phương tiện của bạn"
+          title="Phương tiện"
           value={number(vehicles.length)}
-          icon={<DirectionsCarOutlined fontSize="small" />}
-          foot={
-            <>
-              {vehicles.filter((v) => v.type === "Ô tô").length} ô tô{" "}
-              <Box component="span" sx={{ mx: 0.6 }}>
-                ·
-              </Box>{" "}
-              {vehicles.filter((v) => v.type === "Xe máy").length} xe máy
-            </>
-          }
+          icon={<DirectionsCarOutlined />}
+          foot={`${vehicles.filter((v) => !v.isArchived).length} xe đang hoạt động`}
         />
         <Stat
-          title="Tổng chi phí"
-          value={money(fuel + service)}
-          icon={<AccountBalanceWalletOutlined fontSize="small" />}
-          tone="green"
-          foot={
-            <>
-              <Box
-                component="span"
-                sx={{ color: "var(--success)", display: "inline-flex" }}
-              >
-                <CalendarMonthOutlined sx={{ fontSize: 12 }} />
-              </Box>{" "}
-              {monthLabel(activeMonth)}
-            </>
-          }
+          title="Quãng đường ghi nhận"
+          value={`${number(driven(data, selectedVehicle, activeMonth))} km`}
+          icon={<SpeedOutlined />}
+          foot="Tính từ các cột mốc ODO trong tháng"
         />
         <Stat
-          title="Quãng đường đã đi"
-          value={number(driven(data, selectedVehicle, activeMonth))}
-          icon={<SpeedOutlined fontSize="small" />}
-          foot={<>Tính từ các bản ghi ODO</>}
-        >
-          <Box
-            component="span"
-            sx={{
-              ml: 0.8,
-              fontSize: "var(--text-small-size)",
-              fontWeight: 400,
-              color: "text.secondary",
-            }}
-          >
-            km
-          </Box>
-        </Stat>
-        <Stat
-          title="Nhắc bảo dưỡng"
-          value={number(due.length)}
-          icon={<NotificationsNoneOutlined fontSize="small" />}
-          tone="amber"
-          foot={
-            <>
-              <Box component="span" sx={{ color: "var(--danger)" }}>
-                {
-                  due.filter((p) => planState(p, data).status === "overdue")
-                    .length
-                }{" "}
-                quá hạn
-              </Box>
-              <Box component="span" sx={{ mx: 0.4 }}>
-                ·
-              </Box>
-              {due.filter((p) => planState(p, data).status === "soon").length}{" "}
-              sắp đến hạn
-            </>
-          }
+          title="Chi phí tháng"
+          value="—"
+          icon={<AccountBalanceWalletOutlined />}
+          foot="Báo cáo chi phí đang được hoàn thiện"
         />
       </Box>
-      <Box className="dashboard-grid">
-        <Box sx={{ minWidth: 0 }}>
-          <Box className="panel">
-            <Box className="panel-header">
-              <Box>
-                <Typography variant="h6">Xu hướng chi phí</Typography>
-                <Typography
-                  sx={{
-                    fontSize: "var(--text-meta-size)",
-                    color: "text.secondary",
-                    mt: 0.5,
-                  }}
-                >
-                  Hiểu rõ chi tiêu, chăm xe hiệu quả hơn
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                endIcon={<ArrowForwardRounded sx={{ fontSize: 15 }} />}
-                onClick={() => navigate("/bao-cao")}
-                sx={{ fontSize: "var(--text-meta-size)" }}
-              >
-                Xem báo cáo
-              </Button>
-            </Box>
-            <Box className="chart-summary">
-              <Box className="chart-legend">
-                <Box className="legend-dot" />
-                Nhiên liệu
-              </Box>
-              <Box className="chart-legend">
-                <Box className="legend-dot green" />
-                Bảo dưỡng & sửa chữa
-              </Box>
-              <Typography
-                sx={{
-                  ml: "auto",
-                  fontSize: "var(--text-meta-size)",
-                  color: "text.secondary",
-                }}
-              >
-                Đơn vị: triệu VNĐ
-              </Typography>
-            </Box>
-            <Box
-              className="chart-wrap"
-              role="img"
-              aria-label="Biểu đồ chi phí nhiên liệu và bảo dưỡng sáu tháng gần nhất"
-            >
-              <ExpenseChart entries={allEntries} endMonth={activeMonth} />
-            </Box>
-          </Box>
-          <Box className="panel section-space">
-            <Box className="panel-header">
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography variant="h6">Garage của bạn</Typography>
-                <Chip
-                  size="small"
-                  label={vehicles.length}
-                  sx={{ background: "var(--bg-subtle)", height: 21 }}
-                />
-              </Box>
-              <Button
-                size="small"
-                endIcon={<ArrowForwardRounded sx={{ fontSize: 15 }} />}
-                onClick={() => navigate("/xe")}
-                sx={{ fontSize: "var(--text-meta-size)" }}
-              >
-                Tất cả phương tiện
-              </Button>
-            </Box>
-            {vehicles.length ? (
-              <Box className="vehicles-grid">
-                {vehicles.slice(0, 2).map((v) => (
-                  <VehicleCard key={v.id} vehicle={v} />
-                ))}
-              </Box>
-            ) : (
-              <Empty
-                action={
-                  <Button onClick={() => open({ type: "vehicle" })}>
-                    Thêm phương tiện
-                  </Button>
-                }
-              />
-            )}
-          </Box>
-        </Box>
-        <Box className="dashboard-right">
-          <Box className="panel">
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Ghi nhận nhanh
+      <Box className="dashboard-grid section-space">
+        <Box className="panel">
+          <Box className="panel-header">
+            <Typography variant="h6" component="h2">
+              Xe của tôi
             </Typography>
-            <Box className="quick-grid">
-              <Button
-                className="quick-action"
-                onClick={() => open({ type: "entry", kind: "fuel" })}
-              >
-                <Box className="icon-box">
-                  <LocalGasStationOutlined />
-                </Box>
-                Đổ nhiên liệu
-              </Button>
-              <Button
-                className="quick-action"
-                onClick={() => open({ type: "entry", kind: "service" })}
-              >
-                <Box className="icon-box amber">
-                  <BuildOutlined />
-                </Box>
-                Bảo dưỡng / sửa chữa
-              </Button>
-              <Button
-                className="quick-action"
-                onClick={() => open({ type: "entry", kind: "odo" })}
-              >
-                <Box className="icon-box green">
-                  <SpeedOutlined />
-                </Box>
-                Cập nhật ODO
-              </Button>
-              <Button
-                className="quick-action"
-                onClick={() => open({ type: "vehicle" })}
-              >
-                <Box className="icon-box">
-                  <AddRounded />
-                </Box>
-                Thêm phương tiện
-              </Button>
-            </Box>
-            <Box className="tip">
-              <InfoOutlined
-                sx={{
-                  fontSize: 16,
-                  color: "primary.main",
-                  mt: 0.2,
-                  flexShrink: 0,
-                }}
-              />
-              <Typography
-                sx={{
-                  fontSize: "var(--text-meta-size)",
-                  color: "primary.main",
-                  lineHeight: 1.8,
-                }}
-              >
-                Cập nhật ODO thường xuyên để nhận nhắc bảo dưỡng chính xác hơn.
-              </Typography>
-            </Box>
-          </Box>
-          <Box className="panel section-space">
-            <Box className="panel-header">
-              <Typography variant="h6">Cần bạn chú ý</Typography>
-              <Box className="icon-box amber" sx={{ width: 28, height: 28 }}>
-                <NotificationsNoneOutlined sx={{ fontSize: 18 }} />
-              </Box>
-            </Box>
-            {due.length ? (
-              due
-                .slice(0, 3)
-                .map((plan) => (
-                  <Reminder key={plan.id} plan={plan} data={data} compact />
-                ))
-            ) : (
-              <Empty
-                title="Mọi thứ đều ổn"
-                description="Chưa có hạng mục nào đến hạn."
-              />
-            )}
             <Button
-              fullWidth
-              variant="outlined"
               size="small"
-              endIcon={<EastRounded sx={{ fontSize: 15 }} />}
-              sx={{ mt: 2.5, fontSize: "var(--text-meta-size)" }}
-              onClick={() => navigate("/nhac-bao-duong")}
+              startIcon={<AddRounded />}
+              onClick={() => open({ type: "vehicle" })}
             >
-              Xem tất cả nhắc nhở
+              Thêm xe
+            </Button>
+          </Box>
+          {vehicles.length ? (
+            <Box className="vehicles-grid">
+              {vehicles.slice(0, 4).map((v) => (
+                <VehicleCard key={v.id} vehicle={v} />
+              ))}
+            </Box>
+          ) : (
+            <Empty
+              title="Chưa có phương tiện"
+              description="Thêm xe đầu tiên để bắt đầu ghi nhận ODO và quản lý hồ sơ xe."
+              action={
+                <Button
+                  variant="contained"
+                  onClick={() => open({ type: "vehicle" })}
+                >
+                  Thêm xe
+                </Button>
+              }
+            />
+          )}
+          {vehicles.length > 4 && (
+            <Button
+              sx={{ mt: 2 }}
+              onClick={() => navigate("/xe")}
+              endIcon={<ArrowForwardRounded />}
+            >
+              Xem tất cả phương tiện
+            </Button>
+          )}
+        </Box>
+        <Box className="dashboard-right overview-side">
+          <Box className="panel odometer-summary">
+            <Typography variant="h6" component="h2">
+              ODO hiện tại
+            </Typography>
+            {focusVehicle ? (
+              <>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1 }}
+                >
+                  {focusVehicle.name} · {focusVehicle.plate}
+                </Typography>
+                <Typography
+                  variant="h5"
+                  className="odometer-value"
+                  sx={{ my: 2 }}
+                >
+                  {number(odoOf(focusVehicle, data.entries))} km
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {latestReading
+                    ? `Cập nhật ${dateLabel(latestReading.date)} · Nhập thủ công`
+                    : "Mốc ODO ban đầu"}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  sx={{ mt: 2 }}
+                  onClick={() =>
+                    open({
+                      type: "entry",
+                      kind: "odo",
+                      vehicleId: focusVehicle.id,
+                    })
+                  }
+                >
+                  Cập nhật ODO
+                </Button>
+              </>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Thêm phương tiện để ghi nhận số km hiện tại.
+              </Typography>
+            )}
+          </Box>
+          <Box className="panel section-space reminder-summary">
+            <Box className="panel-header">
+              <Typography variant="h6" component="h2">
+                Nhắc bảo dưỡng
+              </Typography>
+              <NotificationsNoneOutlined color="action" />
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              Kế hoạch và nhắc bảo dưỡng đang được hoàn thiện. Bạn sẽ có thể
+              theo dõi các kỳ chăm sóc xe tại đây.
+            </Typography>
+            <Button
+              variant="outlined"
+              sx={{ mt: 2 }}
+              onClick={() => navigate("/ke-hoach")}
+              endIcon={<ArrowForwardRounded />}
+            >
+              Xem kế hoạch
             </Button>
           </Box>
         </Box>
@@ -519,22 +372,16 @@ export default function Dashboard() {
       <Box className="panel activity-panel section-space">
         <Box className="panel-header">
           <Box>
-            <Typography variant="h6">Hoạt động gần đây</Typography>
-            <Typography
-              sx={{
-                fontSize: "var(--text-meta-size)",
-                color: "text.secondary",
-                mt: 0.5,
-              }}
-            >
-              Nhật ký chăm sóc cho những người bạn đồng hành
+            <Typography variant="h6" component="h2">
+              Hoạt động gần đây
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Các ghi nhận trong {monthLabel(activeMonth).toLowerCase()}
             </Typography>
           </Box>
           <Button
-            size="small"
-            endIcon={<ArrowForwardRounded sx={{ fontSize: 15 }} />}
             onClick={() => navigate("/lich-su")}
-            sx={{ fontSize: "var(--text-meta-size)" }}
+            endIcon={<ArrowForwardRounded />}
           >
             Xem lịch sử
           </Button>
@@ -544,7 +391,6 @@ export default function Dashboard() {
     </Box>
   )
 }
-
 export function Vehicles() {
   const { data, open } = useGarage()
   const [search, setSearch] = useState("")
@@ -569,7 +415,25 @@ export function Vehicles() {
           Thêm phương tiện
         </Button>
       </Heading>
-      <Box className="filters">
+      <Box className="collection-summary panel">
+        <Box>
+          <Typography className="section-kicker">GARAGE CÁ NHÂN</Typography>
+          <Typography variant="h6" component="h2">
+            Những người bạn đồng hành
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Hồ sơ xe, số km và lịch chăm sóc trong cùng một không gian.
+          </Typography>
+        </Box>
+        <Box className="collection-count">
+          <DirectionsCarOutlined color="primary" />
+          <Typography variant="h5">{number(data.vehicles.length)}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            phương tiện
+          </Typography>
+        </Box>
+      </Box>
+      <Box className="filters filter-panel">
         <TextField
           label="Tìm tên xe, biển số"
           value={search}
@@ -594,7 +458,11 @@ export function Vehicles() {
           <MenuItem value="Ô tô">Ô tô</MenuItem>
           <MenuItem value="Xe máy">Xe máy</MenuItem>
         </TextField>
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          className="results-count"
+          variant="caption"
+          color="text.secondary"
+        >
           {vehicles.length} phương tiện
         </Typography>
       </Box>
@@ -680,9 +548,9 @@ export function VehicleDetail() {
               <EditOutlined />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Xóa phương tiện">
+          <Tooltip title="Lưu trữ phương tiện">
             <IconButton
-              aria-label="Xóa phương tiện"
+              aria-label="Lưu trữ phương tiện"
               color="error"
               onClick={() =>
                 open({
@@ -698,6 +566,41 @@ export function VehicleDetail() {
           </Tooltip>
         </Box>
       </Heading>
+      <Box className="panel detail-identity">
+        <Box
+          component="img"
+          className="detail-image"
+          src={vehicle.image}
+          alt={`Ảnh minh họa ${vehicle.name}`}
+        />
+        <Box className="detail-identity-copy">
+          <Typography className="section-kicker">HỒ SƠ PHƯƠNG TIỆN</Typography>
+          <Typography variant="h5" component="h2">
+            {vehicle.vehicleBrandName} {vehicle.vehicleModelName}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {vehicle.type} · Năm sản xuất {vehicle.year}
+          </Typography>
+          <Chip
+            className="vehicle-plate"
+            label={vehicle.plate}
+            variant="outlined"
+          />
+          <Typography variant="caption" color="text.secondary">
+            Ảnh minh họa phương tiện
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<SpeedOutlined />}
+          disabled={vehicle.isArchived}
+          onClick={() =>
+            open({ type: "entry", kind: "odo", vehicleId: vehicle.id })
+          }
+        >
+          Cập nhật ODO
+        </Button>
+      </Box>
       <Box className="detail-metrics" sx={{ mb: 3 }}>
         <Stat
           title="ODO hiện tại"
@@ -725,6 +628,7 @@ export function VehicleDetail() {
           {(["fuel", "service", "odo"] as const).map((kind) => (
             <Button
               key={kind}
+              disabled={vehicle.isArchived}
               variant={kind === "fuel" ? "contained" : "outlined"}
               onClick={() =>
                 open({ type: "entry", kind, vehicleId: vehicle.id })
@@ -749,38 +653,77 @@ export function VehicleDetail() {
           <Button
             variant="outlined"
             startIcon={<AddRounded />}
+            disabled={vehicle.isArchived}
             onClick={() => open({ type: "plan", vehicleId: vehicle.id })}
           >
             Tạo kế hoạch
           </Button>
         </Box>
-        <Tabs value={tab} onChange={(_, t: number) => setTab(t)} sx={{ mb: 2 }}>
-          <Tab label="Lịch sử chăm sóc" />
-          <Tab label="Kế hoạch bảo dưỡng" />
-          <Tab label="Thông tin xe" />
+        <Tabs
+          className="detail-tabs"
+          value={tab}
+          onChange={(_, t: number) => setTab(t)}
+          sx={{ mb: 2 }}
+          variant="scrollable"
+          scrollButtons="auto"
+          aria-label="Thông tin phương tiện"
+        >
+          <Tab
+            label="Lịch sử chăm sóc"
+            id="vehicle-tab-0"
+            aria-controls="vehicle-panel-0"
+          />
+          <Tab
+            label="Kế hoạch bảo dưỡng"
+            id="vehicle-tab-1"
+            aria-controls="vehicle-panel-1"
+          />
+          <Tab
+            label="Thông tin xe"
+            id="vehicle-tab-2"
+            aria-controls="vehicle-panel-2"
+          />
         </Tabs>
-        {tab === 0 && <HistoryTable entries={entries} />}
-        {tab === 1 &&
-          (plans.length ? (
-            plans.map((p) => <Reminder key={p.id} plan={p} data={data} />)
-          ) : (
-            <Empty description="Chưa có kế hoạch cho phương tiện này." />
-          ))}
-        {tab === 2 && (
-          <Box sx={{ py: 2 }}>
-            <Typography variant="body2">Tên xe: {vehicle.name}</Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              Biển số: {vehicle.plate}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              Loại xe: {vehicle.type} · Năm sản xuất: {vehicle.year}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              ODO được nhập thủ công và tính từ lịch sử. Ảnh phương tiện là ảnh
-              minh họa từ Unsplash.
-            </Typography>
-          </Box>
-        )}
+        <Box
+          role="tabpanel"
+          id={`vehicle-panel-${tab}`}
+          aria-labelledby={`vehicle-tab-${tab}`}
+        >
+          {tab === 0 && (
+            <HistoryTable entries={entries} editable={!vehicle.isArchived} />
+          )}
+          {tab === 1 &&
+            (plans.length ? (
+              plans.map((p) => <Reminder key={p.id} plan={p} data={data} />)
+            ) : (
+              <Empty description="Chưa có kế hoạch cho phương tiện này." />
+            ))}
+          {tab === 2 && (
+            <Box sx={{ py: 2 }}>
+              {[
+                ["Tên phương tiện", vehicle.name],
+                ["Biển số", vehicle.plate],
+                ["Loại phương tiện", vehicle.type],
+                [
+                  "Hãng / dòng xe",
+                  `${vehicle.vehicleBrandName} ${vehicle.vehicleModelName}`,
+                ],
+                ["Năm sản xuất", String(vehicle.year)],
+              ].map(([label, value]) => (
+                <Box className="preference-row" key={label}>
+                  <Typography variant="body2" color="text.secondary">
+                    {label}
+                  </Typography>
+                  <Typography variant="body2">{value}</Typography>
+                </Box>
+              ))}
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                ODO được nhập thủ công và tính từ lịch sử. Ảnh phương tiện là
+                ảnh minh họa từ Unsplash.
+              </Typography>
+            </Box>
+          )}
+        </Box>
       </Box>
     </Box>
   )
@@ -849,6 +792,13 @@ export function Records({ kind }: { kind?: Entry["kind"] }) {
         )}
       </Heading>
       {kind && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          {kind === "fuel"
+            ? "Nhật ký nhiên liệu đang được hoàn thiện. Bạn sẽ có thể ghi lại từng lần tiếp nhiên liệu trong phiên bản tiếp theo."
+            : "Nhật ký dịch vụ đang được hoàn thiện. Bạn sẽ có thể lưu các lần bảo dưỡng và sửa chữa trong phiên bản tiếp theo."}
+        </Alert>
+      )}
+      {kind && (
         <Box className="detail-metrics" sx={{ mb: 3 }}>
           <Stat
             title={
@@ -896,8 +846,23 @@ export function Records({ kind }: { kind?: Entry["kind"] }) {
           />
         </Box>
       )}
-      <Box className="panel">
-        <Box className="filters">
+      <Box className="panel activity-panel records-panel">
+        <Box className="panel-header">
+          <Box>
+            <Typography variant="h6" component="h2">
+              {kind === "fuel"
+                ? "Các lần tiếp nhiên liệu"
+                : kind === "service"
+                  ? "Nhật ký dịch vụ"
+                  : "Nhật ký chăm sóc xe"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Tra cứu và quản lý từng ghi nhận theo phương tiện.
+            </Typography>
+          </Box>
+          <Chip label={`${entries.length} bản ghi`} size="small" />
+        </Box>
+        <Box className="filters records-filters">
           <VehicleFilter />
           <MonthFilter />
           <TextField
@@ -1010,6 +975,63 @@ export function Plans({ reminders = false }: { reminders?: boolean }) {
           Tạo kế hoạch
         </Button>
       </Heading>
+      <Alert severity="info" sx={{ mb: 3 }}>
+        Kế hoạch và nhắc bảo dưỡng đang được hoàn thiện. Bạn sẽ có thể lên lịch
+        chăm sóc xe trong phiên bản tiếp theo.
+      </Alert>
+      <Box className="plan-summary" aria-label="Lọc kế hoạch theo trạng thái">
+        {[
+          {
+            value: "all",
+            label: "Tất cả kế hoạch",
+            tone: "",
+            icon: <CalendarMonthOutlined />,
+          },
+          {
+            value: "overdue",
+            label: "Đã quá hạn",
+            tone: "red",
+            icon: <NotificationsNoneOutlined />,
+          },
+          {
+            value: "soon",
+            label: "Sắp đến hạn",
+            tone: "amber",
+            icon: <BuildOutlined />,
+          },
+          {
+            value: "good",
+            label: "Chưa đến hạn",
+            tone: "green",
+            icon: <CheckCircleOutline />,
+          },
+        ].map((item) => {
+          const count = data.plans.filter(
+            (p) =>
+              (selectedVehicle === "all" || p.vehicleId === selectedVehicle) &&
+              (item.value === "all" ||
+                planState(p, data).status === item.value),
+          ).length
+          return (
+            <Button
+              key={item.value}
+              className={`plan-summary-item ${
+                status === item.value ? "active" : ""
+              }`}
+              onClick={() => setStatus(item.value)}
+              aria-pressed={status === item.value}
+            >
+              <Box className={`icon-box ${item.tone}`}>{item.icon}</Box>
+              <Box sx={{ textAlign: "left" }}>
+                <Typography variant="caption" color="text.secondary">
+                  {item.label}
+                </Typography>
+                <Typography variant="h5">{count}</Typography>
+              </Box>
+            </Button>
+          )
+        })}
+      </Box>
       {reminders && (
         <Alert
           severity={data.settings.reminders ? "info" : "warning"}
@@ -1020,7 +1042,7 @@ export function Plans({ reminders = false }: { reminders?: boolean }) {
             : "Thông báo trong ứng dụng đang tắt. Bạn vẫn có thể theo dõi các hạng mục tại đây."}
         </Alert>
       )}
-      <Box className="filters">
+      <Box className="filters filter-panel">
         <VehicleFilter />
         <TextField
           select
@@ -1032,14 +1054,18 @@ export function Plans({ reminders = false }: { reminders?: boolean }) {
           <MenuItem value="attention">Cần chú ý</MenuItem>
           <MenuItem value="overdue">Quá hạn</MenuItem>
           <MenuItem value="soon">Sắp đến hạn</MenuItem>
-          <MenuItem value="good">Đúng lịch</MenuItem>
+          <MenuItem value="good">Chưa đến hạn</MenuItem>
         </TextField>
         <TextField
           label="Tìm hạng mục"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          className="results-count"
+          variant="caption"
+          color="text.secondary"
+        >
           {plans.length} kế hoạch
         </Typography>
       </Box>
@@ -1048,8 +1074,9 @@ export function Plans({ reminders = false }: { reminders?: boolean }) {
           {plans.map((p) => {
             const state = planState(p, data)
             return (
-              <Box className="panel" key={p.id}>
+              <Box className="panel plan-card" key={p.id}>
                 <Box
+                  className="plan-card-top"
                   sx={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -1250,7 +1277,11 @@ export function Reports() {
           Xuất CSV
         </Button>
       </Heading>
-      <Box className="filters">
+      <Alert severity="info" sx={{ mb: 3 }}>
+        Báo cáo chi phí đang được hoàn thiện. Số liệu nhiên liệu và dịch vụ sẽ
+        xuất hiện khi các nhật ký này sẵn sàng.
+      </Alert>
+      <Box className="filters filter-panel">
         <VehicleFilter />
         <MonthFilter />
         <Typography variant="caption" color="text.secondary">
@@ -1312,12 +1343,49 @@ export function Reports() {
         </Box>
         <Box className="panel">
           <Typography variant="h6">Cơ cấu chi phí</Typography>
-          <Box sx={{ height: 300, pt: 2 }}>
+          <Typography
+            className="section-subtitle"
+            variant="body2"
+            color="text.secondary"
+          >
+            Tỷ trọng theo bộ lọc hiện tại
+          </Typography>
+          <Box sx={{ height: 240, pt: 2 }}>
             {fuel + service ? (
               <ExpenseChart entries={entries} doughnut />
             ) : (
               <Empty description="Chưa có chi phí trong khoảng thời gian này." />
             )}
+          </Box>
+          <Box className="report-breakdown">
+            {[
+              { label: "Nhiên liệu", value: fuel, tone: "" },
+              { label: "Bảo dưỡng & sửa chữa", value: service, tone: "green" },
+            ].map((item) => (
+              <Box className="breakdown-row" key={item.label}>
+                <Box className="breakdown-row-label">
+                  <Box className={`legend-dot ${item.tone}`} />
+                  <Typography variant="body2" color="text.secondary">
+                    {item.label}
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ ml: "auto" }}>
+                    {money(item.value)}
+                  </Typography>
+                </Box>
+                <Box className="breakdown-track" aria-hidden="true">
+                  <Box
+                    className={`breakdown-fill ${item.tone}`}
+                    sx={{
+                      width: `${
+                        fuel + service
+                          ? (item.value / (fuel + service)) * 100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </Box>
+              </Box>
+            ))}
           </Box>
         </Box>
       </Box>
@@ -1332,16 +1400,7 @@ export function Reports() {
               .filter((e) => e.vehicleId === v.id)
               .reduce((s, e) => s + e.cost, 0)
             return (
-              <Box
-                key={v.id}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  py: 2,
-                  borderBottom: "1px solid var(--border-secondary)",
-                  gap: 2,
-                }}
-              >
+              <Box className="preference-row" key={v.id}>
                 <Box>
                   <Typography variant="subtitle2">{v.name}</Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -1402,16 +1461,25 @@ export function Profile() {
   }, [data, reset])
   if (!session)
     return (
-      <Box className="panel">
-        <Empty
-          title="Hồ sơ của riêng bạn"
-          description="Đăng nhập để quản lý hồ sơ và dữ liệu cá nhân."
-          action={
-            <Button variant="contained" onClick={() => open({ type: "login" })}>
-              Đăng nhập
-            </Button>
-          }
+      <Box className="route-fade">
+        <Heading
+          title="Hồ sơ cá nhân"
+          subtitle="Không gian dành riêng cho bạn và những hành trình."
         />
+        <Box className="panel account-guest">
+          <Empty
+            title="Hồ sơ của riêng bạn"
+            description="Đăng nhập để quản lý hồ sơ và dữ liệu cá nhân."
+            action={
+              <Button
+                variant="contained"
+                onClick={() => open({ type: "login" })}
+              >
+                Đăng nhập
+              </Button>
+            }
+          />
+        </Box>
       </Box>
     )
   return (
@@ -1420,84 +1488,106 @@ export function Profile() {
         title="Hồ sơ cá nhân"
         subtitle="Thông tin tài khoản và không gian chăm sóc xe của bạn."
       />
-      <Box className="settings-stack">
-        <Box
-          className="panel"
-          sx={{ display: "flex", alignItems: "center", gap: 2.5 }}
-        >
-          <Avatar
-            sx={{
-              width: 64,
-              height: 64,
-              bgcolor: "var(--brand-secondary)",
-              color: "primary.main",
-            }}
-          >
-            {data?.profile.name
-              .split(" ")
-              .slice(-2)
-              .map((n) => n[0])
-              .join("")}
-          </Avatar>
-          <Box>
-            <Typography variant="h6">{data?.profile.name}</Typography>
-            <Chip
-              label="Tài khoản trải nghiệm"
-              size="small"
-              color="primary"
-              variant="outlined"
-              sx={{ mt: 1 }}
-            />
+      <Box className="settings-layout">
+        <Box className="settings-aside">
+          <Box className="panel account-identity">
+            <Avatar
+              sx={{
+                width: 64,
+                height: 64,
+                bgcolor: "var(--brand-secondary)",
+                color: "primary.main",
+              }}
+            >
+              {data?.profile.name
+                .split(" ")
+                .slice(-2)
+                .map((n) => n[0])
+                .join("")}
+            </Avatar>
+            <Box>
+              <Typography variant="h6">{data?.profile.name}</Typography>
+              <Chip
+                label="Chủ phương tiện"
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ mt: 1 }}
+              />
+            </Box>
+          </Box>
+          <Box className="panel">
+            <Box className="icon-box">
+              <ShieldOutlined />
+            </Box>
+            <Typography variant="subtitle1" sx={{ mt: 2 }}>
+              Không gian của riêng bạn
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Kiểm tra thông tin liên hệ để hồ sơ chăm sóc xe luôn đầy đủ.
+            </Typography>
+            <Button
+              onClick={() => open({ type: "help" })}
+              endIcon={<ArrowForwardRounded />}
+              sx={{ mt: 2 }}
+            >
+              Hướng dẫn sử dụng
+            </Button>
           </Box>
         </Box>
-        <Box
-          component="form"
-          className="panel"
-          noValidate
-          onSubmit={handleSubmit(async (values) => {
-            await save((d) => {
-              d.profile.name = values.name
-              d.profile.phone = values.phone
-            }, "Đã cập nhật hồ sơ cá nhân.")
-          })}
-        >
-          <Typography variant="h6" sx={{ mb: 3 }}>
-            Thông tin cá nhân
-          </Typography>
-          <Box className="form-grid">
-            <TextField
-              label="Họ và tên *"
-              {...register("name")}
-              error={!!errors.name}
-              helperText={errors.name?.message}
-            />
-            <TextField
-              label="Số điện thoại"
-              {...register("phone")}
-              error={!!errors.phone}
-              helperText={errors.phone?.message}
-            />
-            <TextField
-              className="full"
-              label="Email đăng nhập"
-              value={session.email}
-              disabled
-              helperText="Email không thể thay đổi sau khi đăng ký."
-            />
-          </Box>
-          <Button
-            variant="contained"
-            type="submit"
-            disabled={pending}
-            sx={{ mt: 3 }}
+        <Box className="settings-stack">
+          <Box
+            component="form"
+            className="panel"
+            noValidate
+            onSubmit={handleSubmit(async (values) => {
+              await save((d) => {
+                d.profile.name = values.name
+                d.profile.phone = values.phone
+              }, "Đã cập nhật hồ sơ cá nhân.")
+            })}
           >
-            {pending ? "Đang lưu..." : "Lưu thông tin"}
-          </Button>
+            <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+              Thông tin cá nhân
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Tên hiển thị và thông tin liên hệ của bạn.
+            </Typography>
+            <Box className="form-grid">
+              <TextField
+                label="Họ và tên *"
+                {...register("name")}
+                error={!!errors.name}
+                helperText={errors.name?.message}
+              />
+              <TextField
+                label="Số điện thoại"
+                {...register("phone")}
+                error={!!errors.phone}
+                helperText={errors.phone?.message}
+              />
+              <TextField
+                className="full"
+                label="Email đăng nhập"
+                value={session.email}
+                disabled
+                helperText="Email không thể thay đổi sau khi đăng ký."
+              />
+            </Box>
+            <Button
+              variant="contained"
+              type="submit"
+              disabled={pending}
+              sx={{ mt: 3 }}
+            >
+              {pending ? "Đang lưu..." : "Lưu thông tin"}
+            </Button>
+          </Box>
+          <Alert severity="info">
+            Xe và ODO được đồng bộ theo tài khoản. Chức năng thay đổi hồ sơ sẽ
+            có trong phiên bản tiếp theo.
+          </Alert>
         </Box>
-        <Alert severity="info">
-          Xác thực tài khoản và phiên đăng nhập được lưu ở backend. Dữ liệu garage
-          hiện vẫn là dữ liệu mẫu trong bộ nhớ cho tới khi business API hoàn tất.
-        </Alert>
       </Box>
     </Box>
   )
@@ -1521,127 +1611,139 @@ export function Settings() {
         title="Cài đặt"
         subtitle="Điều chỉnh iCareX theo cách bạn chăm sóc xe."
       />
-      <Box className="settings-stack">
-        <Box
-          className="panel"
-          component="form"
-          noValidate
-          onSubmit={async (e) => {
-            e.preventDefault()
-            setError("")
-            if (
-              !Number.isInteger(days) ||
-              days < 1 ||
-              days > 365 ||
-              !Number.isFinite(km) ||
-              km < 1 ||
-              km > 100000
-            ) {
-              setError("Số ngày từ 1–365 và số km từ 1–100.000.")
-              return
-            }
-            await save((d) => {
-              d.settings = { reminders, thresholdDays: days, thresholdKm: km }
-            }, "Đã lưu cài đặt nhắc bảo dưỡng.")
-          }}
-        >
-          <Typography variant="h6">Nhắc bảo dưỡng</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Chủ động nhắc trước khi đến hạn, theo điều kiện nào đến trước.
-          </Typography>
-          <FormControlLabel
-            sx={{ my: 2 }}
-            control={
-              <Switch
-                checked={reminders}
-                onChange={(_, value) => setReminders(value)}
+      <Box className="settings-layout">
+        <Box className="settings-stack">
+          <Box
+            className="panel"
+            component="form"
+            noValidate
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setError("")
+              if (
+                !Number.isInteger(days) ||
+                days < 1 ||
+                days > 365 ||
+                !Number.isFinite(km) ||
+                km < 1 ||
+                km > 100000
+              ) {
+                setError("Số ngày từ 1–365 và số km từ 1–100.000.")
+                return
+              }
+              await save((d) => {
+                d.settings = { reminders, thresholdDays: days, thresholdKm: km }
+              }, "Đã lưu cài đặt nhắc bảo dưỡng.")
+            }}
+          >
+            <Box className="section-heading">
+              <Box className="icon-box amber">
+                <NotificationsNoneOutlined />
+              </Box>
+              <Box>
+                <Typography variant="h6" component="h2">
+                  Nhắc bảo dưỡng
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Chủ động trước mỗi kỳ chăm sóc
+                </Typography>
+              </Box>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Chủ động nhắc trước khi đến hạn, theo điều kiện nào đến trước.
+            </Typography>
+            <FormControlLabel
+              sx={{ my: 2 }}
+              control={
+                <Switch
+                  checked={reminders}
+                  onChange={(_, value) => setReminders(value)}
+                />
+              }
+              label={
+                <Typography variant="body2">
+                  Bật nhắc nhở trong ứng dụng
+                </Typography>
+              }
+            />
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            <Box className="form-grid">
+              <TextField
+                type="number"
+                label="Nhắc trước (ngày)"
+                helperText="Từ 1 đến 365 ngày"
+                value={days}
+                onChange={(e) => setDays(Number(e.target.value))}
               />
-            }
-            label={
-              <Typography variant="body2">
-                Bật nhắc nhở trong ứng dụng
-              </Typography>
-            }
-          />
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
+              <TextField
+                type="number"
+                label="Nhắc trước (km)"
+                helperText="Từ 1 đến 100.000 km"
+                value={km}
+                onChange={(e) => setKm(Number(e.target.value))}
+              />
+            </Box>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={pending}
+              sx={{ mt: 3 }}
+            >
+              {pending ? "Đang lưu..." : "Lưu cài đặt"}
+            </Button>
+          </Box>
+          <Box className="panel">
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Ngôn ngữ & định dạng
+            </Typography>
+            {[
+              ["Ngôn ngữ", "Tiếng Việt"],
+              ["Đơn vị tiền tệ", "Việt Nam đồng (VNĐ)"],
+              ["Quãng đường / nhiên liệu", "Kilômét (km) / Lít"],
+              ["Ngày tháng", "dd/MM/yyyy"],
+              ["Múi giờ", "Asia/Ho_Chi_Minh (UTC+7)"],
+            ].map(([label, value]) => (
+              <Box className="preference-row" key={label}>
+                <Typography variant="body2" color="text.secondary">
+                  {label}
+                </Typography>
+                <Typography variant="body2">{value}</Typography>
+              </Box>
+            ))}
+          </Box>
+          {!session && (
+            <Alert severity="info">
+              Bạn đang xem bản trải nghiệm. Cần đăng nhập để thay đổi cài đặt
+              trong phiên hiện tại.
             </Alert>
           )}
-          <Box className="form-grid">
-            <TextField
-              type="number"
-              label="Nhắc trước (ngày)"
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-            />
-            <TextField
-              type="number"
-              label="Nhắc trước (km)"
-              value={km}
-              onChange={(e) => setKm(Number(e.target.value))}
-            />
-          </Box>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={pending}
-            sx={{ mt: 3 }}
-          >
-            {pending ? "Đang lưu..." : "Lưu cài đặt"}
-          </Button>
         </Box>
-        <Box className="panel">
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Ngôn ngữ & định dạng
-          </Typography>
-          {[
-            ["Ngôn ngữ", "Tiếng Việt"],
-            ["Đơn vị tiền tệ", "Việt Nam đồng (VNĐ)"],
-            ["Quãng đường / nhiên liệu", "Kilômét (km) / Lít"],
-            ["Ngày tháng", "dd/MM/yyyy"],
-            ["Múi giờ", "Asia/Ho_Chi_Minh (UTC+7)"],
-          ].map(([label, value]) => (
+        <Box className="settings-aside">
+          <Box className="panel">
             <Box
-              key={label}
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 2,
-                py: 1.5,
-              }}
+              sx={{ display: "flex", gap: 1, alignItems: "center", mb: 1.5 }}
             >
-              <Typography variant="body2" color="text.secondary">
-                {label}
-              </Typography>
-              <Typography variant="body2">{value}</Typography>
+              <ShieldOutlined color="primary" />
+              <Typography variant="h6">Quyền riêng tư & dữ liệu</Typography>
             </Box>
-          ))}
-        </Box>
-        <Box className="panel">
-          <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 1.5 }}>
-            <ShieldOutlined color="primary" />
-            <Typography variant="h6">Quyền riêng tư & dữ liệu</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Hồ sơ xe và ODO được lưu theo tài khoản của bạn. Đăng nhập để xem
+              và quản lý dữ liệu trên các thiết bị.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+              Tính năng lưu tùy chọn nhắc nhở sẽ có trong phiên bản tiếp theo.
+              Ảnh phương tiện chỉ mang tính minh họa.
+            </Typography>
+            <Button sx={{ mt: 2 }} onClick={() => open({ type: "help" })}>
+              Xem hướng dẫn sử dụng{" "}
+              <ArrowForwardRounded sx={{ fontSize: 16, ml: 1 }} />
+            </Button>
           </Box>
-          <Typography variant="body2" color="text.secondary">
-            Dữ liệu garage hiện chưa gửi đến máy chủ. Phiên đăng nhập dùng cookie
-            HttpOnly và session backend; garage sẽ trở về bộ mẫu khi tải lại trang.
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-            Không gửi nhắc nhở khi web đã đóng. Ảnh minh họa từ Unsplash, không
-            đại diện chính xác mẫu xe.
-          </Typography>
-          <Button sx={{ mt: 2 }} onClick={() => open({ type: "help" })}>
-            Xem hướng dẫn sử dụng{" "}
-            <ArrowForwardRounded sx={{ fontSize: 16, ml: 1 }} />
-          </Button>
         </Box>
-        {!session && (
-          <Alert severity="info">
-            Bạn đang xem bản trải nghiệm. Cần đăng nhập để lưu thay đổi cài đặt
-            trong phiên hiện tại.
-          </Alert>
-        )}
       </Box>
     </Box>
   )
@@ -1649,16 +1751,25 @@ export function Settings() {
 export function NotFound() {
   const navigate = useNavigate()
   return (
-    <Box className="panel">
-      <Empty
-        title="Không tìm thấy trang"
-        description="Đường dẫn này không tồn tại trong iCareX."
-        action={
-          <Button variant="contained" onClick={() => navigate("/")}>
-            Về tổng quan
-          </Button>
-        }
-      />
+    <Box className="panel not-found-panel route-fade">
+      <Typography className="not-found-code" aria-hidden="true">
+        404
+      </Typography>
+      <Box className="empty">
+        <Typography variant="h4" component="h1">
+          Không tìm thấy trang
+        </Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mt: 1, mb: 3 }}
+        >
+          Đường dẫn này không tồn tại trong iCareX.
+        </Typography>
+        <Button variant="contained" onClick={() => navigate("/")}>
+          Về tổng quan
+        </Button>
+      </Box>
     </Box>
   )
 }

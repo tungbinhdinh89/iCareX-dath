@@ -14,6 +14,29 @@ Web quản lý phương tiện cá nhân, ODO, chi phí và kế hoạch bảo d
 
 Xem [cây repository và dependency](doc/structure-architecture.md). Các thư mục ẩn Git/GitHub, manifest tool .NET và Figma là cấu hình cần thiết.
 
+## Codex agents và custom skills
+
+Đọc [hướng dẫn dùng skills cho Codex](doc/codex-skills.md) và [quy tắc iCareX](doc/rules.md) trước khi giao việc cho agent. `AGENTS.md` ở root dẫn agent tới hai tài liệu này; chỉ đọc các skill phù hợp tác vụ, không nạp toàn bộ bộ skill mỗi phiên.
+
+- Agent theo vai trò: `stephen-skills/.codex/agents/*.toml` — backend, frontend, PM, QA và tech lead.
+- Skill chuyên môn: `stephen-skills/.agents/skills/<name>/SKILL.md`.
+- Skill quy trình: `stephen-skills/skills/<name>/SKILL.md`.
+
+Ví dụ dùng ngay bằng đường dẫn, kể cả khi chưa đăng ký skill vào Codex:
+
+```text
+Đọc AGENTS.md, doc/rules.md và developer_instructions trong
+stephen-skills/.codex/agents/frontend-dev.toml.
+Đọc stephen-skills/.agents/skills/frontend-design/SKILL.md trước khi sửa UI.
+Chỉnh form thêm xe theo MUI/Astra hiện có, giữ UX tiếng Việt và kiểm tra phần bị ảnh hưởng.
+```
+
+Frontend đã có bản cài ở root: `.codex/agents/frontend-dev.toml` và `.agents/skills/frontend-design/SKILL.md`. Trong Codex CLI/IDE, dùng `/skills` hoặc `$frontend-design` để chọn skill; `frontend-dev` là tên agent, không phải tên skill. Nếu chưa thấy cập nhật, mở phiên Codex mới tại root iCareX. Bản cài được copy từ `stephen-skills/`, cần review và đồng bộ khi nguồn thay đổi.
+
+Các vai trò/skill khác trong repo con `stephen-skills/` chưa tự được đăng ký từ root. Hướng dẫn chi tiết có cách cài vào `.codex/agents/` và `.agents/skills/`, bảng chọn skill và cách kiểm tra việc nạp. Không dùng các trường TOML suy đoán như `context_files` hoặc `skills = [...]`.
+
+Một số skill dùng lại còn ví dụ CMS cũ; [rules](doc/rules.md) quy định dùng scripts, kiến trúc và design system iCareX khi áp dụng. `stephen-skills/` là repo Git riêng; `doc/` đang bị Git ignore ở repo ngoài, nên thay đổi local không tự xuất hiện trên remote.
+
 ## Chuẩn bị môi trường
 
 Dùng PowerShell trên Windows và chạy các lệnh bên dưới từ root repository. Cần .NET SDK 10 theo `global.json`, Node.js 22, pnpm 10.34.3 theo `.mise.toml`/package manifest, cùng PostgreSQL có thể truy cập. Script backend ưu tiên `dotnet` trên PATH, fallback về `tools/.local/dotnet/dotnet.exe`. Docker chỉ cần cho nhóm integration test sử dụng Testcontainers.

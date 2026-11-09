@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   CardActionArea,
-  Chip,
   IconButton,
   MenuItem,
   Table,
@@ -53,6 +52,7 @@ import {
   type Vehicle,
 } from "@/lib/models/garage"
 import { useGarage } from "@/lib/state/store"
+import MaintenanceStatusChip from "@/components/MaintenanceStatusChip"
 
 ChartJS.register(
   CategoryScale,
@@ -98,7 +98,9 @@ export function Empty({
 }) {
   return (
     <Box className="empty">
-      <DirectionsCarOutlined sx={{ fontSize: 42, mb: 1.5, opacity: 0.4 }} />
+      <Box className="empty-illustration">
+        <DirectionsCarOutlined sx={{ fontSize: 32 }} />
+      </Box>
       <Typography variant="subtitle1" color="text.primary">
         {title}
       </Typography>
@@ -170,19 +172,12 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         onClick={() => navigate(`/xe/${vehicle.id}`)}
         aria-label={`Xem ${vehicle.name}`}
       >
-        <Box
-          component="img"
-          src={vehicle.image}
-          alt={`Ảnh minh họa ${vehicle.type.toLowerCase()} ${vehicle.name}`}
-          className="vehicle-photo"
-          loading="lazy"
-        />
         <Box className="vehicle-body">
           <Box className="vehicle-meta">
             <Box>
               <Typography variant="subtitle1">{vehicle.name}</Typography>
               <Typography variant="caption" color="text.secondary">
-                {vehicle.plate}
+                {vehicle.type} · {vehicle.plate}
               </Typography>
             </Box>
             <Box className="icon-box">
@@ -237,10 +232,15 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       >
         <Box className={`status-chip ${active ? "warning" : ""}`}>
           <CheckCircleOutline sx={{ fontSize: 14 }} />
-          {active ? `${active} hạng mục cần chú ý` : "Xe đang hoạt động tốt"}
+          {vehicle.isArchived
+            ? "Đã lưu trữ"
+            : active
+              ? `${active} hạng mục cần chú ý`
+              : "Đang theo dõi phương tiện"}
         </Box>
         <Button
           size="small"
+          disabled={vehicle.isArchived}
           onClick={() =>
             open({ type: "entry", kind: "odo", vehicleId: vehicle.id })
           }
@@ -277,37 +277,9 @@ export function Reminder({
             {vehicle?.name} · {vehicle?.plate}
           </Typography>
         </Box>
-        <Chip
-          size="small"
-          label={
-            state.status === "overdue"
-              ? "Quá hạn"
-              : state.status === "soon"
-                ? "Sắp đến hạn"
-                : "Đúng lịch"
-          }
-          sx={{
-            color: `var(--${
-              state.status === "overdue"
-                ? "danger"
-                : state.status === "soon"
-                  ? "warning"
-                  : "success"
-            })`,
-            bgcolor: `var(--${
-              state.status === "overdue"
-                ? "danger"
-                : state.status === "soon"
-                  ? "warning"
-                  : "success"
-            }-soft)`,
-            fontSize: 9,
-            flexShrink: 0,
-          }}
+        <MaintenanceStatusChip
+          status={state.status === "overdue" ? "overdue" : state.status === "soon" ? "soon" : "notDue"}
         />
-      </Box>
-      <Box className="reminder-progress">
-        <Box className={`reminder-progress-fill ${state.status}`} />
       </Box>
       <Box
         sx={{ display: "flex", justifyContent: "space-between", mt: 1, gap: 1 }}
@@ -362,113 +334,183 @@ export function HistoryTable({
   if (!data) return null
   if (!entries.length) return <Empty />
   return (
-    <TableContainer>
-      <Table size="small" aria-label="Lịch sử chăm sóc xe">
-        <TableHead>
-          <TableRow>
-            <TableCell>Hoạt động</TableCell>
-            <TableCell>Phương tiện</TableCell>
-            <TableCell>Ngày ghi nhận</TableCell>
-            <TableCell align="right">ODO (km)</TableCell>
-            <TableCell align="right">Chi phí</TableCell>
-            {editable && <TableCell align="right">Thao tác</TableCell>}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {entries.map((entry) => {
-            const vehicle = data.vehicles.find((v) => v.id === entry.vehicleId)
-            return (
-              <TableRow key={entry.id} hover>
-                <TableCell>
-                  <Box className="activity-label">
-                    <KindIcon kind={entry.kind} />
-                    <Box>
-                      <Typography
-                        variant="body2"
-                        sx={{ fontWeight: 500, whiteSpace: "nowrap" }}
-                      >
-                        {entry.title}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: "var(--text-meta-size)",
-                          color: "text.secondary",
-                        }}
-                      >
-                        {entry.kind === "fuel"
-                          ? `${number(entry.liters)} lít · `
-                          : ""}
-                        {entry.note || kindLabel(entry.kind)}
-                        {entry.planId ? " · Theo kế hoạch" : ""}
-                      </Typography>
+    <Box className="activity-views">
+      <TableContainer className="activity-table">
+        <Table size="small" aria-label="Lịch sử chăm sóc xe">
+          <TableHead>
+            <TableRow>
+              <TableCell>Hoạt động</TableCell>
+              <TableCell>Phương tiện</TableCell>
+              <TableCell>Ngày ghi nhận</TableCell>
+              <TableCell align="right">ODO (km)</TableCell>
+              <TableCell align="right">Chi phí</TableCell>
+              {editable && <TableCell align="right">Thao tác</TableCell>}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {entries.map((entry) => {
+              const vehicle = data.vehicles.find(
+                (v) => v.id === entry.vehicleId,
+              )
+              return (
+                <TableRow key={entry.id} hover>
+                  <TableCell>
+                    <Box className="activity-label">
+                      <KindIcon kind={entry.kind} />
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 500, whiteSpace: "nowrap" }}
+                        >
+                          {entry.title}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: "var(--text-meta-size)",
+                            color: "text.secondary",
+                          }}
+                        >
+                          {entry.kind === "fuel"
+                            ? `${number(entry.liters)} lít · `
+                            : ""}
+                          {entry.note || kindLabel(entry.kind)}
+                          {entry.planId ? " · Theo kế hoạch" : ""}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Typography
-                    sx={{
-                      fontSize: "var(--text-small-size)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {vehicle?.name}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      fontSize: "var(--text-meta-size)",
-                      color: "text.secondary",
-                    }}
-                  >
-                    {vehicle?.plate}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ whiteSpace: "nowrap" }}>
-                  {dateLabel(entry.date)}
-                </TableCell>
-                <TableCell align="right">{number(entry.odo)}</TableCell>
-                <TableCell
-                  align="right"
-                  sx={{ fontWeight: 600, whiteSpace: "nowrap" }}
-                >
-                  {entry.kind === "odo" ? "—" : money(entry.cost)}
-                </TableCell>
-                {editable && (
-                  <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                    <Tooltip title="Chỉnh sửa">
-                      <IconButton
-                        size="small"
-                        aria-label={`Sửa ${entry.title}`}
-                        onClick={() =>
-                          open({ type: "entry", kind: entry.kind, entry })
-                        }
-                      >
-                        <EditOutlined sx={{ fontSize: 17 }} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Xóa bản ghi">
-                      <IconButton
-                        size="small"
-                        aria-label={`Xóa ${entry.title}`}
-                        onClick={() =>
-                          open({
-                            type: "delete",
-                            entity: "entry",
-                            id: entry.id,
-                            title: entry.title,
-                          })
-                        }
-                      >
-                        <DeleteOutline sx={{ fontSize: 17 }} />
-                      </IconButton>
-                    </Tooltip>
                   </TableCell>
-                )}
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    </TableContainer>
+                  <TableCell>
+                    <Typography
+                      sx={{
+                        fontSize: "var(--text-small-size)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {vehicle?.name}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "var(--text-meta-size)",
+                        color: "text.secondary",
+                      }}
+                    >
+                      {vehicle?.plate}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>
+                    {dateLabel(entry.date)}
+                  </TableCell>
+                  <TableCell align="right">{number(entry.odo)}</TableCell>
+                  <TableCell
+                    align="right"
+                    sx={{ fontWeight: 600, whiteSpace: "nowrap" }}
+                  >
+                    {entry.kind === "odo" ? "—" : money(entry.cost)}
+                  </TableCell>
+                  {editable && (
+                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                      <Tooltip title="Chỉnh sửa">
+                        <IconButton
+                          size="small"
+                          aria-label={`Sửa ${entry.title}`}
+                          onClick={() =>
+                            open({ type: "entry", kind: entry.kind, entry })
+                          }
+                        >
+                          <EditOutlined sx={{ fontSize: 17 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Xóa bản ghi">
+                        <IconButton
+                          size="small"
+                          aria-label={`Xóa ${entry.title}`}
+                          onClick={() =>
+                            open({
+                              type: "delete",
+                              entity: "entry",
+                              id: entry.id,
+                              title: entry.title,
+                            })
+                          }
+                        >
+                          <DeleteOutline sx={{ fontSize: 17 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  )}
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <Box
+        className="activity-card-list"
+        role="list"
+        aria-label="Lịch sử chăm sóc xe"
+      >
+        {entries.map((entry) => {
+          const vehicle = data.vehicles.find((v) => v.id === entry.vehicleId)
+          return (
+            <Box className="activity-card" role="listitem" key={entry.id}>
+              <Box className="activity-card-heading">
+                <Typography variant="subtitle2">
+                  {dateLabel(entry.date)} · {kindLabel(entry.kind)}
+                </Typography>
+                <KindIcon kind={entry.kind} />
+              </Box>
+              <Typography variant="body2">{entry.title}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {vehicle?.name} · {vehicle?.plate}
+              </Typography>
+              {entry.note && (
+                <Typography variant="body2" color="text.secondary">
+                  {entry.note}
+                </Typography>
+              )}
+              <Box className="activity-card-values">
+                <Typography variant="body2" color="text.secondary">
+                  {number(entry.odo)} km
+                </Typography>
+                <Typography variant="subtitle2">
+                  {entry.kind === "odo" ? "—" : money(entry.cost)}
+                </Typography>
+              </Box>
+              {editable && (
+                <Box className="activity-card-actions">
+                  <Button
+                    size="small"
+                    startIcon={<EditOutlined />}
+                    onClick={() =>
+                      open({ type: "entry", kind: entry.kind, entry })
+                    }
+                    aria-label={`Sửa ${entry.title}`}
+                  >
+                    Sửa
+                  </Button>
+                  <Button
+                    size="small"
+                    color="error"
+                    startIcon={<DeleteOutline />}
+                    onClick={() =>
+                      open({
+                        type: "delete",
+                        entity: "entry",
+                        id: entry.id,
+                        title: entry.title,
+                      })
+                    }
+                    aria-label={`Xóa ${entry.title}`}
+                  >
+                    Xóa
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          )
+        })}
+      </Box>
+    </Box>
   )
 }
 function chartColors() {

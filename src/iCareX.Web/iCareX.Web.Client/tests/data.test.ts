@@ -7,7 +7,8 @@ import {
   type Garage,
   type Vehicle,
 } from "../src/lib/models/garage.ts"
-import { api } from "../src/lib/apis/iCareXApi.ts"
+import { api, ApiError, onUnauthorized, resetSessionRequests } from "../src/lib/apis/iCareXApi.ts"
+import { sessionReturnPath } from "../src/lib/models/session.ts"
 
 const vehicle: Vehicle = {
   id: "vehicle-1",
@@ -74,4 +75,64 @@ test("current ODO is derived from vehicle base and readings", () => {
     }]),
     30125,
   )
+})
+
+test("login return preserves internal filters and rejects external or recursive navigation", () => {
+  assert.equal(sessionReturnPath("/xe/vehicle-1?tab=odo#history"), "/xe/vehicle-1?tab=odo#history")
+  for (const value of ["https://example.com", "//example.com", "/\\example.com", "/dang-nhap", "/dang-nhap?from=/xe", "/\nexample.com", null, {}]) {
+    assert.equal(sessionReturnPath(value), "/")
+  }
+})
+
+test("session restoration distinguishes expired cookies from server and network errors", async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    for (const status of [401, 503]) {
+      globalThis.fetch = async () => new Response(JSON.stringify({ detail: "Không thể xác thực." }), { status })
+      await assert.rejects(api.me(), (error: unknown) => error instanceof ApiError && error.status === status)
+    }
+    globalThis.fetch = async () => { throw new TypeError("Network unavailable") }
+    await assert.rejects(api.me(), (error: unknown) => error instanceof TypeError && !(error instanceof ApiError))
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("protected API expiry notifies session boundary while other failures keep the account", async () => {
+  const originalFetch = globalThis.fetch
+  let expired = 0
+  const unsubscribe = onUnauthorized(() => { expired += 1 })
+  const account = { id: "account-1", name: "Test", email: "test@example.com", phone: "", roles: [] }
+  try {
+    globalThis.fetch = async () => new Response("{}", { status: 503 })
+    await assert.rejects(api.get(account), ApiError)
+    assert.equal(expired, 0)
+    globalThis.fetch = async () => new Response("{}", { status: 401 })
+    await assert.rejects(api.get(account), ApiError)
+    assert.equal(expired, 1)
+    unsubscribe()
+    await assert.rejects(api.get(account), ApiError)
+    assert.equal(expired, 1)
+  } finally {
+    unsubscribe()
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("an expired response from a previous account cannot expire the new session", async () => {
+  const originalFetch = globalThis.fetch
+  let expired = 0
+  const unsubscribe = onUnauthorized(() => { expired += 1 })
+  let complete: (response: Response) => void = () => {}
+  try {
+    globalThis.fetch = () => new Promise<Response>((resolve) => { complete = resolve })
+    const request = api.get({ id: "previous-account", name: "Old", email: "old@example.com", phone: "", roles: [] })
+    resetSessionRequests()
+    complete(new Response("{}", { status: 401 }))
+    await assert.rejects(request, ApiError)
+    assert.equal(expired, 0)
+  } finally {
+    unsubscribe()
+    globalThis.fetch = originalFetch
+  }
 })

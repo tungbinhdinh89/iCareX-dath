@@ -2,6 +2,8 @@ import {
   createContext,
   useContext,
   useEffect,
+  useCallback,
+  useRef,
   useState,
   type ReactNode,
 } from "react"
@@ -9,6 +11,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Alert, Snackbar } from "@mui/material"
 import {
   api,
+  ApiError,
+  onUnauthorized,
+  resetSessionRequests,
   type Account,
   type Entry,
   type Garage,
@@ -37,6 +42,9 @@ export type ModalState = { type: "login" } | {
 } | { type: "help" } | null
 type ContextValue = {
   session: Account | null
+  sessionStatus: "checking" | "authenticated" | "anonymous" | "error"
+  sessionError: Error | null
+  retrySession: () => void
   data: Garage | undefined
   loading: boolean
   error: Error | null
@@ -67,6 +75,10 @@ export const useGarage = () => {
 export default function GarageProvider({ children }: { children: ReactNode }) {
   const client = useQueryClient()
   const [session, setSession] = useState<Account | null>(null)
+  const [sessionStatus, setSessionStatus] = useState<ContextValue["sessionStatus"]>("checking")
+  const [sessionError, setSessionError] = useState<Error | null>(null)
+  const sessionRequest = useRef(0)
+  const currentAccount = useRef<string | null>(null)
   const [modal, setModal] = useState<ModalState>(null)
   const [month, setMonth] = useState("all")
   const [selectedVehicle, setSelectedVehicle] = useState("all")
@@ -75,13 +87,48 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
     text: string
     severity: "success" | "error" | "info"
   } | null>(null)
+  const clearAccount = useCallback(() => {
+    resetSessionRequests()
+    sessionRequest.current += 1
+    currentAccount.current = null
+    setSession(null)
+    setSessionStatus("anonymous")
+    setSessionError(null)
+    setModal(null)
+    setSelectedVehicle("all")
+    setMonth("all")
+    client.removeQueries({ queryKey: ["garage"] })
+    client.getMutationCache().clear()
+  }, [client])
+  const retrySession = useCallback(() => {
+    const request = ++sessionRequest.current
+    setSessionStatus("checking")
+    setSessionError(null)
+    void api.me().then((account) => {
+      if (request !== sessionRequest.current) return
+      currentAccount.current = account.id
+      setSession(account)
+      setSessionStatus("authenticated")
+    }).catch((error: unknown) => {
+      if (request !== sessionRequest.current) return
+      if (error instanceof ApiError && error.status === 401) {
+        clearAccount()
+        return
+      }
+      setSessionError(error instanceof Error ? error : new Error("Không thể kiểm tra phiên đăng nhập."))
+      setSessionStatus("error")
+    })
+  }, [clearAccount])
   useEffect(() => {
-    void api.me().then(setSession).catch(() => setSession(null))
-  }, [])
+    retrySession()
+    return () => { sessionRequest.current += 1 }
+  }, [retrySession])
+  useEffect(() => onUnauthorized(clearAccount), [clearAccount])
   const query = useQuery({
-    queryKey: ["garage", session?.id ?? "preview"],
+    queryKey: ["garage", session?.id ?? "anonymous"],
     queryFn: () => api.get(session),
-    retry: 1,
+    enabled: sessionStatus === "authenticated" && !!session,
+    retry: (failureCount, error) => !(error instanceof ApiError && error.status === 401) && failureCount < 1,
     staleTime: Infinity,
   })
   useEffect(() => {
@@ -94,7 +141,9 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
   }, [query.data, selectedVehicle])
   const mutation = useMutation({
     mutationFn: ({ id, action }: UpdateRequest) => api.update(id, action),
-    onSuccess: (data, { id }) => client.setQueryData(["garage", id], data),
+    onSuccess: (data, { id }) => {
+      if (currentAccount.current === id) client.setQueryData(["garage", id], data)
+    },
   })
   const notify: ContextValue["notify"] = (text, severity = "success") =>
     setToast({ id: crypto.randomUUID(), text, severity })
@@ -131,8 +180,11 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
     <Context.Provider
       value={{
         session,
-        data: query.data,
-        loading: query.isPending,
+        sessionStatus,
+        sessionError,
+        retrySession,
+        data: session ? query.data : undefined,
+        loading: sessionStatus === "authenticated" && query.isPending,
         error: query.error,
         modal,
         setModal,
@@ -141,7 +193,14 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
         save,
         notify,
         login: (account) => {
+          resetSessionRequests()
+          sessionRequest.current += 1
+          currentAccount.current = account.id
+          client.removeQueries({ queryKey: ["garage"] })
+          client.getMutationCache().clear()
           setSession(account)
+          setSessionStatus("authenticated")
+          setSessionError(null)
           setSelectedVehicle("all")
           setMonth("all")
           setModal(null)
@@ -151,18 +210,19 @@ export default function GarageProvider({ children }: { children: ReactNode }) {
           try {
             await api.logout()
           } catch (error) {
+            if (error instanceof ApiError && error.status === 401) {
+              clearAccount()
+              return
+            }
             notify(
               error instanceof Error ? error.message : "Không thể đăng xuất.",
               "error",
             )
             return
           }
-          setSession(null)
-          setModal(null)
-          setSelectedVehicle("all")
-          setMonth("all")
+          clearAccount()
           notify(
-            "Đã đăng xuất. Phiên đăng nhập không được lưu trên thiết bị.",
+            "Đã đăng xuất khỏi iCareX.",
             "info",
           )
         },

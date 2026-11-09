@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router"
 import Layout from "@/components/Layout"
+import AuthenticationPage, { RequireSession } from "@/components/AuthenticationPage"
 import Dashboard, {
   NotFound,
   Plans,
@@ -12,7 +13,10 @@ import Dashboard, {
 } from "@/features/garage/pages"
 
 export const router = createBrowserRouter([
+  { path: "/dang-nhap", Component: AuthenticationPage },
   {
+    Component: RequireSession,
+    children: [{
     path: "/",
     Component: Layout,
     children: [
@@ -29,5 +33,6 @@ export const router = createBrowserRouter([
       { path: "cai-dat", Component: Settings },
       { path: "*", Component: NotFound },
     ],
+    }],
   },
 ])

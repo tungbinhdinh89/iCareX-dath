@@ -58,6 +58,25 @@ Typecheck, three Node tests and production build pass. Chrome verified ten guest
 routes and the login dialog at desktop/mobile sizes without JavaScript exceptions.
 Authenticated database transactions still need separate acceptance testing.
 
+The frontend follows the owner's `Design/Design_system_1.png` and
+`Design/Design_system_2.png`: Inter, a #F4F8F1 canvas, a #1F4D3A navigation
+sidebar, and #2F6B4A primary actions. Desktop uses a 224px sidebar; tablet uses
+a 72px accessible icon rail; phones use a 320px drawer. Supplied SVG logo and
+symbol variants live in `public/brand/`. Global layout, spacing and typography stay
+in `src/index.css`; MUI controls share the theme in `src/lib/theme/theme.ts`.
+Dashboard, vehicle detail, records, plans, reports, profile/settings and dialogs
+use this same hierarchy. Features awaiting completion show an explicit notice;
+vehicle and ODO operations retain their existing API integration.
+
+All application routes require a server session. The standalone `/dang-nhap`
+screen appears only after the initial cookie check resolves; a valid restored
+session opens the requested internal route without a guest/dashboard flash.
+Network errors provide retry, and logout/API 401 clear private cached data.
+Authenticated headers show only the real account, never a login button.
+`src/components/MaintenanceStatusChip.tsx` provides the five visual maintenance
+states from the design system; callers must supply a real evaluation. It does
+not add missing backend states or synthesize reminder data.
+
 Figma Make scripts, site configuration and dev.json live in `.figma/make/` here.
 The repository-root forwarding hooks were removed; open this Client directory
 as the Figma Make project root when those hooks are needed. Local builds and

@@ -2,6 +2,17 @@
 
 Read [rules](doc/rules.md), [implementation playbook](doc/skill.md), [README](README.md) and relevant documentation before implementation. The [reference](doc/reference.md) is a blueprint; runtime and manifests are authoritative.
 
+## Custom skills
+
+Use [Codex skill guidance](doc/codex-skills.md) and the routing table in
+[rules](doc/rules.md) to select relevant `SKILL.md` files under
+`stephen-skills/.agents/skills/` or `stephen-skills/skills/`. Read the selected
+skill before applying it and announce its use. Do not load all skills, assume
+nested files are registered, or execute inherited CMS commands against iCareX.
+Project architecture, scripts, design guidelines and the user's authorized
+scope govern how a reusable skill is applied. A role file is not authorization
+to spawn agents or mutate external services.
+
 ## Source layout
 
 - `iCareX.slnx`: .NET solution.
