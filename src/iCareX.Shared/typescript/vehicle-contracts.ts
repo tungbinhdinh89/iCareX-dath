@@ -53,20 +53,30 @@ export type InvitationTokenRequest = {
 
 export type VehicleResponse = {
   id: string
-  name: string
-  plate: string
-  vehicleTypeId: string
+  name?: string | null
+  plate?: string | null
+  vehicleType: string
   vehicleTypeName: string
   vehicleBrandId: string
   vehicleBrandName: string
   vehicleModelId: string
   vehicleModelName: string
-  year: number
-  baseOdo: number
+  year?: number | null
+  odometer: number
   currentOdo: number
-  imageUrl: string
+  fuelType: string
+  fuelCapacity?: number | null
+  odometerUnit: string
+  vin?: string | null
+  registrationId?: string | null
+  purchasePrice?: number | null
+  salePrice?: number | null
+  notes?: string | null
+  imageUrl?: string | null
   isArchived: boolean
   version: number
+  createdAtUtc: string
+  updatedAtUtc: string
 }
 
 export type VehicleListResponse = {
@@ -74,20 +84,40 @@ export type VehicleListResponse = {
 }
 
 export type CreateVehicleRequest = {
-  name: string
-  plate: string
+  vehicleType: string
+  vehicleBrandId: string
   vehicleModelId: string
-  year: number
-  baseOdo: number
+  fuelType: string
+  odometerUnit: string
+  odometer: number
+  year?: number | null
+  name?: string | null
+  plate?: string | null
+  vin?: string | null
+  registrationId?: string | null
+  fuelCapacity?: number | null
+  purchasePrice?: number | null
+  salePrice?: number | null
+  notes?: string | null
   imageUrl?: string | null
 }
 
 export type UpdateVehicleRequest = {
-  name: string
-  plate: string
+  vehicleType: string
+  vehicleBrandId: string
   vehicleModelId: string
-  year: number
-  baseOdo: number
+  fuelType: string
+  odometerUnit: string
+  odometer: number
+  year?: number | null
+  name?: string | null
+  plate?: string | null
+  vin?: string | null
+  registrationId?: string | null
+  fuelCapacity?: number | null
+  purchasePrice?: number | null
+  salePrice?: number | null
+  notes?: string | null
   imageUrl?: string | null
   version: number
 }
@@ -119,13 +149,11 @@ export type VehicleTypeResponse = {
   id: string
   code: string
   name: string
-  isActive: boolean
-  version: number
 }
 
 export type VehicleBrandResponse = {
   id: string
-  vehicleTypeId: string
+  vehicleType: string
   name: string
   isActive: boolean
   version: number
@@ -139,25 +167,13 @@ export type VehicleModelResponse = {
   version: number
 }
 
-export type CreateVehicleTypeRequest = {
-  code: string
-  name: string
-}
-
-export type UpdateVehicleTypeRequest = {
-  code: string
-  name: string
-  isActive: boolean
-  version: number
-}
-
 export type CreateVehicleBrandRequest = {
-  vehicleTypeId: string
+  vehicleType: string
   name: string
 }
 
 export type UpdateVehicleBrandRequest = {
-  vehicleTypeId: string
+  vehicleType: string
   name: string
   isActive: boolean
   version: number

@@ -1,3 +1,4 @@
+using iCareX.Web.Api.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using iCareX.Application.Features.Vehicles.Contracts;
@@ -7,6 +8,7 @@ namespace iCareX.Web.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/vehicle-catalog")]
+[ServiceFilter(typeof(VehicleCsrfFilter))]
 public sealed class VehicleCatalogController(IVehicleCatalogService catalog) : ControllerBase
 {
     [HttpGet("types")]
@@ -14,25 +16,15 @@ public sealed class VehicleCatalogController(IVehicleCatalogService catalog) : C
     public Task<IReadOnlyCollection<VehicleTypeResponse>> Types(CancellationToken cancellationToken) =>
         catalog.ListTypesAsync(cancellationToken);
 
-    [HttpGet("types/{vehicleTypeId:guid}/brands")]
+    [HttpGet("types/{vehicleType}/brands")]
     [AllowAnonymous]
-    public Task<IReadOnlyCollection<VehicleBrandResponse>> Brands(Guid vehicleTypeId, CancellationToken cancellationToken) =>
-        catalog.ListBrandsAsync(vehicleTypeId, cancellationToken);
+    public Task<IReadOnlyCollection<VehicleBrandResponse>> Brands(string vehicleType, CancellationToken cancellationToken) =>
+        catalog.ListBrandsAsync(vehicleType, cancellationToken);
 
     [HttpGet("brands/{vehicleBrandId:guid}/models")]
     [AllowAnonymous]
     public Task<IReadOnlyCollection<VehicleModelResponse>> Models(Guid vehicleBrandId, CancellationToken cancellationToken) =>
         catalog.ListModelsAsync(vehicleBrandId, cancellationToken);
-
-    [HttpPost("types")]
-    [Authorize(Roles = "SystemAdmin,Admin", Policy = "VerifiedAccount")]
-    public Task<VehicleTypeResponse> CreateType(CreateVehicleTypeRequest request, CancellationToken cancellationToken) =>
-        catalog.CreateTypeAsync(request, cancellationToken);
-
-    [HttpPut("types/{id:guid}")]
-    [Authorize(Roles = "SystemAdmin,Admin", Policy = "VerifiedAccount")]
-    public Task<VehicleTypeResponse> UpdateType(Guid id, UpdateVehicleTypeRequest request, CancellationToken cancellationToken) =>
-        catalog.UpdateTypeAsync(id, request, cancellationToken);
 
     [HttpPost("brands")]
     [Authorize(Roles = "SystemAdmin,Admin", Policy = "VerifiedAccount")]

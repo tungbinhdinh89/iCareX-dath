@@ -4,14 +4,25 @@ export type Vehicle = {
   id: string
   name: string
   plate: string
-  type: "Ô tô" | "Xe máy"
+  type: string
   vehicleTypeId: string
   vehicleBrandId: string
   vehicleBrandName: string
   vehicleModelId: string
   vehicleModelName: string
-  year: number
+  year: number | null
   baseOdo: number
+  registrationName?: string | null
+  fuelType: string
+  fuelCapacity?: number | null
+  odometerUnit: string
+  vin?: string | null
+  registrationId?: string | null
+  purchasePrice?: number | null
+  salePrice?: number | null
+  createdAtUtc?: string
+  updatedAtUtc?: string
+  notes?: string | null
   currentOdo: number
   image: string
   isArchived: boolean
@@ -40,6 +51,7 @@ export type Plan = {
   intervalMonths: number
 }
 export type Garage = {
+  maintenanceAvailable?: boolean
   vehicles: Vehicle[]
   entries: Entry[]
   plans: Plan[]
@@ -72,7 +84,8 @@ const assetBase = import.meta.env?.BASE_URL ?? "/"
 const carImage = `${assetBase}images/car.jpg`
 const bikeImage = `${assetBase}images/scooter.jpg`
 export const defaultImage = (type: string) =>
-  type === "Ô tô" ? carImage : bikeImage
+  ["Ô tô", "Xe tải", "Xe buýt", "Xe van"].includes(type) ? carImage
+    : type === "Xe máy" ? bikeImage : `${assetBase}brand/brand-symbol-light.svg`
 
 export const odoOf = (v: Vehicle, entries: Entry[]) =>
   Math.max(v.baseOdo, v.currentOdo, ...entries.filter((e) => e.vehicleId === v.id).map((e) => e.odo))
@@ -93,3 +106,9 @@ export function planState(plan: Plan, data: Garage) {
     dayCount <= data.settings.thresholdDays || km <= data.settings.thresholdKm ? "soon" : "good"
   return { dueDate: plan.dueDate, dueOdo: plan.dueOdo, km, days: dayCount, status, service: undefined as Entry | undefined }
 }
+
+export const odometerUnitLabel = (v?: Pick<Vehicle, "odometerUnit">) =>
+  v?.odometerUnit === "Miles" ? "mi" : v?.odometerUnit === "Hours" ? "giờ" : "km"
+
+export const distanceInKilometres = (value: number, unit: string) =>
+  unit === "Hours" ? 0 : unit === "Miles" ? value * 1.609344 : value

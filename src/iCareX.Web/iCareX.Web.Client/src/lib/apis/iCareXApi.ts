@@ -7,8 +7,12 @@ import type {
   VerifyEmailRequest,
   ResetPasswordRequest,
   ChangePasswordRequest,
+  UpdateProfileRequest,
 } from "@shared/auth-contracts"
 import type {
+  CreateVehicleRequest,
+  UpdateVehicleRequest,
+  VehicleBrandResponse,
   VehicleInvitationResponse,
   CreateVehicleInvitationRequest,
   InvitationTokenRequest,
@@ -29,11 +33,7 @@ import {
 } from "../models/garage.ts"
 export type { Account, Entry, Garage, Plan, Vehicle } from "../models/garage.ts"
 export type VehicleTypeOption = { id: string; code: string; name: string }
-export type VehicleBrandOption = {
-  id: string
-  vehicleTypeId: string
-  name: string
-}
+export type VehicleBrandOption = VehicleBrandResponse
 export type VehicleModelOption = {
   id: string
   vehicleBrandId: string
@@ -173,23 +173,49 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError("Session changed.", 401)
   return result
 }
-const mapVehicle = (vehicle: VehicleResponse): Vehicle => ({
+export type VehicleWriteInput = Omit<CreateVehicleRequest, "vehicleType" | "odometer" | "imageUrl"> & {
+  vehicleTypeId: string
+  baseOdo: number
+  image?: string
+}
+const vehicleWriteDto = (r: VehicleWriteInput): CreateVehicleRequest => {
+  if (!['Car','Motorcycle','Bicycle','Truck','Bus','Van','Boat','Aircraft','Other'].includes(r.vehicleTypeId))
+    throw new ApiError('Danh mục phương tiện chưa tương thích. Vui lòng thử lại sau khi hệ thống được cập nhật.', 503)
+  return ({
+  vehicleType: r.vehicleTypeId, vehicleBrandId: r.vehicleBrandId, vehicleModelId: r.vehicleModelId,
+  fuelType: r.fuelType, odometerUnit: r.odometerUnit, odometer: r.baseOdo,
+  year: r.year, name: r.name, plate: r.plate, vin: r.vin, registrationId: r.registrationId,
+  fuelCapacity: r.fuelCapacity, purchasePrice: r.purchasePrice, salePrice: r.salePrice,
+  notes: r.notes, imageUrl: r.image ?? null,
+})
+}
+
+const mapVehicle = (vehicle: VehicleResponse): Vehicle => {
+  if (typeof vehicle.odometer !== 'number' || !vehicle.vehicleType || !vehicle.odometerUnit || !vehicle.fuelType)
+    throw new ApiError('Dữ liệu phương tiện chưa tương thích. Vui lòng tải lại trang sau khi hệ thống được cập nhật.', 503)
+  return ({
   id: vehicle.id,
-  name: vehicle.name,
-  plate: vehicle.plate,
-  type: vehicle.vehicleTypeName === "Ô tô" ? "Ô tô" : "Xe máy",
-  vehicleTypeId: vehicle.vehicleTypeId,
+  name: vehicle.name ?? `${vehicle.vehicleBrandName} ${vehicle.vehicleModelName}`,
+  registrationName: vehicle.name ?? null,
+  plate: vehicle.plate ?? "",
+  type: vehicle.vehicleTypeName,
+  vehicleTypeId: vehicle.vehicleType,
   vehicleBrandId: vehicle.vehicleBrandId,
   vehicleBrandName: vehicle.vehicleBrandName,
   vehicleModelId: vehicle.vehicleModelId,
   vehicleModelName: vehicle.vehicleModelName,
-  year: vehicle.year,
-  baseOdo: vehicle.baseOdo,
+  year: vehicle.year ?? null,
+  baseOdo: vehicle.odometer,
+  fuelType: vehicle.fuelType, fuelCapacity: vehicle.fuelCapacity,
+  odometerUnit: vehicle.odometerUnit, vin: vehicle.vin, registrationId: vehicle.registrationId,
+  purchasePrice: vehicle.purchasePrice, salePrice: vehicle.salePrice, notes: vehicle.notes, createdAtUtc: vehicle.createdAtUtc, updatedAtUtc: vehicle.updatedAtUtc,
   currentOdo: vehicle.currentOdo,
   image: vehicle.imageUrl || defaultImage(vehicle.vehicleTypeName),
   isArchived: vehicle.isArchived,
   version: vehicle.version,
 })
+}
+
 const mapReading = (reading: ReadingResponse): Entry => ({
   id: reading.id,
   vehicleId: reading.vehicleId,
@@ -337,6 +363,13 @@ export const api = {
   async me() {
     return authRequest<Account>("/me")
   },
+  async updateProfile(request: UpdateProfileRequest) {
+    await apiRequest<Account>("/auth/me", {
+      method: "PUT",
+      body: JSON.stringify({ name: request.name, phone: request.phone } satisfies UpdateProfileRequest),
+    })
+    return apiRequest<Account>("/auth/me")
+  },
   async logout() {
     await authMutation<void>("/logout")
   },
@@ -378,52 +411,14 @@ export const api = {
       settings: { reminders: true, thresholdKm: 500, thresholdDays: 30 },
     }
   },
-  async createVehicle(request: {
-    name: string
-    plate: string
-    vehicleModelId: string
-    year: number
-    baseOdo: number
-    image?: string
-  }) {
-    const vehicle = await apiRequest<VehicleResponse>("/vehicles", {
-      method: "POST",
-      body: JSON.stringify({
-          name: request.name,
-          plate: request.plate,
-          vehicleModelId: request.vehicleModelId,
-          year: request.year,
-          baseOdo: request.baseOdo,
-        imageUrl: request.image ?? "",
-      }),
-    })
-    return mapVehicle(vehicle)
+  async createVehicle(request: VehicleWriteInput) {
+    return mapVehicle(await apiRequest<VehicleResponse>("/vehicles", {
+      method: "POST", body: JSON.stringify(vehicleWriteDto(request)),
+    }))
   },
-  async updateVehicle(
-    id: string,
-    request: {
-      name: string
-      plate: string
-      vehicleModelId: string
-      year: number
-      baseOdo: number
-      image?: string
-      version: number
-    },
-  ) {
-    const vehicle = await apiRequest<VehicleResponse>(`/vehicles/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({
-          name: request.name,
-          plate: request.plate,
-          vehicleModelId: request.vehicleModelId,
-          year: request.year,
-          baseOdo: request.baseOdo,
-        imageUrl: request.image ?? "",
-          version: request.version,
-      }),
-    })
-    return mapVehicle(vehicle)
+  async updateVehicle(id: string, request: VehicleWriteInput & { version: number }) {
+    const body: UpdateVehicleRequest = { ...vehicleWriteDto(request), version: request.version }
+    return mapVehicle(await apiRequest<VehicleResponse>(`/vehicles/${id}`, { method: "PUT", body: JSON.stringify(body) }))
   },
   async archiveVehicle(id: string, version: number) {
     return mapVehicle(

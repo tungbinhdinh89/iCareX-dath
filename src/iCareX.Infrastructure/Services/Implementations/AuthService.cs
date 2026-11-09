@@ -132,6 +132,30 @@ public sealed class AuthService(
         return ToResponse(account, user, await users.GetRolesAsync(user));
     }
 
+    public async Task<AccountResponse?> UpdateProfileAsync(Guid accountId, UpdateProfileRequest request, CancellationToken cancellationToken)
+    {
+        (string Name, string Phone) profile;
+        try { profile = AccountProfileRules.Normalize(request.Name, request.Phone); }
+        catch (iCareX.Domain.Exceptions.RuleViolation exception)
+        { throw new AuthValidationException([exception.Message]); }
+
+        await using var transaction = await repository.BeginTransactionAsync(cancellationToken);
+        // Serialize edits of this profile without replacing unrelated account fields.
+        var account = await db.Accounts.FromSqlInterpolated(
+            $"SELECT * FROM accounts WHERE \"Id\" = {accountId} FOR UPDATE")
+            .SingleOrDefaultAsync(cancellationToken);
+        var user = await users.FindByIdAsync(accountId.ToString());
+        if (account is null || user is null) return null;
+        if (account.Name != profile.Name || account.Phone != profile.Phone)
+            account.UpdatedAtUtc = clock.UtcNow;
+        account.Name = profile.Name;
+        account.Phone = profile.Phone;
+        await repository.SaveChangesAsync(cancellationToken);
+        var response = ToResponse(account, user, await users.GetRolesAsync(user));
+        await transaction.CommitAsync(cancellationToken);
+        return response;
+    }
+
     public async Task RevokeSessionAsync(Guid accountId, Guid sessionId, CancellationToken cancellationToken)
     {
         if (!await repository.RevokeSessionAsync(accountId, sessionId, clock.UtcNow, cancellationToken))

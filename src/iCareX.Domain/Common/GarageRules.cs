@@ -11,7 +11,7 @@ public static partial class GarageRules
     private static partial Regex PlateCharacters();
     public static string NormalizePlate(string plate) => PlateCharacters().Replace(plate, "").ToUpperInvariant();
     public static decimal CurrentOdo(Vehicle vehicle, IEnumerable<Entry> entries) =>
-        entries.Where(e => e.VehicleId == vehicle.Id).Select(e => e.Odo).Append(vehicle.BaseOdo).Max();
+        entries.Where(e => e.VehicleId == vehicle.Id).Select(e => e.Odo).Append(vehicle.Odometer).Max();
 
     public static void EnsureActive(Vehicle vehicle)
     {
@@ -21,7 +21,7 @@ public static partial class GarageRules
 
     public static void ValidateBaseOdo(decimal baseOdo, IEnumerable<Entry> history)
     {
-        Number(baseOdo, 0, 9_999_999, "ODO");
+        Number(baseOdo, 0, VehicleRegistrationRules.MaximumOdometer, "ODO");
         if (history.Any(e => e.Odo < baseOdo))
             throw new RuleViolation("ODO_OUT_OF_SEQUENCE", "ODO ban đầu vượt lịch sử.");
     }
@@ -36,7 +36,7 @@ public static partial class GarageRules
             throw new RuleViolation("INVALID_DATE", "Ngày ghi nhận không hợp lệ hoặc ở tương lai.");
         if (entry.Title.Trim().Length is < 2 or > 100 || entry.Note.Length > 500)
             throw new RuleViolation("VALIDATION", "Tiêu đề hoặc ghi chú không hợp lệ.");
-        Number(entry.Odo, 0, 9_999_999, "ODO");
+        Number(entry.Odo, 0, VehicleRegistrationRules.MaximumOdometer, "ODO");
         Number(entry.Cost, 0, 10_000_000_000, "Chi phí");
         Number(entry.Liters, 0, 500, "Lít");
         if ((entry.Kind is EntryKind.Fuel or EntryKind.Service) && entry.Cost <= 0 ||
@@ -46,7 +46,7 @@ public static partial class GarageRules
             entry.PlanId is not null && entry.Kind != EntryKind.Service)
             throw new RuleViolation("VALIDATION", "Chi phí, số lít hoặc liên kết kế hoạch không hợp lệ.");
         var history = entries.Where(e => e.VehicleId == vehicle.Id && e.Id != entry.Id).ToArray();
-        var lower = history.Where(e => e.Date < entry.Date).Select(e => e.Odo).Append(vehicle.BaseOdo).Max();
+        var lower = history.Where(e => e.Date < entry.Date).Select(e => e.Odo).Append(vehicle.Odometer).Max();
         var upper = history.Where(e => e.Date > entry.Date).Select(e => (decimal?)e.Odo).Min();
         if (entry.Odo < lower || upper is not null && entry.Odo > upper)
             throw new RuleViolation("ODO_OUT_OF_SEQUENCE", "ODO không nhất quán với lịch sử.");
@@ -59,7 +59,7 @@ public static partial class GarageRules
             throw new RuleViolation("NOT_FOUND", "Không tìm thấy xe đã chọn.");
         if (plan.Title.Trim().Length is < 2 or > 100 || plan.DueDate == default || plan.IntervalMonths is < 1 or > 120)
             throw new RuleViolation("VALIDATION", "Kế hoạch không hợp lệ.");
-        Number(plan.DueOdo, 1, 9_999_999, "ODO hạn");
+        Number(plan.DueOdo, 1, VehicleRegistrationRules.MaximumOdometer, "ODO hạn");
         Number(plan.IntervalKm, 1, 1_000_000, "Chu kỳ km");
     }
 

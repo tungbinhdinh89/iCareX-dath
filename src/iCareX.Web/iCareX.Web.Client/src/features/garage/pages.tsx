@@ -1,3 +1,4 @@
+import { matchesVehicleTab, fuelTypeLabels, type VehicleTab } from "@/lib/models/vehiclePresentation"
 import { useEffect, useState, type ReactNode } from "react"
 import {
   Alert,
@@ -49,6 +50,8 @@ import {
   monthLabel,
   number,
   odoOf,
+  odometerUnitLabel,
+  distanceInKilometres,
   planState,
   today,
   type Entry,
@@ -162,7 +165,7 @@ function driven(data: Garage, vehicle: string, month: string) {
                 .filter((e) => e.vehicleId === v.id && e.date < `${month}-01`)
                 .map((e) => e.odo),
             )
-      return sum + Math.max(0, Math.max(...entries.map((e) => e.odo)) - before)
+      return sum + distanceInKilometres(Math.max(0, Math.max(...entries.map((e) => e.odo)) - before), v.odometerUnit)
     }, 0)
 }
 
@@ -298,7 +301,7 @@ export default function Dashboard() {
                   className="odometer-value"
                   sx={{ my: 2 }}
                 >
-                  {number(odoOf(focusVehicle, data.entries))} km
+                  {number(odoOf(focusVehicle, data.entries))} {odometerUnitLabel(focusVehicle)}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {latestReading
@@ -373,14 +376,16 @@ export default function Dashboard() {
 }
 
 export function Vehicles() {
-  const { data, open } = useGarage()
+  const { data, open, permissions } = useGarage()
   const [search, setSearch] = useState("")
   const [type, setType] = useState("all")
+  const [group, setGroup] = useState<VehicleTab>("all")
   if (!data) return null
   const vehicles = data.vehicles.filter(
     (v) =>
+      matchesVehicleTab(v, permissions?.vehicles.find((item) => item.vehicleId === v.id)?.role, group) &&
       (type === "all" || v.type === type) &&
-      `${v.name} ${v.plate}`.toLowerCase().includes(search.toLowerCase()),
+      `${v.name} ${v.plate} ${v.vehicleBrandName} ${v.vehicleModelName}`.toLowerCase().includes(search.toLowerCase()),
   )
   return (
     <Box className="route-fade">
@@ -414,6 +419,11 @@ export function Vehicles() {
           </Typography>
         </Box>
       </Box>
+      <Tabs value={group} onChange={(_, value: VehicleTab) => setGroup(value)} variant="scrollable" scrollButtons="auto" aria-label="Nhóm phương tiện" sx={{ mb: 3 }}>
+        {([['all', 'Tất cả'], ['owned', 'Sở hữu'], ['shared', 'Được chia sẻ'], ['archived', 'Đã lưu trữ']] as const).map(([value, label]) => (
+          <Tab key={value} value={value} label={`${label} (${data.vehicles.filter((v) => matchesVehicleTab(v, permissions?.vehicles.find((item) => item.vehicleId === v.id)?.role, value)).length})`} />
+        ))}
+      </Tabs>
       <Box className="filters filter-panel">
         <TextField
           label="Tìm tên xe, biển số"
@@ -436,8 +446,7 @@ export function Vehicles() {
           onChange={(e) => setType(e.target.value)}
         >
           <MenuItem value="all">Tất cả loại xe</MenuItem>
-          <MenuItem value="Ô tô">Ô tô</MenuItem>
-          <MenuItem value="Xe máy">Xe máy</MenuItem>
+          {Array.from(new Set(data.vehicles.map((v) => v.type))).map((label) => <MenuItem key={label} value={label}>{label}</MenuItem>)}
         </TextField>
         <Typography
           className="results-count"
@@ -521,7 +530,7 @@ export function VehicleDetail() {
       </Button>
       <Heading
         title={vehicle.name}
-        subtitle={`${vehicle.plate} · ${vehicle.type} · Năm ${vehicle.year}`}
+        subtitle={`${vehicle.plate} · ${vehicle.type} · Năm ${vehicle.year ?? "—"}`}
       >
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           {can("vehicle.member.read", vehicle.id) && (
@@ -607,7 +616,7 @@ export function VehicleDetail() {
             {vehicle.vehicleBrandName} {vehicle.vehicleModelName}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {vehicle.type} · Năm sản xuất {vehicle.year}
+            {vehicle.type} · Năm sản xuất {vehicle.year ?? "—"}
           </Typography>
           <Chip
             className="vehicle-plate"
@@ -634,9 +643,9 @@ export function VehicleDetail() {
       <Box className="detail-metrics" sx={{ mb: 3 }}>
         <Stat
           title="ODO hiện tại"
-          value={`${number(odoOf(vehicle, data.entries))} km`}
+          value={`${number(odoOf(vehicle, data.entries))} ${odometerUnitLabel(vehicle)}`}
           icon={<SpeedOutlined />}
-          foot={`ODO ban đầu: ${number(vehicle.baseOdo)} km`}
+          foot={`ODO ban đầu: ${number(vehicle.baseOdo)} ${odometerUnitLabel(vehicle)}`}
         />
         <Stat
           title="Chi phí toàn thời gian"
@@ -738,7 +747,15 @@ export function VehicleDetail() {
                   "Hãng / dòng xe",
                   `${vehicle.vehicleBrandName} ${vehicle.vehicleModelName}`,
                 ],
-                ["Năm sản xuất", String(vehicle.year)],
+                ["Năm sản xuất", String(vehicle.year ?? "—")],
+                ["Nhiên liệu", fuelTypeLabels[vehicle.fuelType] ?? vehicle.fuelType],
+                ["VIN", vehicle.vin ?? "—"], ["Số đăng ký", vehicle.registrationId ?? "—"],
+                ["Giá mua", vehicle.purchasePrice == null ? "—" : money(vehicle.purchasePrice)],
+                ["Giá bán", vehicle.salePrice == null ? "—" : money(vehicle.salePrice)],
+                ["Dung tích nhiên liệu", vehicle.fuelCapacity == null ? "—" : `${number(vehicle.fuelCapacity)} US gallon`],
+                ["Ghi chú", vehicle.notes ?? "—"],
+                ["Ngày tạo", vehicle.createdAtUtc ? new Date(vehicle.createdAtUtc).toLocaleString('vi-VN') : "—"],
+                ["Cập nhật lần cuối", vehicle.updatedAtUtc ? new Date(vehicle.updatedAtUtc).toLocaleString('vi-VN') : "—"],
               ].map(([label, value]) => (
                 <Box className="preference-row" key={label}>
                   <Typography variant="body2" color="text.secondary">
@@ -1388,13 +1405,13 @@ const profileSchema = z.object({
     .string()
     .trim()
     .refine(
-      (v) => !v || /^0\d{9}$/.test(v.replace(/\s/g, "")),
+      (v) => !v || /^0[0-9]{9}$/.test(v),
       "Nhập số điện thoại Việt Nam gồm 10 chữ số.",
     ),
 })
 
 export function Profile() {
-  const { data, session, save, pending, open, globalRoles } = useGarage()
+  const { data, session, updateProfile, pending, open, globalRoles } = useGarage()
   const {
     register,
     handleSubmit,
@@ -1409,7 +1426,7 @@ export function Profile() {
   })
   useEffect(() => {
     if (data) reset({ name: data.profile.name, phone: data.profile.phone })
-  }, [data, reset])
+  }, [data?.profile.name, data?.profile.phone, reset])
   if (!session)
     return (
       <Box className="route-fade">
@@ -1509,10 +1526,7 @@ export function Profile() {
             className="panel"
             noValidate
             onSubmit={handleSubmit(async (values) => {
-              await save((d) => {
-                d.profile.name = values.name
-                d.profile.phone = values.phone
-              }, "Đã cập nhật hồ sơ cá nhân.")
+              await updateProfile(values)
             })}
           >
             <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
@@ -1552,8 +1566,8 @@ export function Profile() {
             </Button>
           </Box>
           <Alert severity="info">
-            Xe và ODO được đồng bộ theo tài khoản. Chức năng thay đổi hồ sơ sẽ
-            có trong phiên bản tiếp theo.
+            Thông tin hồ sơ được lưu theo tài khoản của bạn. Để trống số điện
+            thoại nếu bạn muốn xóa thông tin này.
           </Alert>
         </Box>
       </Box>

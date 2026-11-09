@@ -120,10 +120,9 @@ public sealed partial class DatabaseTests
         var (other, _) = await CreateUser("Other recipient");
         using (owner) using (recipient) using (other)
         {
-            var model = new iCareX.Domain.Entities.VehicleModel { Name = "Shared model", VehicleBrand = new()
-            { Name = "Shared brand", VehicleType = new() { Code = Guid.NewGuid().ToString("N"), Name = "Shared type" } } };
+            var model = TestVehicleModel();
             await using (var db = Context()) { db.VehicleModels.Add(model); await db.SaveChangesAsync(); }
-            var response = await owner.PostAsJsonAsync("/api/v1/vehicles", new { name = "Invitation vehicle", plate = "51A-44444", vehicleModelId = model.Id, year = 2020, baseOdo = 0, imageUrl = "" });
+            var response = await owner.PostAsJsonAsync("/api/v1/vehicles", new { name = "Invitation vehicle", plate = "51A-44444", vehicleModelId = model.Id, vehicleBrandId = model.VehicleBrandId, vehicleType = "Car", fuelType = "Gasoline", odometerUnit = "Kilometres", year = 2020, odometer = 0, imageUrl = "" });
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
             var vehicle = (await response.Content.ReadFromJsonAsync<VehicleResponse>())!;
             var path = $"/api/v1/vehicles/{vehicle.Id}/invitations";

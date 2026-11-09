@@ -12,10 +12,9 @@ public sealed partial class DatabaseTests
     {
         var ownerId = Guid.NewGuid();
         var viewerId = Guid.NewGuid();
-        var model = new VehicleModel { Name = "Trigger model", VehicleBrand = new()
-        { Name = "Trigger brand", VehicleType = new() { Name = "Trigger type", Code = Guid.NewGuid().ToString("N") } } };
+        var model = TestVehicleModel();
         var vehicle = new Vehicle { AccountId = ownerId, CreatedByUserId = ownerId,
-            VehicleModelId = model.Id, Name = "Ford EcoSport 2019", Plate = "51G-87624", PlateNormalized = "51G87624", Year = 2019, BaseOdo = 50000 };
+            VehicleModelId = model.Id, VehicleBrandId = model.VehicleBrandId, VehicleType = iCareX.Domain.Enums.VehicleType.Car, FuelType = iCareX.Domain.Enums.FuelType.Gasoline, Name = "Ford EcoSport 2019", Plate = "51G-87624", PlateNormalized = "51G87624", Year = 2019, Odometer = 50000 };
         var owner = new VehicleMember { VehicleId = vehicle.Id, UserId = ownerId, Role = VehicleMemberRole.Owner };
         var viewer = new VehicleMember { VehicleId = vehicle.Id, UserId = viewerId, Role = VehicleMemberRole.Viewer };
         await using (var db = Context())
@@ -49,7 +48,7 @@ public sealed partial class DatabaseTests
         await using (var db = Context())
         {
             db.Vehicles.Add(new Vehicle { AccountId = ownerId, CreatedByUserId = ownerId,
-                VehicleModelId = model.Id, Name = "Missing Owner", PlateNormalized = "51G00001", Year = 2019 });
+                VehicleModelId = model.Id, VehicleBrandId = model.VehicleBrandId, VehicleType = iCareX.Domain.Enums.VehicleType.Car, FuelType = iCareX.Domain.Enums.FuelType.Gasoline, Name = "Missing Owner", Plate = "51G00001", PlateNormalized = "51G00001", Year = 2019 });
             var exception = await Assert.ThrowsAnyAsync<Exception>(() => db.SaveChangesAsync());
             var postgres = exception as Npgsql.PostgresException ?? Assert.IsType<Npgsql.PostgresException>(exception.InnerException);
             Assert.Equal("23514", postgres.SqlState);
@@ -57,7 +56,7 @@ public sealed partial class DatabaseTests
         await using (var db = Context())
         {
             var destination = new Vehicle { AccountId = ownerId, CreatedByUserId = ownerId,
-                VehicleModelId = model.Id, Name = "Move destination", PlateNormalized = "51G00002", Year = 2019 };
+                VehicleModelId = model.Id, VehicleBrandId = model.VehicleBrandId, VehicleType = iCareX.Domain.Enums.VehicleType.Car, FuelType = iCareX.Domain.Enums.FuelType.Gasoline, Name = "Move destination", Plate = "51G00002", PlateNormalized = "51G00002", Year = 2019 };
             db.Vehicles.Add(destination);
             (await db.VehicleMembers.SingleAsync(x => x.Id == owner.Id)).VehicleId = destination.Id;
             // Destination has one Owner, but moving it must not leave the source without one.

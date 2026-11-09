@@ -8,6 +8,9 @@ public sealed record RegisterRequest(string Name, string Email, string Password,
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record LoginRequest(string Email, string Password);
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record UpdateProfileRequest(string Name, string? Phone);
+
 public sealed record AccountResponse(
     Guid Id,
     string Name,

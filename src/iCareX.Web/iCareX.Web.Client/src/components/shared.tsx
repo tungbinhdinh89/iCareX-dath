@@ -1,10 +1,15 @@
-import { useMemo } from "react"
+import MoreVertRounded from "@mui/icons-material/MoreVertRounded"
+import DirectionsCarOutlined from "@mui/icons-material/DirectionsCarOutlined"
+import { fuelTypeLabels, vehicleRoleLabels, vehicleMaintenanceSummary } from "@/lib/models/vehiclePresentation"
+import { useMemo, useState } from "react"
 import {
   Box,
   Button,
   CardActionArea,
   IconButton,
   MenuItem,
+  Menu,
+  Chip,
   Table,
   TableBody,
   TableCell,
@@ -15,8 +20,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material"
-import DirectionsCarOutlined from "@mui/icons-material/DirectionsCarOutlined"
-import TwoWheelerOutlined from "@mui/icons-material/TwoWheelerOutlined"
 import SpeedOutlined from "@mui/icons-material/SpeedOutlined"
 import LocalGasStationOutlined from "@mui/icons-material/LocalGasStationOutlined"
 import BuildOutlined from "@mui/icons-material/BuildOutlined"
@@ -24,7 +27,6 @@ import EditOutlined from "@mui/icons-material/EditOutlined"
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import ChevronRight from "@mui/icons-material/ChevronRight"
 import ArrowForwardRounded from "@mui/icons-material/ArrowForwardRounded"
-import CheckCircleOutline from "@mui/icons-material/CheckCircleOutline"
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -44,6 +46,7 @@ import {
   money,
   number,
   odoOf,
+  odometerUnitLabel,
   planState,
   today,
   type Entry,
@@ -164,110 +167,54 @@ export function MonthFilter({ all = true }: { all?: boolean }) {
 }
 
 export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
-  const { data, open, canManageOdo, permissions } = useGarage()
+  const { data, open, can, canManageOdo, permissions } = useGarage()
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const navigate = useNavigate()
-  if (!data) return null
-  const active = data.plans.filter(
-    (p) => p.vehicleId === vehicle.id && planState(p, data).status !== "good",
-  ).length
+  if (!data || !can('vehicle.read', vehicle.id)) return null
+  const membership = permissions?.vehicles.find((item) => item.vehicleId === vehicle.id)
+  const maintenance = vehicleMaintenanceSummary(data, vehicle)
+  const canEdit = can('vehicle.update', vehicle.id)
+  const canMembers = can('vehicle.member.invite', vehicle.id)
+  const canArchive = can('vehicle.archive', vehicle.id)
+  const odo = canManageOdo(vehicle.id)
+  const hasMenu = canEdit || canMembers || canArchive || odo
+  const action = (run: () => void) => { setAnchor(null); run() }
   return (
-    <Box className="vehicle-card">
-      <CardActionArea
-        onClick={() => navigate(`/xe/${vehicle.id}`)}
-        aria-label={`Xem ${vehicle.name}`}
-      >
+    <Box className="vehicle-card vehicle-card-v2">
+      <CardActionArea onClick={() => navigate(`/xe/${vehicle.id}`)} aria-label={`Xem chi tiết ${vehicle.name}`}>
+        <Box component="img" src={vehicle.image} alt={`Ảnh ${vehicle.name}`} className="vehicle-card-image" />
         <Box className="vehicle-body">
-          <Box className="vehicle-meta">
-            <Box>
-              <Typography variant="subtitle1">{vehicle.name}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {vehicle.type} · {vehicle.plate}
-              </Typography>
-            </Box>
-            <Box className="icon-box">
-              {vehicle.type === "Ô tô" ? (
-                <DirectionsCarOutlined fontSize="small" />
-              ) : (
-                <TwoWheelerOutlined fontSize="small" />
-              )}
-            </Box>
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "end",
-            }}
-          >
-            <Box>
-              <Typography
-                sx={{
-                  fontSize: "var(--text-meta-size)",
-                  color: "text.secondary",
-                  mb: 0.4,
-                }}
-              >
-                SỐ KM HIỆN TẠI
-              </Typography>
-              <Box className="vehicle-odo">
-                <Typography
-                  sx={{
-                    fontSize: "var(--text-title-size)",
-                    fontWeight: 600,
-                    letterSpacing: "-.04em",
-                  }}
-                >
-                  {number(odoOf(vehicle, data.entries))}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  km
-                </Typography>
-              </Box>
-            </Box>
-            <Typography variant="caption" color="text.secondary">
-              {vehicle.type} · {vehicle.year}
+          <Box>
+            <Typography component="h3" variant="subtitle1">{vehicle.name}</Typography>
+            <Typography variant="body2" color="text.secondary">{vehicle.vehicleBrandName} {vehicle.vehicleModelName}</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              {[vehicle.plate, vehicle.year, vehicle.type].filter(Boolean).join(' · ')}
             </Typography>
           </Box>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="caption" color="text.secondary">ODO HIỆN TẠI</Typography>
+            <Typography variant="h5" sx={{ mt: 0.5 }}>{number(odoOf(vehicle, data.entries))} <Box component="span" sx={{ fontSize: 14, fontWeight: 400 }}>{odometerUnitLabel(vehicle)}</Box></Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap', mt: 2 }}>
+            <Box><Typography variant="caption" color="text.secondary">Nhiên liệu</Typography><Typography variant="body2">{fuelTypeLabels[vehicle.fuelType] ?? vehicle.fuelType}</Typography></Box>
+            {membership && <Chip variant="outlined" size="small" label={vehicleRoleLabels[membership.role] ?? membership.role} />}
+          </Box>
+          {vehicle.isArchived && <Chip size="small" label="Đã lưu trữ" sx={{ mt: 2 }} />}
+          {maintenance && <Box sx={{ mt: 2 }}><Chip size="small" color={maintenance.status === 'Overdue' ? 'error' : maintenance.status === 'Due' || maintenance.status === 'Upcoming' ? 'warning' : 'default'} label={maintenance.label} />
+            {maintenance.title && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{maintenance.title}{maintenance.remaining != null && maintenance.remaining > 0 ? ` · Còn ${number(maintenance.remaining)} ${odometerUnitLabel(vehicle)}` : ''}</Typography>}
+          </Box>}
         </Box>
       </CardActionArea>
-      <Box sx={{ px: 2, pb: 1 }}>
-        <Typography variant="caption" color="text.secondary">
-          {
-            permissions?.vehicles.find((item) => item.vehicleId === vehicle.id)
-              ?.role
-          }{" "}
-          ·{" "}
-          {permissions?.vehicles.find((item) => item.vehicleId === vehicle.id)
-            ?.accessType === "Owned"
-            ? "Xe sở hữu"
-            : "Được chia sẻ"}
-        </Typography>
+      <Box className="vehicle-card-actions">
+        <Button onClick={() => navigate(`/xe/${vehicle.id}`)} endIcon={<ChevronRight />}>Xem chi tiết</Button>
+        {hasMenu && <IconButton aria-label={`Thao tác với ${vehicle.name}`} aria-haspopup="menu" aria-expanded={!!anchor} onClick={(event) => setAnchor(event.currentTarget)} sx={{ width: 44, height: 44 }}><MoreVertRounded /></IconButton>}
       </Box>
-      <Box
-        className="vehicle-footer"
-        sx={{ mx: 2, pb: 1.5, mt: "0 !important" }}
-      >
-        <Box className={`status-chip ${active ? "warning" : ""}`}>
-          <CheckCircleOutline sx={{ fontSize: 14 }} />
-          {vehicle.isArchived
-            ? "Đã lưu trữ"
-            : active
-              ? `${active} hạng mục cần chú ý`
-              : "Đang theo dõi phương tiện"}
-        </Box>
-        {canManageOdo(vehicle.id) && (
-          <Button
-            size="small"
-            disabled={vehicle.isArchived}
-            onClick={() =>
-              open({ type: "entry", kind: "odo", vehicleId: vehicle.id })
-            }
-            sx={{ fontSize: "var(--text-meta-size)", p: 0, minHeight: 26 }}
-          >
-            Cập nhật ODO <ChevronRight sx={{ fontSize: 14 }} />
-          </Button>
-        )}
-      </Box>
+      <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
+        {canEdit && <MenuItem onClick={() => action(() => open({ type: 'vehicle', vehicle }))}>Sửa thông tin xe</MenuItem>}
+        {odo && <MenuItem onClick={() => action(() => open({ type: 'entry', kind: 'odo', vehicleId: vehicle.id }))}>Cập nhật ODO</MenuItem>}
+        {canMembers && <MenuItem onClick={() => action(() => navigate(`/xe/${vehicle.id}/thanh-vien`))}>Quản lý thành viên</MenuItem>}
+        {canArchive && <MenuItem onClick={() => action(() => open({ type: 'delete', entity: 'vehicle', id: vehicle.id, title: vehicle.name }))}>Lưu trữ xe</MenuItem>}
+      </Menu>
     </Box>
   )
 }
@@ -354,7 +301,7 @@ export function HistoryTable({
               <TableCell>Hoạt động</TableCell>
               <TableCell>Phương tiện</TableCell>
               <TableCell>Ngày ghi nhận</TableCell>
-              <TableCell align="right">ODO (km)</TableCell>
+              <TableCell align="right">ODO</TableCell>
               <TableCell align="right">Chi phí</TableCell>
               {hasActions && <TableCell align="right">Thao tác</TableCell>}
             </TableRow>
@@ -412,7 +359,7 @@ export function HistoryTable({
                   <TableCell sx={{ whiteSpace: "nowrap" }}>
                     {dateLabel(entry.date)}
                   </TableCell>
-                  <TableCell align="right">{number(entry.odo)}</TableCell>
+                  <TableCell align="right">{number(entry.odo)} {odometerUnitLabel(data.vehicles.find((v) => v.id === entry.vehicleId))}</TableCell>
                   <TableCell
                     align="right"
                     sx={{ fontWeight: 600, whiteSpace: "nowrap" }}
@@ -491,7 +438,7 @@ export function HistoryTable({
               )}
               <Box className="activity-card-values">
                 <Typography variant="body2" color="text.secondary">
-                  {number(entry.odo)} km
+                  {number(entry.odo)} {odometerUnitLabel(data.vehicles.find((v) => v.id === entry.vehicleId))}
                 </Typography>
                 <Typography variant="subtitle2">
                   {entry.kind === "odo" ? "—" : money(entry.cost)}

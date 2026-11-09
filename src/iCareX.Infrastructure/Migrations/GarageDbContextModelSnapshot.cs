@@ -287,7 +287,7 @@ namespace iCareX.Infrastructure.Migrations
 
                     b.ToTable("fuel_entries", null, t =>
                         {
-                            t.HasCheckConstraint("ck_fuel_entry_numbers", "\"Odo\" BETWEEN 0 AND 9999999 AND \"Cost\" > 0 AND \"Liters\" > 0 AND \"Liters\" <= 500");
+                            t.HasCheckConstraint("ck_fuel_entry_numbers", "\"Odo\" BETWEEN 0 AND 9999999999.99 AND \"Cost\" > 0 AND \"Liters\" > 0 AND \"Liters\" <= 500");
                         });
                 });
 
@@ -337,7 +337,7 @@ namespace iCareX.Infrastructure.Migrations
 
                     b.ToTable("maintenance_plans", null, t =>
                         {
-                            t.HasCheckConstraint("ck_plan_intervals", "\"DueOdo\" BETWEEN 1 AND 9999999 AND \"IntervalKm\" BETWEEN 1 AND 1000000 AND \"IntervalMonths\" BETWEEN 1 AND 120");
+                            t.HasCheckConstraint("ck_plan_intervals", "\"DueOdo\" BETWEEN 1 AND 9999999999.99 AND \"IntervalKm\" BETWEEN 1 AND 1000000 AND \"IntervalMonths\" BETWEEN 1 AND 120");
                         });
                 });
 
@@ -404,7 +404,7 @@ namespace iCareX.Infrastructure.Migrations
 
                     b.ToTable("maintenance_records", null, t =>
                         {
-                            t.HasCheckConstraint("ck_maintenance_record_numbers", "\"Odo\" BETWEEN 0 AND 9999999 AND \"Cost\" > 0");
+                            t.HasCheckConstraint("ck_maintenance_record_numbers", "\"Odo\" BETWEEN 0 AND 9999999999.99 AND \"Cost\" > 0");
                         });
                 });
 
@@ -511,7 +511,7 @@ namespace iCareX.Infrastructure.Migrations
 
                     b.ToTable("odometer_readings", null, t =>
                         {
-                            t.HasCheckConstraint("ck_odometer_reading_odo", "\"Odo\" BETWEEN 0 AND 9999999");
+                            t.HasCheckConstraint("ck_odometer_reading_odo", "\"Odo\" BETWEEN 0 AND 9999999999.99");
                         });
                 });
 
@@ -629,63 +629,124 @@ namespace iCareX.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("ArchivedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("BaseOdo")
-                        .HasPrecision(20, 6)
-                        .HasColumnType("numeric(20,6)");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ImageUrl")
+                    b.Property<decimal?>("FuelCapacity")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("FuelType")
                         .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ImageUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
 
                     b.Property<string>("Name")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<decimal>("Odometer")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("OdometerUnit")
                         .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)");
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Plate")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<string>("PlateNormalized")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal?>("PurchasePrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("RegistrationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("SalePrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("VIN")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("VehicleBrandId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("VehicleModelId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("VehicleType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
 
-                    b.Property<int>("Year")
+                    b.Property<int?>("Year")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ArchivedAtUtc");
+
                     b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("VehicleModelId");
+                    b.HasIndex("PlateNormalized");
+
+                    b.HasIndex("VIN");
 
                     b.HasIndex("AccountId", "PlateNormalized")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"PlateNormalized\" IS NOT NULL");
+
+                    b.HasIndex("VehicleBrandId", "VehicleModelId");
+
+                    b.HasIndex("VehicleBrandId", "VehicleType");
+
+                    b.HasIndex("VehicleModelId", "VehicleBrandId");
 
                     b.ToTable("vehicles", null, t =>
                         {
-                            t.HasCheckConstraint("ck_vehicle_odo", "\"BaseOdo\" BETWEEN 0 AND 9999999");
+                            t.HasCheckConstraint("ck_vehicle_fuel_type", "\"FuelType\" IN ('Gasoline','Diesel','Electric','Hybrid','PlugInHybrid','Ethanol','Biodiesel','LPG','CNG','Hydrogen','Other')");
 
-                            t.HasCheckConstraint("ck_vehicle_year", "\"Year\" >= 1980");
+                            t.HasCheckConstraint("ck_vehicle_odo", "\"Odometer\" BETWEEN 0 AND 9999999999.99");
+
+                            t.HasCheckConstraint("ck_vehicle_odometer_unit", "\"OdometerUnit\" IN ('Kilometres','Miles','Hours')");
+
+                            t.HasCheckConstraint("ck_vehicle_optional_numbers", "(\"FuelCapacity\" IS NULL OR \"FuelCapacity\" > 0) AND (\"PurchasePrice\" IS NULL OR \"PurchasePrice\" >= 0) AND (\"SalePrice\" IS NULL OR \"SalePrice\" >= 0)");
+
+                            t.HasCheckConstraint("ck_vehicle_plate_pair", "(\"Plate\" IS NULL AND \"PlateNormalized\" IS NULL) OR (\"Plate\" IS NOT NULL AND \"PlateNormalized\" IS NOT NULL AND length(\"PlateNormalized\") > 0)");
+
+                            t.HasCheckConstraint("ck_vehicle_type", "\"VehicleType\" IN ('Car','Motorcycle','Bicycle','Truck','Bus','Van','Boat','Aircraft','Other')");
+
+                            t.HasCheckConstraint("ck_vehicle_year", "\"Year\" IS NULL OR \"Year\" BETWEEN 1 AND 9999");
                         });
                 });
 
@@ -699,18 +760,27 @@ namespace iCareX.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)");
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("VehicleTypeId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("VehicleType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -718,10 +788,15 @@ namespace iCareX.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("VehicleTypeId", "Name")
+                    b.HasIndex("VehicleType", "NormalizedName")
                         .IsUnique();
 
-                    b.ToTable("vehicle_brands", (string)null);
+                    b.ToTable("vehicle_brands", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_vehicle_brand_name", "length(btrim(\"Name\")) > 0 AND length(\"NormalizedName\") > 0");
+
+                            t.HasCheckConstraint("ck_vehicle_brand_type", "\"VehicleType\" IN ('Car','Motorcycle','Bicycle','Truck','Bus','Van','Boat','Aircraft','Other')");
+                        });
                 });
 
             modelBuilder.Entity("iCareX.Domain.Entities.VehicleInvitation", b =>
@@ -861,12 +936,19 @@ namespace iCareX.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)");
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -880,47 +962,13 @@ namespace iCareX.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("VehicleBrandId", "Name")
+                    b.HasIndex("VehicleBrandId", "NormalizedName")
                         .IsUnique();
 
-                    b.ToTable("vehicle_models", (string)null);
-                });
-
-            modelBuilder.Entity("iCareX.Domain.Entities.VehicleType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.ToTable("vehicle_types", (string)null);
+                    b.ToTable("vehicle_models", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_vehicle_model_name", "length(btrim(\"Name\")) > 0 AND length(\"NormalizedName\") > 0");
+                        });
                 });
 
             modelBuilder.Entity("iCareX.Infrastructure.Persistence.ApplicationUser", b =>
@@ -1272,24 +1320,23 @@ namespace iCareX.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("iCareX.Domain.Entities.VehicleModel", "VehicleModel")
-                        .WithMany()
-                        .HasForeignKey("VehicleModelId")
+                    b.HasOne("iCareX.Domain.Entities.VehicleBrand", "VehicleBrand")
+                        .WithMany("Vehicles")
+                        .HasForeignKey("VehicleBrandId", "VehicleType")
+                        .HasPrincipalKey("Id", "VehicleType")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("iCareX.Domain.Entities.VehicleModel", "VehicleModel")
+                        .WithMany("Vehicles")
+                        .HasForeignKey("VehicleModelId", "VehicleBrandId")
+                        .HasPrincipalKey("Id", "VehicleBrandId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("VehicleBrand");
 
                     b.Navigation("VehicleModel");
-                });
-
-            modelBuilder.Entity("iCareX.Domain.Entities.VehicleBrand", b =>
-                {
-                    b.HasOne("iCareX.Domain.Entities.VehicleType", "VehicleType")
-                        .WithMany("Brands")
-                        .HasForeignKey("VehicleTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("VehicleType");
                 });
 
             modelBuilder.Entity("iCareX.Domain.Entities.VehicleInvitation", b =>
@@ -1359,11 +1406,13 @@ namespace iCareX.Infrastructure.Migrations
             modelBuilder.Entity("iCareX.Domain.Entities.VehicleBrand", b =>
                 {
                     b.Navigation("Models");
+
+                    b.Navigation("Vehicles");
                 });
 
-            modelBuilder.Entity("iCareX.Domain.Entities.VehicleType", b =>
+            modelBuilder.Entity("iCareX.Domain.Entities.VehicleModel", b =>
                 {
-                    b.Navigation("Brands");
+                    b.Navigation("Vehicles");
                 });
 #pragma warning restore 612, 618
         }

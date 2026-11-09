@@ -51,17 +51,16 @@ public sealed partial class DatabaseTests
         var (outsider, _) = await Login("Outsider");
         using (owner) using (manager) using (contributor) using (viewer) using (outsider)
         {
-            var model = new VehicleModel { Name = "Model", VehicleBrand = new VehicleBrand
-            { Name = "Brand", VehicleType = new VehicleType { Name = "Type", Code = Guid.NewGuid().ToString("N") } } };
+            var model = TestVehicleModel();
             await using (var db = Context()) { db.VehicleModels.Add(model); await db.SaveChangesAsync(); }
-            var created = await owner.PostAsJsonAsync("/api/v1/vehicles", new { name = "Shared car", plate = "51A-12345", year = 2020, baseOdo = 0, vehicleModelId = model.Id, imageUrl = "" });
+            var created = await owner.PostAsJsonAsync("/api/v1/vehicles", new { name = "Shared car", plate = "51A-12345", year = 2020, odometer = 0, vehicleModelId = model.Id, vehicleBrandId = model.VehicleBrandId, vehicleType = "Car", fuelType = "Gasoline", odometerUnit = "Kilometres", imageUrl = "" });
             Assert.Equal(HttpStatusCode.Created, created.StatusCode);
             var vehicle = (await created.Content.ReadFromJsonAsync<VehicleResponse>())!;
             var url = $"/api/v1/vehicles/{vehicle.Id}";
             var fuel = new FuelEntry { VehicleId = vehicle.Id, AccountId = ownerId, CreatedByUserId = contributorId,
                 DriverUserId = viewerId, Date = new(2026, 1, 1), Odo = 100, Cost = 100, Liters = 2 };
             var secondVehicle = new Vehicle { AccountId = ownerId, CreatedByUserId = ownerId,
-                VehicleModelId = model.Id, Name = "Second car", Plate = "51A-99999", PlateNormalized = "51A99999", Year = 2020 };
+                VehicleModelId = model.Id, VehicleBrandId = model.VehicleBrandId, VehicleType = iCareX.Domain.Enums.VehicleType.Car, FuelType = iCareX.Domain.Enums.FuelType.Gasoline, Name = "Second car", Plate = "51A-99999", PlateNormalized = "51A99999", Year = 2020 };
             await using (var db = Context())
             {
                 db.Vehicles.Add(secondVehicle);
@@ -106,7 +105,7 @@ public sealed partial class DatabaseTests
             {
                 await holder.Vehicles.FromSqlInterpolated($"SELECT * FROM vehicles WHERE \"Id\" = {vehicle.Id} FOR UPDATE").AsNoTracking().SingleAsync();
                 var write = manager.PutAsJsonAsync(url, new { name = "Race update", plate = vehicle.Plate,
-                    vehicleModelId = model.Id, year = 2020, baseOdo = 0, imageUrl = "", version = vehicle.Version });
+                    vehicleModelId = model.Id, vehicleBrandId = model.VehicleBrandId, vehicleType = "Car", fuelType = "Gasoline", odometerUnit = "Kilometres", year = 2020, odometer = 0, imageUrl = "", version = vehicle.Version });
                 var blocked = false;
                 for (var attempt = 0; attempt < 200 && !blocked; attempt++)
                 {

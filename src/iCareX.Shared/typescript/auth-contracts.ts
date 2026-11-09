@@ -12,6 +12,11 @@ export type LoginRequest = {
   password: string
 }
 
+export type UpdateProfileRequest = {
+  name: string
+  phone?: string | null
+}
+
 export type AccountResponse = {
   id: string
   name: string

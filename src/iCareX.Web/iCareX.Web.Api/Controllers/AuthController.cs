@@ -113,6 +113,27 @@ public sealed class AuthController(
     }
 
     [Authorize]
+    [HttpPut("me")]
+    public async Task<ActionResult<AccountResponse>> UpdateProfile(UpdateProfileRequest request, CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var accountId))
+            return Unauthorized();
+        if (!IsCsrfValid())
+            return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+            { ["csrf"] = ["CSRF token không hợp lệ."] }));
+        try
+        {
+            var account = await auth.UpdateProfileAsync(accountId, request, cancellationToken);
+            return account is null ? Unauthorized() : Ok(account);
+        }
+        catch (AuthValidationException exception)
+        {
+            return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+            { ["profile"] = exception.Errors.ToArray() }));
+        }
+    }
+
+    [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
