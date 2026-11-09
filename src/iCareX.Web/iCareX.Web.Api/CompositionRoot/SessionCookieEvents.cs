@@ -24,7 +24,9 @@ internal sealed class SessionCookieEvents(GarageDbContext db, TimeProvider timeP
             session => session.Id == sessionId &&
                        session.AccountId == accountId &&
                        session.RevokedAtUtc == null &&
-                       session.ExpiresAtUtc > now,
+                       session.ExpiresAtUtc > now &&
+                       db.Users.Any(user => user.Id == accountId &&
+                           (!user.LockoutEnabled || user.LockoutEnd == null || user.LockoutEnd <= now)),
             context.HttpContext.RequestAborted);
         if (!valid)
             context.RejectPrincipal();

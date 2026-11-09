@@ -1,3 +1,5 @@
+using iCareX.Domain.Authorization;
+using iCareX.Web.Api.Authorization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +13,7 @@ namespace iCareX.Web.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/vehicles")]
+[ServiceFilter(typeof(VehicleCsrfFilter))]
 public sealed class VehiclesController(IVehicleService vehicles) : ControllerBase
 {
     [HttpGet]
@@ -22,6 +25,7 @@ public sealed class VehiclesController(IVehicleService vehicles) : ControllerBas
     }
 
     [HttpGet("{vehicleId:guid}")]
+    [Authorize(Policy = VehiclePermissions.VehicleRead)]
     public async Task<ActionResult<VehicleResponse>> Get(Guid vehicleId, CancellationToken cancellationToken)
     {
         var result = await vehicles.GetAsync(AccountId(), vehicleId, cancellationToken);
@@ -42,6 +46,7 @@ public sealed class VehiclesController(IVehicleService vehicles) : ControllerBas
     }
 
     [HttpPut("{vehicleId:guid}")]
+    [Authorize(Policy = VehiclePermissions.VehicleUpdate)]
     public async Task<ActionResult<VehicleResponse>> Update(
         Guid vehicleId, UpdateVehicleRequest request, CancellationToken cancellationToken)
     {
@@ -56,14 +61,17 @@ public sealed class VehiclesController(IVehicleService vehicles) : ControllerBas
     }
 
     [HttpPost("{vehicleId:guid}/archive")]
+    [Authorize(Policy = VehiclePermissions.VehicleArchive)]
     public Task<ActionResult<VehicleResponse>> Archive(Guid vehicleId, VersionRequest request, CancellationToken cancellationToken) =>
         ChangeArchive(vehicleId, request.Version, true, cancellationToken);
 
     [HttpPost("{vehicleId:guid}/restore")]
+    [Authorize(Policy = VehiclePermissions.VehicleRestore)]
     public Task<ActionResult<VehicleResponse>> Restore(Guid vehicleId, VersionRequest request, CancellationToken cancellationToken) =>
         ChangeArchive(vehicleId, request.Version, false, cancellationToken);
 
     [HttpGet("{vehicleId:guid}/odometer-readings")]
+    [Authorize(Policy = VehiclePermissions.VehicleRead)]
     public async Task<ActionResult<IReadOnlyCollection<OdometerReadingResponse>>> Readings(
         Guid vehicleId, CancellationToken cancellationToken)
     {
@@ -72,6 +80,7 @@ public sealed class VehiclesController(IVehicleService vehicles) : ControllerBas
     }
 
     [HttpPost("{vehicleId:guid}/odometer-readings")]
+    [Authorize(Policy = VehiclePermissions.VehicleRead)]
     public async Task<ActionResult<OdometerReadingResponse>> CreateReading(
         Guid vehicleId, CreateOdometerReadingRequest request, CancellationToken cancellationToken)
     {
@@ -87,6 +96,7 @@ public sealed class VehiclesController(IVehicleService vehicles) : ControllerBas
     }
 
     [HttpPut("{vehicleId:guid}/odometer-readings/{readingId:guid}")]
+    [Authorize(Policy = VehiclePermissions.VehicleRead)]
     public async Task<ActionResult<OdometerReadingResponse>> UpdateReading(
         Guid vehicleId, Guid readingId, UpdateOdometerReadingRequest request, CancellationToken cancellationToken)
     {
@@ -101,6 +111,7 @@ public sealed class VehiclesController(IVehicleService vehicles) : ControllerBas
     }
 
     [HttpDelete("{vehicleId:guid}/odometer-readings/{readingId:guid}")]
+    [Authorize(Policy = VehiclePermissions.VehicleRead)]
     public async Task<IActionResult> DeleteReading(
         Guid vehicleId, Guid readingId, [FromQuery] long version, CancellationToken cancellationToken)
     {

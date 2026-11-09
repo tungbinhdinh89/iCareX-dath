@@ -65,10 +65,13 @@ async function authMutation<T>(path: string, body?: unknown) {
 }
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const generation = sessionGeneration
+  const mutation = !["GET", "HEAD"].includes((init?.method ?? "GET").toUpperCase())
+  if (mutation && !csrfToken) await csrf()
+  if (generation !== sessionGeneration) throw new ApiError("Session changed.", 401)
   const response = await fetch(`/api/v1${path}`, {
     ...init,
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: { "Content-Type": "application/json", ...(mutation ? { "X-CSRF-TOKEN": csrfToken } : {}), ...(init?.headers ?? {}) },
   })
   if (!response.ok) {
     if (response.status === 401 && generation === sessionGeneration) unauthorizedListeners.forEach((listener) => listener())

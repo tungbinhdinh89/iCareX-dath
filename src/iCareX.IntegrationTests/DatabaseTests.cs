@@ -10,7 +10,7 @@ using Xunit;
 
 namespace iCareX.IntegrationTests;
 
-public sealed class DatabaseTests : IAsyncLifetime
+public sealed partial class DatabaseTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer postgres = new PostgreSqlBuilder("postgres:18-alpine").Build();
     private GarageDbContext Context() => new(new DbContextOptionsBuilder<GarageDbContext>().UseNpgsql(postgres.GetConnectionString()).Options);

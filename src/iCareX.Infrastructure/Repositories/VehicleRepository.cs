@@ -8,11 +8,11 @@ public sealed class VehicleRepository(GarageDbContext db)
 {
     public Task<Vehicle?> FindAsync(Guid accountId, Guid vehicleId, CancellationToken cancellationToken) =>
         db.Vehicles.Include(x => x.VehicleModel!).ThenInclude(x => x.VehicleBrand!).ThenInclude(x => x.VehicleType)
-            .SingleOrDefaultAsync(x => x.AccountId == accountId && x.Id == vehicleId, cancellationToken);
+            .SingleOrDefaultAsync(x => x.Id == vehicleId && db.VehicleMembers.Any(m => m.VehicleId == x.Id && m.UserId == accountId && m.RevokedAtUtc == null), cancellationToken);
 
     public Task<List<Vehicle>> ListAsync(Guid accountId, bool includeArchived, CancellationToken cancellationToken)
     {
-        var query = db.Vehicles.Where(x => x.AccountId == accountId);
+        var query = db.Vehicles.Where(x => db.VehicleMembers.Any(m => m.VehicleId == x.Id && m.UserId == accountId && m.RevokedAtUtc == null));
         if (!includeArchived) query = query.Where(x => x.ArchivedAtUtc == null);
         return query.Include(x => x.VehicleModel!).ThenInclude(x => x.VehicleBrand!).ThenInclude(x => x.VehicleType)
             .OrderBy(x => x.Name).ThenBy(x => x.Id).ToListAsync(cancellationToken);

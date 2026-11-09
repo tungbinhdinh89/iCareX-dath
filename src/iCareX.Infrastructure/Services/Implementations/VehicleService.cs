@@ -1,3 +1,6 @@
+using System.Text.Json;
+using iCareX.Application.Features.Authorization.Contracts;
+using iCareX.Domain.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using iCareX.Application.Abstractions;
@@ -13,6 +16,7 @@ namespace iCareX.Infrastructure.Services.Implementations;
 public sealed class VehicleService(
     VehicleRepository repository,
     GarageDbContext db,
+    IVehicleAccessService access,
     IBusinessClock clock,
     ILogger<VehicleService> logger) : IVehicleService
 {
@@ -21,7 +25,10 @@ public sealed class VehicleService(
         var vehicles = await repository.ListAsync(accountId, includeArchived, cancellationToken);
         var result = new List<VehicleResponse>(vehicles.Count);
         foreach (var vehicle in vehicles)
-            result.Add(ToResponse(vehicle, await repository.ReadingsAsync(accountId, vehicle.Id, cancellationToken)));
+        {
+            await access.RequireAsync(accountId, vehicle.Id, VehiclePermissions.VehicleRead, cancellationToken);
+            result.Add(ToResponse(vehicle, await repository.ReadingsAsync(vehicle.AccountId, vehicle.Id, cancellationToken)));
+        }
         return result;
     }
 
@@ -29,7 +36,8 @@ public sealed class VehicleService(
     {
         var vehicle = await repository.FindAsync(accountId, vehicleId, cancellationToken);
         if (vehicle is null) return null;
-        var readings = await repository.ReadingsAsync(accountId, vehicleId, cancellationToken);
+        await access.RequireAsync(accountId, vehicleId, VehiclePermissions.VehicleRead, cancellationToken);
+        var readings = await repository.ReadingsAsync(vehicle.AccountId, vehicleId, cancellationToken);
         return ToResponse(vehicle, readings);
     }
 
@@ -60,6 +68,7 @@ public sealed class VehicleService(
             UserId = accountId,
             Role = VehicleMemberRole.Owner
         });
+        Audit(accountId, vehicle, "vehicle.created");
         await repository.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Vehicle created {VehicleId} for account {AccountId}", vehicle.Id, accountId);
         return ToResponse(vehicle, Array.Empty<OdometerReading>());
@@ -68,14 +77,16 @@ public sealed class VehicleService(
     public async Task<VehicleResponse> UpdateAsync(Guid accountId, Guid vehicleId, UpdateVehicleRequest request, CancellationToken cancellationToken)
     {
         ValidateVehicle(request.Name, request.Plate, request.Year, request.BaseOdo);
+        await using var transaction = await VehicleWriteLock.BeginAsync(db, vehicleId, cancellationToken);
         var vehicle = await RequireVehicle(accountId, vehicleId, cancellationToken);
+        await access.RequireAsync(accountId, vehicleId, VehiclePermissions.VehicleUpdate, cancellationToken);
         GarageRules.EnsureActive(vehicle);
         EnsureVersion(vehicle, request.Version);
         var model = await RequireActiveModel(request.VehicleModelId, cancellationToken);
-        var readings = await repository.ReadingsAsync(accountId, vehicleId, cancellationToken);
+        var readings = await repository.ReadingsAsync(vehicle.AccountId, vehicleId, cancellationToken);
         GarageRules.ValidateBaseOdo(request.BaseOdo, readings.Select(ToEntry));
         var normalizedPlate = GarageRules.NormalizePlate(request.Plate);
-        if (await db.Vehicles.AnyAsync(x => x.AccountId == accountId && x.Id != vehicleId &&
+        if (await db.Vehicles.AnyAsync(x => x.AccountId == vehicle.AccountId && x.Id != vehicleId &&
             x.PlateNormalized == normalizedPlate, cancellationToken))
             throw new VehicleConflictException("Biển số đã tồn tại trong tài khoản.");
         vehicle.Name = request.Name.Trim();
@@ -88,7 +99,9 @@ public sealed class VehicleService(
         vehicle.ImageUrl = request.ImageUrl?.Trim() ?? "";
         vehicle.Version++;
         vehicle.UpdatedAtUtc = clock.UtcNow;
+        Audit(accountId, vehicle, "vehicle.changed");
         await SaveWithConcurrency(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("Vehicle updated {VehicleId} for account {AccountId}", vehicleId, accountId);
         return ToResponse(vehicle, readings);
     }
@@ -101,67 +114,98 @@ public sealed class VehicleService(
 
     public async Task<IReadOnlyCollection<OdometerReadingResponse>?> ListReadingsAsync(Guid accountId, Guid vehicleId, CancellationToken cancellationToken)
     {
-        if (await repository.FindAsync(accountId, vehicleId, cancellationToken) is null) return null;
-        return (await repository.ReadingsAsync(accountId, vehicleId, cancellationToken)).Select(ToReadingResponse).ToArray();
+        var vehicle = await repository.FindAsync(accountId, vehicleId, cancellationToken);
+        if (vehicle is null) return null;
+        await access.RequireAsync(accountId, vehicleId, VehiclePermissions.VehicleRead, cancellationToken);
+        return (await repository.ReadingsAsync(vehicle.AccountId, vehicleId, cancellationToken)).Select(ToReadingResponse).ToArray();
     }
 
     public async Task<OdometerReadingResponse> CreateReadingAsync(Guid accountId, Guid vehicleId, CreateOdometerReadingRequest request, CancellationToken cancellationToken)
     {
+        await using var transaction = await VehicleWriteLock.BeginAsync(db, vehicleId, cancellationToken);
         var vehicle = await RequireVehicle(accountId, vehicleId, cancellationToken);
+        await RequireOdoOwner(accountId, vehicleId, cancellationToken);
         GarageRules.EnsureActive(vehicle);
         var reading = new OdometerReading
         {
-            AccountId = accountId, VehicleId = vehicleId, CreatedByUserId = accountId,
+            AccountId = vehicle.AccountId, VehicleId = vehicleId, CreatedByUserId = accountId,
             Date = request.Date, Odo = request.Odo,
             Note = request.Note?.Trim() ?? ""
         };
-        var history = await repository.ReadingsAsync(accountId, vehicleId, cancellationToken);
+        var history = await repository.ReadingsAsync(vehicle.AccountId, vehicleId, cancellationToken);
         GarageRules.ValidateEntry(vehicle, ToEntry(reading), history.Select(ToEntry), clock.Today);
         repository.AddReading(reading);
+        Audit(accountId, vehicle, "vehicle.odometer.created");
         await repository.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("ODO reading created {ReadingId} for vehicle {VehicleId}", reading.Id, vehicleId);
         return ToReadingResponse(reading);
     }
 
     public async Task<OdometerReadingResponse> UpdateReadingAsync(Guid accountId, Guid vehicleId, Guid readingId, UpdateOdometerReadingRequest request, CancellationToken cancellationToken)
     {
+        await using var transaction = await VehicleWriteLock.BeginAsync(db, vehicleId, cancellationToken);
         var vehicle = await RequireVehicle(accountId, vehicleId, cancellationToken);
+        await RequireOdoOwner(accountId, vehicleId, cancellationToken);
         GarageRules.EnsureActive(vehicle);
-        var reading = await repository.FindReadingAsync(accountId, vehicleId, readingId, cancellationToken)
+        var reading = await repository.FindReadingAsync(vehicle.AccountId, vehicleId, readingId, cancellationToken)
             ?? throw new VehicleNotFoundException();
         EnsureVersion(reading, request.Version);
-        var history = await repository.ReadingsAsync(accountId, vehicleId, cancellationToken);
+        var history = await repository.ReadingsAsync(vehicle.AccountId, vehicleId, cancellationToken);
         reading.Date = request.Date; reading.Odo = request.Odo; reading.Note = request.Note?.Trim() ?? "";
         GarageRules.ValidateEntry(vehicle, ToEntry(reading), history.Select(ToEntry), clock.Today);
         reading.Version++;
         reading.UpdatedAtUtc = clock.UtcNow;
+        Audit(accountId, vehicle, "vehicle.changed");
         await SaveWithConcurrency(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return ToReadingResponse(reading);
     }
 
     public async Task DeleteReadingAsync(Guid accountId, Guid vehicleId, Guid readingId, long version, CancellationToken cancellationToken)
     {
+        await using var transaction = await VehicleWriteLock.BeginAsync(db, vehicleId, cancellationToken);
         var vehicle = await RequireVehicle(accountId, vehicleId, cancellationToken);
+        await RequireOdoOwner(accountId, vehicleId, cancellationToken);
         GarageRules.EnsureActive(vehicle);
-        var reading = await repository.FindReadingAsync(accountId, vehicleId, readingId, cancellationToken)
+        var reading = await repository.FindReadingAsync(vehicle.AccountId, vehicleId, readingId, cancellationToken)
             ?? throw new VehicleNotFoundException();
         EnsureVersion(reading, version);
         repository.RemoveReading(reading);
+        Audit(accountId, vehicle, "vehicle.changed");
         await SaveWithConcurrency(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("ODO reading deleted {ReadingId} for vehicle {VehicleId}", readingId, vehicleId);
     }
 
     private async Task<VehicleResponse> SetArchivedAsync(Guid accountId, Guid vehicleId, long version, bool archived, CancellationToken cancellationToken)
     {
+        await using var transaction = await VehicleWriteLock.BeginAsync(db, vehicleId, cancellationToken);
         var vehicle = await RequireVehicle(accountId, vehicleId, cancellationToken);
+        await access.RequireAsync(accountId, vehicleId, archived ? VehiclePermissions.VehicleArchive : VehiclePermissions.VehicleRestore, cancellationToken);
         EnsureVersion(vehicle, version);
         vehicle.ArchivedAtUtc = archived ? clock.UtcNow : null;
         vehicle.Version++;
         vehicle.UpdatedAtUtc = clock.UtcNow;
+        Audit(accountId, vehicle, "vehicle.changed");
         await SaveWithConcurrency(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("Vehicle {VehicleId} archive state changed to {Archived}", vehicleId, archived);
-        return ToResponse(vehicle, await repository.ReadingsAsync(accountId, vehicleId, cancellationToken));
+        return ToResponse(vehicle, await repository.ReadingsAsync(vehicle.AccountId, vehicleId, cancellationToken));
     }
+
+    private async Task RequireOdoOwner(Guid actor, Guid vehicleId, CancellationToken ct)
+    {
+        var member = await access.RequireAsync(actor, vehicleId, VehiclePermissions.VehicleRead, ct);
+        if (member.Role != VehicleMemberRole.Owner) throw new VehicleAccessDeniedException();
+    }
+
+    private void Audit(Guid actor, Vehicle vehicle, string action) => db.AuditLogs.Add(new AuditLog
+    {
+        ActorUserId = actor, VehicleId = vehicle.Id, Action = action, EntityType = nameof(Vehicle),
+        EntityId = vehicle.Id, CreatedAtUtc = clock.UtcNow,
+        NewValues = JsonSerializer.Serialize(new { vehicle.Version, archived = vehicle.ArchivedAtUtc != null })
+    });
 
     private async Task<Vehicle> RequireVehicle(Guid accountId, Guid vehicleId, CancellationToken cancellationToken) =>
         await repository.FindAsync(accountId, vehicleId, cancellationToken) ?? throw new VehicleNotFoundException();

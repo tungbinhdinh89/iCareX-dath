@@ -1,3 +1,4 @@
+using iCareX.Web.Api.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
@@ -67,8 +68,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             return Task.CompletedTask;
         };
     });
-builder.Services.AddAuthorization();
-builder.Services.AddControllers();
+builder.Services.AddVehicleAuthorization();
+builder.Services.AddScoped<VehicleCsrfFilter>();
+builder.Services.AddControllers(options => options.Filters.Add<VehicleApiExceptionFilter>());
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgresql", tags: ["ready"]);
