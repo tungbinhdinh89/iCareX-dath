@@ -37,7 +37,7 @@ public sealed class AuthController(
 
     [HttpPost("register")]
     [EnableRateLimiting("auth-actions")]
-    public async Task<ActionResult<AccountResponse>> Register(
+    public async Task<ActionResult<RegistrationResponse>> Register(
         [FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {
         if (!IsCsrfValid())

@@ -28,8 +28,8 @@ public sealed class AccountSecurityService(GarageDbContext db, UserManager<Appli
         var user = await users.FindByEmailAsync(address.Trim());
         // Same successful response for unknown addresses and already verified accounts.
         if (user is null || !reset && user.EmailConfirmed) return;
-        // Registration already owns a transaction; sending failure must roll it back too.
-        await using var transaction = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
+        // This transaction owns only token issuance. SMTP failure must not roll back registration.
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await LockUser(user, ct);
         if (!reset && user.EmailConfirmed) return;
         var token = reset ? await users.GeneratePasswordResetTokenAsync(user) : await users.GenerateEmailConfirmationTokenAsync(user);
@@ -38,7 +38,7 @@ public sealed class AccountSecurityService(GarageDbContext db, UserManager<Appli
             $"email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}");
         await email.SendAsync(user.Email!, reset ? "iCareX - Đặt lại mật khẩu" : "iCareX - Xác thực email",
             $"Mở liên kết sau để {(reset ? "đặt lại mật khẩu" : "xác thực email")}:\n{link}\nLiên kết có hiệu lực trong 1 giờ và chỉ dùng một lần. Nếu bạn không yêu cầu, hãy bỏ qua email này.", ct);
-        if (transaction is not null) await transaction.CommitAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
     public async Task VerifyEmailAsync(VerifyEmailRequest request, CancellationToken ct)

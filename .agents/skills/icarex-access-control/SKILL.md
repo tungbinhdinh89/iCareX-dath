@@ -15,6 +15,9 @@ phải một hệ thống authentication mới. Phân biệt source hiện tại
 - Reuse Identity/Account cùng Guid, cookie/session DB và CSRF. Đăng ký
   không tự login; account mới EmailConfirmed=false, email verification bắt buộc
   trước khi vào API phương tiện. Đọc runtime contract `doc/.be/access-control.md`.
+  Registration commit trước SMTP; lỗi email không rollback account. Contract
+  RegistrationResponse thêm verificationEmailSent; false vẫn pending, phục hồi
+  bằng login/resend/verify. Không trả raw token hoặc tự set EmailConfirmed=true.
   Sáu account states là đích: PendingVerification/Active/Suspended/Locked/
   DeletionPending/Deleted; runtime hiện chỉ derive Active/PendingVerification/
   Locked từ Identity, không giả trạng thái chưa có dữ liệu.

@@ -15,7 +15,7 @@ import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined"
 import { Link } from "react-router"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { credentialsSchema } from "@/lib/models/auth"
+import { credentialsSchema, registrationNotice } from "@/lib/models/auth"
 import { api } from "@/lib/apis/iCareXApi"
 import { useGarage } from "@/lib/state/store"
 
@@ -31,6 +31,7 @@ export default function AuthForm({
   const [show, setShow] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [emailUnavailable, setEmailUnavailable] = useState(false)
   const registering = mode === "register"
   const {
     register,
@@ -51,10 +52,9 @@ export default function AuthForm({
         setSuccess("")
         try {
           if (registering) {
-            await api.register(values)
-            setSuccess(
-              "Tài khoản đã được tạo. Kiểm tra email để xác thực, sau đó đăng nhập.",
-            )
+            const result = await api.register(values)
+            setEmailUnavailable(result.verificationEmailSent !== true)
+            setSuccess(registrationNotice(result.verificationEmailSent === true))
             resetField("password")
             setMode("login")
           } else login(await api.login(values.email, values.password))
@@ -90,7 +90,7 @@ export default function AuthForm({
               {error}
             </Alert>
           )}
-          {success && <Alert severity="success">{success}</Alert>}
+          {success && <Alert severity={emailUnavailable ? "warning" : "success"}>{success}</Alert>}
           {registering && (
             <>
               <TextField

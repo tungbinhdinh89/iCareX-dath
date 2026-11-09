@@ -17,4 +17,8 @@ public interface IAccountEmailSender
     Task SendAsync(string recipient, string subject, string text, CancellationToken ct);
 }
 
-public sealed class EmailDeliveryUnavailableException : Exception;
+public sealed class EmailDeliveryUnavailableException(string reason = "unavailable") : Exception("Email delivery unavailable.")
+{
+    // Safe operational code only; do not expose SMTP exception text or credentials.
+    public string Reason { get; } = reason;
+}

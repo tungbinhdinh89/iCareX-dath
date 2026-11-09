@@ -25,6 +25,7 @@ import {
   credentialsSchema,
   newPasswordSchema,
   readSecretFragment,
+  registrationNotice,
 } from "../src/lib/models/auth.ts"
 import type { CurrentUserPermissionsResponse } from "../../../iCareX.Shared/typescript/vehicle-contracts.ts"
 const vehicle: Vehicle = {
@@ -51,6 +52,37 @@ const garage: Garage = {
   profile: { name: "Test", email: "test@example.com", phone: "" },
   settings: { reminders: true, thresholdKm: 500, thresholdDays: 30 },
 }
+
+test("vehicle writes send only the Shared DTO fields, excluding form/catalog metadata", async () => {
+  const originalFetch = globalThis.fetch
+  resetSessionRequests()
+  const bodies: unknown[] = []
+  try {
+    globalThis.fetch = async (input, init) => {
+      if (String(input).endsWith("/csrf")) return Response.json({ token: "csrf-test" })
+      bodies.push(JSON.parse(String(init?.body)))
+      return Response.json({ id: "saved-vehicle", vehicleTypeName: "Ô tô" })
+    }
+    const form = { name: "Ford EcoSport 2019", plate: "51G-87624",
+      vehicleModelId: "30000000-0000-0000-0000-000000000003", year: 2019, baseOdo: 50000,
+      image: "/images/car.jpg", vehicleTypeId: "internal-type", vehicleBrandId: "internal-brand" }
+    await api.createVehicle(form)
+    await api.updateVehicle("saved-vehicle", { ...form, version: 3 })
+    const expected = { name: form.name, plate: form.plate, vehicleModelId: form.vehicleModelId,
+      year: form.year, baseOdo: form.baseOdo, imageUrl: form.image }
+    assert.deepEqual(bodies, [expected, { ...expected, version: 3 }])
+  } finally {
+    globalThis.fetch = originalFetch
+    resetSessionRequests()
+  }
+})
+
+test("registration reports durable account creation separately from email delivery", () => {
+  assert.match(registrationNotice(false), /Tài khoản đã được tạo/)
+  assert.match(registrationNotice(false), /chưa thể gửi email/)
+  assert.match(registrationNotice(false), /vẫn cần xác thực/)
+  assert.match(registrationNotice(true), /Kiểm tra email/)
+})
 
 test("guest garage contains no seeded mock data", async () => {
   const data = await api.get(null)

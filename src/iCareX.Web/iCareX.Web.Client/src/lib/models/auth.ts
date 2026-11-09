@@ -1,5 +1,11 @@
 import { z } from "zod"
 
+export function registrationNotice(emailSent: boolean): string {
+  return emailSent
+    ? "Tài khoản đã được tạo. Kiểm tra email để xác thực, sau đó đăng nhập."
+    : "Tài khoản đã được tạo, nhưng hiện chưa thể gửi email xác thực. Bạn có thể đăng nhập để gửi lại email sau; tài khoản vẫn cần xác thực trước khi sử dụng."
+}
+
 export const emailSchema = z.string().trim().email("Email không hợp lệ.")
 export const newPasswordSchema = z
   .string()

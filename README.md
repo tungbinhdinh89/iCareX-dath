@@ -9,6 +9,14 @@ invitation, verify/reset/change password; chưa có Fuel/Maintenance/Reminder CR
 hoặc ownership transfer. Các migration sharing hiện có phải được áp dụng chủ
 động; ứng dụng không tự migrate lúc startup.
 
+Đăng ký hiện lưu tài khoản trước khi gửi thư; SMTP lỗi vẫn trả 201 với
+`verificationEmailSent=false`, tài khoản chờ xác thực và có thể gửi lại sau.
+Xem [kế hoạch và khôi phục SMTP](doc/.be/registration-email-recovery.md).
+
+Cấu hình Gmail local bằng `powershell -NoProfile -ExecutionPolicy Bypass -File
+scripts/configure-gmail.ps1`: nhập email/App Password trực tiếp trên máy, gõ
+SEND để thử gửi và lưu User Secrets khi thành công. Không gửi App Password qua chat.
+
 ## Cấu trúc
 
 - `src/`: Domain, Application, Infrastructure, Shared, Web và hai project test.

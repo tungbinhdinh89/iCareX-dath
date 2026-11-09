@@ -4,7 +4,7 @@ namespace iCareX.Application.Features.Identity.Contracts;
 
 public interface IAuthService
 {
-    Task<AccountResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken);
+    Task<RegistrationResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken);
     Task<(AccountResponse Account, Guid SessionId)?> LoginAsync(
         LoginRequest request,
         CancellationToken cancellationToken);

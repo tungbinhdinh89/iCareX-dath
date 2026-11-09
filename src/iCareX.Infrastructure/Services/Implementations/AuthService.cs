@@ -15,18 +15,16 @@ public sealed class AuthService(
     IAuthRepository repository,
     GarageDbContext db,
     IAccountSecurityService security,
-    IAccountEmailSender emailSender,
     UserManager<ApplicationUser> users,
     RoleManager<IdentityRole<Guid>> roles,
     IDataProtectionProvider protectionProvider,
     IBusinessClock clock,
     ILogger<AuthService> logger) : IAuthService
 {
-    public async Task<AccountResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<RegistrationResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)
     {
         logger.LogInformation("Registration requested for {Email}", MaskEmail(request.Email?.Trim() ?? ""));
         ValidateRequest(request);
-        emailSender.EnsureConfigured();
         var email = request.Email?.Trim() ?? "";
         if (await users.FindByEmailAsync(email) is not null)
         {
@@ -39,30 +37,43 @@ public sealed class AuthService(
         {
             Id = account.Id, Email = email, UserName = email, EmailConfirmed = false
         };
-        await using var transaction = await repository.BeginTransactionAsync(cancellationToken);
-        var result = await users.CreateAsync(user, request.Password);
-        if (!result.Succeeded)
+        await using (var transaction = await repository.BeginTransactionAsync(cancellationToken))
         {
-            logger.LogWarning("Registration validation failed for {Email}", MaskEmail(email));
-            throw new AuthValidationException(result.Errors.Select(error => error.Description).ToArray());
+            var result = await users.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+            {
+                logger.LogWarning("Registration validation failed for {Email}", MaskEmail(email));
+                throw new AuthValidationException(result.Errors.Select(error => error.Description).ToArray());
+            }
+            if (!await roles.RoleExistsAsync("User"))
+            {
+                var createRoleResult = await roles.CreateAsync(new IdentityRole<Guid>("User"));
+                if (!createRoleResult.Succeeded)
+                    throw new AuthValidationException(
+                        createRoleResult.Errors.Select(error => error.Description).ToArray());
+            }
+            var roleResult = await users.AddToRoleAsync(user, "User");
+            if (!roleResult.Succeeded)
+                throw new AuthValidationException(roleResult.Errors.Select(error => error.Description).ToArray());
+            repository.AddAccount(account);
+            repository.AddSettings(new UserSettings { AccountId = account.Id });
+            await repository.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
-        if (!await roles.RoleExistsAsync("User"))
+        // Account persistence must not depend on an external SMTP service.
+        // Dispose the committed transaction before the security service starts its own.
+        var verificationEmailSent = true;
+        try { await security.SendVerificationAsync(email, cancellationToken); }
+        catch (EmailDeliveryUnavailableException exception)
         {
-            var createRoleResult = await roles.CreateAsync(new IdentityRole<Guid>("User"));
-            if (!createRoleResult.Succeeded)
-                throw new AuthValidationException(
-                    createRoleResult.Errors.Select(error => error.Description).ToArray());
+            verificationEmailSent = false;
+            logger.LogWarning("Registration persisted for account {AccountId}; verification email unavailable ({Reason})",
+                account.Id, exception.Reason);
         }
-        var roleResult = await users.AddToRoleAsync(user, "User");
-        if (!roleResult.Succeeded)
-            throw new AuthValidationException(roleResult.Errors.Select(error => error.Description).ToArray());
-        repository.AddAccount(account);
-        repository.AddSettings(new UserSettings { AccountId = account.Id });
-        await repository.SaveChangesAsync(cancellationToken);
-        await security.SendVerificationAsync(email, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
         logger.LogInformation("Registration succeeded for account {AccountId} ({Email})", account.Id, MaskEmail(email));
-        return ToResponse(account, user, ["User"]);
+        var response = ToResponse(account, user, ["User"]);
+        return new(response.Id, response.Name, response.Email, response.Phone, response.Roles,
+            response.AccountStatus, response.EmailVerified, verificationEmailSent);
     }
 
     public async Task<(AccountResponse Account, Guid SessionId)?> LoginAsync(

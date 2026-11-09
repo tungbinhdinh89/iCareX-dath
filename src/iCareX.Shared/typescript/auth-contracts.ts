@@ -26,6 +26,17 @@ export type CsrfResponse = {
   token: string
 }
 
+export type RegistrationResponse = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  roles: Array<string>
+  accountStatus: string
+  emailVerified: boolean
+  verificationEmailSent: boolean
+}
+
 export type EmailActionRequest = {
   email: string
 }

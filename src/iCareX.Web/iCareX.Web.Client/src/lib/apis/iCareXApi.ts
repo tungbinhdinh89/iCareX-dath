@@ -2,6 +2,7 @@ import type {
   CsrfResponse,
   LoginRequest,
   RegisterRequest,
+  RegistrationResponse,
   EmailActionRequest,
   VerifyEmailRequest,
   ResetPasswordRequest,
@@ -331,7 +332,7 @@ export const api = {
     } satisfies LoginRequest)
   },
   async register(request: RegisterRequest) {
-    return authMutation<Account>("/register", request)
+    return authMutation<RegistrationResponse>("/register", request)
   },
   async me() {
     return authRequest<Account>("/me")
@@ -388,7 +389,11 @@ export const api = {
     const vehicle = await apiRequest<VehicleResponse>("/vehicles", {
       method: "POST",
       body: JSON.stringify({
-        ...request,
+          name: request.name,
+          plate: request.plate,
+          vehicleModelId: request.vehicleModelId,
+          year: request.year,
+          baseOdo: request.baseOdo,
         imageUrl: request.image ?? "",
       }),
     })
@@ -409,8 +414,13 @@ export const api = {
     const vehicle = await apiRequest<VehicleResponse>(`/vehicles/${id}`, {
       method: "PUT",
       body: JSON.stringify({
-        ...request,
+          name: request.name,
+          plate: request.plate,
+          vehicleModelId: request.vehicleModelId,
+          year: request.year,
+          baseOdo: request.baseOdo,
         imageUrl: request.image ?? "",
+          version: request.version,
       }),
     })
     return mapVehicle(vehicle)

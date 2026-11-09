@@ -19,6 +19,11 @@ public sealed record AccountResponse(
 
 public sealed record CsrfResponse(string Token);
 
+// Flat account fields preserve existing registration consumers; delivery is not verification.
+public sealed record RegistrationResponse(
+    Guid Id, string Name, string Email, string Phone, IReadOnlyCollection<string> Roles,
+    string AccountStatus, bool EmailVerified, bool VerificationEmailSent);
+
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record EmailActionRequest(string Email);
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
