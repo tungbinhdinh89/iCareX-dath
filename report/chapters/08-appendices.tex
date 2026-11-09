@@ -1,0 +1,126 @@
+\chapter{Truy vết, kế hoạch và quyết định}
+\section{Ma trận FR--UC--flow--task--test}
+\begin{smalltable}\begin{longtable}{L{1.3cm}L{2.1cm}L{2.1cm}L{2.2cm}L{6.8cm}}
+\caption{Truy vết yêu cầu chức năng tới thiết kế và nghiệm thu}\label{tab:trace-fr}\\\toprule FR & UC & User flow & Task Wiki & AT / TC báo cáo\\\midrule\endfirsthead
+\toprule FR & UC & User flow & Task Wiki & AT / TC báo cáo\\\midrule\endhead
+FR01 & UC01,10 & UF00 & T02,T07,T09 & AT01/16; TC01--05, TC45--46, TC50--53.\\
+FR02 & UC02,11 & UF00,06 & T03,T07 & AT02/03; TC06--09, TC47.\\
+FR03 & UC03 & UF03 & T03,T07,T09 & AT04/11; TC10--14, TC36--38.\\
+FR04 & UC04 & UF01,03 & T04,T07 & AT05/10; TC15--17, TC34--35.\\
+FR05 & UC05 & UF02,03 & T04,T07 & AT06/10; TC18--20, TC34.\\
+FR06 & UC06 & UF04 & T05,T08 & AT07; TC21--25, TC32.\\
+FR07 & UC07.1 & UF02,04 & T05,T06,T08 & AT07; TC21--25.\\
+FR08 & UC05 & UF02,03 & T06 & AT08; TC26--29.\\
+FR09 & UC07.2 & UF02,06 & T06,T08 & AT09; TC30--33, TC49.\\
+FR10 & UC08 & UF03 & T08 & AT14; TC43.\\
+FR11 & UC09 & UF05 & T08,T09 & AT10/13; TC34--35, TC41.\\
+FR12 & UC10.3 & UF04,05 & T07,T08,T09 & AT12/15; TC39--40, TC44.\\\bottomrule
+\end{longtable}\end{smalltable}
+Mã TC được tạo từ catalogue trong \code{scripts/generate_testcases.py}; CSV chứa từng dòng expected/actual/status. Khi thêm/bớt test phải cập nhật ma trận này, không chỉ dựa vào khoảng TC. UC11 là bổ sung từ source, cần task/issue riêng nếu nhóm chọn mở rộng phạm vi nghiệm thu.
+\section{Ma trận NFR--minh chứng}
+\begin{smalltable}\begin{longtable}{L{1.4cm}L{3cm}L{10.4cm}}
+\caption{Truy vết phi chức năng}\label{tab:trace-nfr}\\\toprule NFR & AT / task & Evidence cần có, hiện chưa có phép đo mới\\\midrule\endfirsthead
+\toprule NFR & AT / task & Evidence cần có, hiện chưa có phép đo mới\\\midrule\endhead
+NFR01 & AT01/02; T02--04,T09 & HTTP requests A/B, DB assertions, ảnh cache isolation.\\
+NFR02 & AT16; T02,T09,T10 & JWT validation/rotation/reuse theo Wiki; ADR auth còn mở. Cookie/CSRF/revoke kiểm hiện trạng riêng.\\
+NFR03 & AT05/06/11; T03--06,T09 & PostgreSQL constraints, rollback và concurrent connections.\\
+NFR04 & AT12; T07--09 & 360/768/1440px; keyboard/focus/label screenshots và notes.\\
+NFR05 & AT13; T09,T10 & Load script, raw latency samples, p95 theo endpoint/hardware.\\
+NFR06 & AT09; T06,T09 & t0/t1/t2, startup/restart và worker dedup evidence.\\
+NFR07 & T01,T05,T09 & Build/test/typecheck/format và architecture dependency check.\\
+NFR08 & AT13; T01,T10 & Checkout sạch, explicit migration, restart và restore DB riêng.\\
+NFR09 & AT04/07/08/10; T03,05,06,08 & Expected tính tay và kết quả biên date/ODO/money.\\
+NFR10 & AT17; T02,06,09,10 & Trace response/log, secret scan, health và lỗi vòng worker.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\section{Kế hoạch thực hiện phù hợp đồ án năm 3}
+Wiki ghi workflow thực tế chủ repository + AI hỗ trợ, không phải một nhóm nhiều người đã hoạt động. Bảng vai trò dưới là đề xuất để nhóm sinh viên tổ chức công việc khi có danh sách thật; một thành viên có thể kiêm vai, nhưng người rà soát cần được chỉ định và ghi rõ tự review hay review độc lập.
+\begin{smalltable}\begin{longtable}{L{3cm}L{8cm}L{3.6cm}}
+\caption{Vai trò đề xuất, chưa gán tên thành viên}\\\toprule Vai trò & Trách nhiệm / output & Tiêu chí kiểm tra\\\midrule\endfirsthead
+\toprule Vai trò & Trách nhiệm / output & Tiêu chí kiểm tra\\\midrule\endhead
+Phân tích / điều phối & Scope, FR/NFR, use cases, backlog, theo dõi rủi ro, tài liệu. & Yêu cầu có test/task và không mâu thuẫn contract.\\
+Backend / dữ liệu & Entity, API, ownership, transaction, concurrency, migrations. & API thật và integration evidence.\\
+Frontend / UX & Form, routing, API mapping, state, responsive, accessibility. & E2E và checklist browser.\\
+QA / vận hành & Fixture, test matrix, CI, deployment, backup/restore, demo. & Test actual/evidence và runbook tái lập.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+Các mốc dưới lấy kế hoạch Wiki đến 05/12/2026, không phải tiến độ đã hoàn thành. Ngày theo lịch dự kiến; cần điều chỉnh khi lớp/giảng viên xác nhận deadline. Không ghi một task Done chỉ vì đã có UI hoặc được AI tạo code.
+\begin{smalltable}\begin{longtable}{L{1.3cm}L{2cm}L{8.7cm}L{2.5cm}}
+\caption{Kế hoạch và đầu ra nghiệm thu theo Wiki}\label{tab:plan}\\\toprule Task & Hạn 2026 & Output / phụ thuộc & Tình trạng báo cáo\\\midrule\endfirsthead
+\toprule Task & Hạn 2026 & Output / phụ thuộc & Tình trạng báo cáo\\\midrule\endhead
+T01 & 01/11 & Baseline repo, scope, Project và CI tối thiểu. & Chưa xác nhận Done.\\
+T02 & 08/11 & Auth/session/ownership và test, sau T01. & Có mã auth; Wiki ghi Completed, chưa retest.\\
+T03 & 10/11 & Vehicle/ODO/archive/restore/version, sau T02. & Có mã; chưa xác nhận Done.\\
+T04 & 15/11 & Fuel/service nhiều dòng, transaction, idempotency, sau T03. & Đích chưa API.\\
+T05 & 19/11 & Plan baseline/mode/evaluator, sau T03/T04. & Model/rule hiện đơn giản.\\
+T06 & 22/11 & Completion/notification/worker/dedup, sau T04/T05. & Thiết kế đích.\\
+T07 & 26/11 & Kết nối UI các nguồn với API thật, sau T02/T04. & Có phần source; chưa runtime.\\
+T08 & 29/11 & Plan/inbox/history/report/settings UI+API, sau T06/T07. & Chưa đủ API.\\
+T09 & 02/12 & CI/E2E/security/concurrency/NFR, sau T06/T08. & Cần chạy/đo.\\
+T10 & 03/12 & Deploy/health/migration/backup/restore, sau T09. & Có health, chưa đủ operational evidence.\\
+T11 & 04/12 & Báo cáo, traceability, test report, slide/demo. & Bản tài liệu này là đầu vào.\\
+T12 & 05/12 & UAT, sửa blocker, release/bàn giao. & Chưa thực hiện.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+Đường phụ thuộc quan trọng: auth/owner $\rightarrow$ xe/ODO $\rightarrow$ nguồn tiền $\rightarrow$ plan/completion $\rightarrow$ nhắc/report $\rightarrow$ E2E/NFR $\rightarrow$ bàn giao. Nhóm có thể chuẩn bị UI theo contract song song nhưng không coi integration hoàn tất trước API. Chốt tính năng trước UAT; nếu trễ, ưu tiên độ đúng và ownership, không cắt bảo mật để đổi lấy số màn hình.
+
+\section{Sổ rủi ro và quyết định kiến trúc}
+\begin{smalltable}\begin{longtable}{L{1cm}L{4.5cm}L{6.7cm}L{2.6cm}}
+\caption{Rủi ro hiện hữu và biện pháp}\\\toprule ID & Rủi ro & Xử lý cụ thể & Dấu hiệu đóng\\\midrule\endfirsthead
+\toprule ID & Rủi ro & Xử lý cụ thể & Dấu hiệu đóng\\\midrule\endhead
+R01 & Chẩn đoán NUL lịch sử chưa đồng bộ & Đối chiếu README 06/11 và source hiện tại; xác minh khi checkout nghiệm thu. & Source hợp lệ, build log đúng commit.\\
+R02 & Wiki JWT khác cookie source & Chốt ADR auth, đồng bộ contract/NFR/AT16; bảo vệ mọi mutation. & ADR và test session/CSRF đạt.\\
+R03 & Entry đơn không đủ service items & Migration có đối chiếu count/tổng, contract mới và rollback test. & TC18--20/26--29 đạt.\\
+R04 & Hai write phá chuỗi ODO & Guard cấp xe, isolation/lock strategy và test 2 connections. & TC36--38 đạt.\\
+R05 & Nhắc trùng sau restart & Unique cycle key, startup scan, scopes đúng. & TC30/32/49 đạt.\\
+R06 & Khảo sát chưa có bằng chứng & Thực hiện EP01--05, ghi anonymized observations. & Sổ phiên và phát hiện thật.\\
+R07 & Scope lớn so với thời gian & Tách vertical slice, giới hạn WIP; không thêm đội xe/mobile/AI. & Demo lõi ổn và traceability đủ.\\
+R08 & Giao diện đẹp che thiếu persistence & Gắn nhãn prototype, chỉ success sau commit, E2E DB. & TC15--20/34 và reload đạt.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+ADR-001 giữ monolith/Clean để giảm vận hành, tách domain thuần. ADR-002 cần chốt cookie baseline hay chuyển JWT; báo cáo chọn phản ánh source, không thay code. ADR-003 đề xuất worker trong host và evaluator dùng clock inject, chưa scheduler ngoài. ADR-004 đề xuất guard theo xe, transaction nguồn--nhắc và DB unique; phải spike trên PostgreSQL. ADR-005 đề xuất same-origin proxy, HTTPS, DB private, key ring/backup ngoài repo. Mỗi ADR cần context, option, quyết định, hệ quả, trạng thái và evidence; không biến các đề xuất ở đây thành ``đã phê duyệt''.
+
+\chapter{Từ điển thuật ngữ và nguồn kiểm chứng}
+\section{Thuật ngữ}
+\begin{smalltable}\begin{longtable}{L{3cm}L{11.8cm}}
+\caption{Thuật ngữ thống nhất}\\\toprule Thuật ngữ & Nghĩa trong iCareX\\\midrule\endfirsthead
+\toprule Thuật ngữ & Nghĩa trong iCareX\\\midrule\endhead
+Owner / chủ xe & Account có quyền sở hữu dữ liệu; không phải ownerId do browser tự khai.\\
+ODO / reading & Chỉ số đồng hồ và một mốc ngày; không là GPS hoặc dữ liệu live.\\
+Baseline & Mốc ban đầu phục vụ theo dõi; có thể là lần đã làm hoặc bắt đầu theo dõi, không là chi phí.\\
+Plan / kế hoạch & Hạng mục có chu kỳ và ngưỡng theo mode.\\
+Completion & Lần Maintenance liên kết plan hợp lệ; trong đích suy ra từ ServiceItem.\\
+Cycle / kỳ & Một lần theo dõi từ baseline/latest completion đến hạn tiếp theo; định danh ổn định cho dedup.\\
+Either & Điều kiện thời gian hoặc khoảng cách đến trước, không phải AND.\\
+Archive & Lưu trữ giữ lịch sử, chặn ghi; có restore.\\
+Idempotency & Retry cùng request không tạo thêm tác động dữ liệu.\\
+Concurrency token & Version dùng phát hiện dữ liệu cũ; không tự bảo vệ mọi invariant liên bản ghi.\\
+Superseded & Nhắc không còn hiện hành; không tính badge nhưng có thể giữ để truy vết.\\
+UTC / ngày VN & Audit theo UTC; nghiệp vụ theo lịch Asia/Ho\_Chi\_Minh.\\
+SRS / FR / NFR & Đặc tả yêu cầu phần mềm / chức năng / phi chức năng.\\
+AT / TC & Acceptance test Wiki / test case chi tiết của báo cáo.\\
+Desk research & Đọc tài liệu nguồn, khác thử ứng dụng hoặc phỏng vấn người thật.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\section{Bản đồ nguồn và khả năng truy vết}
+\begin{smalltable}\begin{longtable}{L{4cm}L{6.8cm}L{3.8cm}}
+\caption{Nguồn thực đọc và phạm vi được dùng}\label{tab:sources}\\\toprule Nguồn & Phần dùng & Giới hạn\\\midrule\endfirsthead
+\toprule Nguồn & Phần dùng & Giới hạn\\\midrule\endhead
+PDF tham chiếu & Bảy chương, cách viết use case, method/test tables, các loại sơ đồ. & Không kế thừa nghiệp vụ, tên người hoặc test result.\\
+Wiki 01--10 & Vấn đề, nghiên cứu, quyết định, phạm vi và ngoại phạm vi. & Giả định chưa được nghiên cứu sơ cấp xác nhận.\\
+Wiki 11--13 & User stories, UC/UF, FR/NFR/BR. & Auth JWT khác source; sửa cách diễn giải trong báo cáo.\\
+Wiki 14--16 & Kiến trúc dự kiến, task/deadline, AT và traceability. & Cấu trúc thư mục và trạng thái có thể cũ.\\
+\code{src/iCareX.Domain/} & Entities, GarageRules, PlanState. & Model hiện còn đơn giản hơn đích.\\
+\code{src/iCareX.Application/}, \code{src/iCareX.Shared/} & Interface/port nội bộ; DTO truyền tải và TypeScript sinh tự động trong Shared. & Hợp đồng thực có ưu tiên bảng API dự kiến cũ.\\
+\code{src/iCareX.Infrastructure/} & Services, repository, mapping và migrations. & Chỉ đọc tĩnh, không áp migration thật.\\
+API controllers / Program & Cookie, CSRF, session, route, role, health và docs. & Cần kiểm toàn bộ business CSRF; source không là kết quả chạy.\\
+Client routes, pages, Dialogs, store & UI surfaces, calls và UX gaps. & README 06/11 ghi đã phục hồi; chưa kiểm lại luồng có đăng nhập.\\
+doc/.be & Data model/API/testing giải thích nguồn. & Chẩn đoán NUL trong báo cáo cũ là lịch sử; test cũ không là kết quả mới.\\
+Manifest / toolchain & Phiên bản và scripts dùng thật. & Semver range không là phiên bản cài đặt đo được.\\
+Nguồn web chính thức & Desk research và cơ sở CSRF~\cite{fuelio,drivvo,fleetio,csrf}. & Tài liệu nhà cung cấp, không phải thử nghiệm độc lập.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\section{Cách cập nhật và tái biên dịch}
+Sửa nội dung trực tiếp ở \code{chapters/*.tex}, preamble và bibliography; sơ đồ ở \code{figures/*.tex}. Các bảng UC/TC và sơ đồ đã được chỉnh trực tiếp; không chạy generator cũ lên bản cập nhật này. Nếu chỉnh trực tiếp file sinh ra, không chạy generator tương ứng trước khi giữ lại thay đổi; README giải thích rõ file nào được generate. Tài liệu dùng UTF-8, A4, LuaLaTeX, Biber, TikZ, mục lục/danh sách hình/bảng và tham chiếu chéo.
+
+Lệnh từ root repository: chạy \code{powershell -NoProfile -ExecutionPolicy Bypass -File report_template_latex/build.ps1}. PDF ở \code{report_template_latex/dist/main.pdf} và bản sao \code{report_template_latex/main.pdf}; output tạm ở build, log theo từng lần ở logs. Không cần shell-escape. Giữ log để đối chiếu lỗi và không commit output tạm. Bản PDF chỉ xác nhận tài liệu biên dịch được, không xác nhận phần mềm đạt các AT đã lập.

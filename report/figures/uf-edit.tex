@@ -1,0 +1,26 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+box/.style={draw=ink,fill=pale,rounded corners=2pt,align=center,text width=3.3cm,minimum height=.85cm,inner sep=6pt},
+decision/.style={diamond,draw=ink,fill=white,aspect=2.3,align=center,text width=2.6cm,inner sep=2pt},
+state/.style={draw=ink,rounded corners=7pt,fill=pale,align=center,text width=2.7cm,minimum height=.9cm},
+initial/.style={circle,fill=ink,minimum size=.22cm,inner sep=0pt},
+final/.style={circle,draw=ink,double,fill=ink,minimum size=.28cm,inner sep=0pt},
+uc/.style={ellipse,draw=ink,fill=pale,align=center,text width=3.5cm,minimum height=1.1cm},
+edge/.style={->,draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\node[initial] (start) at (0,1) {};
+\node[box] (s0) at (0,-0.5) {Tìm hoạt động trong lịch sử};
+\node[box] (s1) at (0,-2.0) {Mở form nguồn / chọn sửa-xóa};
+\node[box] (s2) at (0,-3.5) {Xác nhận với version hiện có};
+\node[decision] (d) at (0,-5.3) {Được chấp nhận?};
+\node[box] (yes) at (0,-7.9) {Xem ODO / chi phí / hạn mới};
+\node[box] (no) at (5,-5.3) {Đọc lỗi; tải lại / sửa};
+\node[final] (end) at (0,-9.6) {};
+\draw[edge] (start) -- node[lbl] {} (s0);
+\draw[edge] (s0) -- node[lbl] {} (s1);
+\draw[edge] (s1) -- node[lbl] {} (s2);
+\draw[edge] (s2) -- node[lbl] {} (d);
+\draw[edge] (d) -- node[lbl] {Có} (yes);
+\draw[edge] (d) -- node[lbl] {Không} (no);
+\draw[edge] (yes) -- node[lbl] {} (end);
+\draw[edge] (no) |- node[lbl] {sửa / thử lại} (s0);
+
+\end{tikzpicture}

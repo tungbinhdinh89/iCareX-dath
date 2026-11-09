@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-07",
+  "configured_server": {
+    "name": "figma",
+    "enabled": true,
+    "url": "https://mcp.figma.com/mcp",
+    "transport": "streamable_http",
+    "auth_type_reported": "OAuth"
+  },
+  "figma_tools_exposed_in_session": [],
+  "file_url": "https://www.figma.com/design/dhuYBdCuQxXFoNb6OpOjdW/?node-id=35-451",
+  "web_open_result": "URL is not accessible via this tool",
+  "mcp_file_read": false,
+  "fallback": "User explicitly authorized using the eight local screenshots in Design",
+  "source_manifest": "design-assets.json"
+}

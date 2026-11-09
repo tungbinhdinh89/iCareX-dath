@@ -1,0 +1,50 @@
+\chapter{Tổng quan dự án}\label{chap:overview}
+\section{Bối cảnh và phát biểu vấn đề}
+Trong quá trình sử dụng xe máy hoặc ô tô, chủ xe thường cần ghi nhớ các lần đổ nhiên liệu, số tiền sửa chữa và thời điểm bảo dưỡng. Những thông tin này phát sinh ở nhiều thời điểm và có thể được lưu bằng hóa đơn, sổ tay hoặc bảng tính. Khi cần xem lại lịch sử của một chiếc xe, người dùng phải tập hợp dữ liệu từ nhiều nơi và tự tính toán chi phí.
+
+Từ nhu cầu đó, nhóm xây dựng iCareX, một ứng dụng web hỗ trợ quản lý phương tiện cá nhân. Mỗi tài khoản có thể theo dõi nhiều xe, ghi lại số km trên đồng hồ, các lần đổ nhiên liệu, sửa chữa và bảo dưỡng. Dữ liệu được sắp xếp theo từng xe để người dùng thuận tiện tra cứu, xem tổng chi phí và theo dõi kế hoạch bảo dưỡng.
+
+Một yêu cầu quan trọng của hệ thống là giữ thông tin nhất quán khi người dùng bổ sung hoặc sửa lịch sử. Chẳng hạn, khi thay đổi ngày của một lần bảo dưỡng, mốc tính cho kỳ tiếp theo cũng phải được cập nhật. Khi một khoản chi bị xóa, số liệu trong lịch sử và báo cáo phải cùng thay đổi. Vì vậy, nhóm tập trung thiết kế các quy tắc dữ liệu ngay từ giai đoạn phân tích yêu cầu.
+
+\section{Khảo sát giải pháp và cơ sở lựa chọn}
+Nhóm tham khảo tài liệu giới thiệu của Fuelio, Drivvo và Fleetio để tìm hiểu cách tổ chức các chức năng liên quan đến phương tiện. Đồng thời, nhóm đối chiếu với cách ghi chép bằng sổ tay và bảng tính để xác định phạm vi phù hợp cho iCareX.
+\begin{smalltable}\begin{longtable}{L{2.2cm}L{5.8cm}L{6.8cm}}
+\caption{Các giải pháp tham khảo}\\\toprule Giải pháp & Đặc điểm & Hướng áp dụng cho iCareX\\\midrule\endfirsthead
+\toprule Giải pháp & Đặc điểm & Hướng áp dụng cho iCareX\\\midrule\endhead
+Fuelio & Theo dõi nhiên liệu, chi phí và thông tin sử dụng xe~\cite{fuelio}. & Tổ chức biểu mẫu ghi nhiên liệu ngắn gọn và cho phép tra cứu theo xe.\\
+Drivvo & Quản lý chi phí, dịch vụ và lịch nhắc liên quan đến phương tiện~\cite{drivvo}. & Liên kết lịch sử bảo dưỡng với kế hoạch theo thời gian hoặc số km.\\
+Fleetio & Hướng đến hoạt động quản lý và bảo dưỡng đội xe~\cite{fleetio}. & Giới hạn iCareX ở phương tiện cá nhân để tập trung vào các tác vụ của chủ xe.\\
+Bảng tính & Người dùng tự tạo cột dữ liệu và công thức tổng hợp. & Cung cấp sẵn biểu mẫu, bộ lọc và cách tính thống nhất.\\
+Sổ tay và hóa đơn & Thuận tiện để ghi lại từng khoản phát sinh, nhưng cần tổng hợp riêng khi xem lại. & Tập trung dữ liệu theo xe và theo ngày, hỗ trợ tìm kiếm lịch sử.\\\bottomrule
+\end{longtable}\end{smalltable}
+Qua việc đối chiếu, nhóm lựa chọn một ứng dụng web bằng tiếng Việt với phạm vi tập trung vào ghi chép và theo dõi. Người dùng có thể xem lại chi phí, biết lần bảo dưỡng gần nhất và hiểu vì sao một hạng mục được nhắc đến hạn.
+
+\section{Các bên liên quan và tác nhân}
+\begin{smalltable}\begin{longtable}{L{2.7cm}L{2.3cm}L{7.1cm}L{2.4cm}}
+\caption{Các bên liên quan của iCareX}\\\toprule Đối tượng & Vai trò & Nhu cầu và trách nhiệm & Chức năng liên quan\\\midrule\endfirsthead
+\toprule Đối tượng & Vai trò & Nhu cầu và trách nhiệm & Chức năng liên quan\\\midrule\endhead
+Khách & Người sử dụng & Đăng ký tài khoản và đăng nhập để bắt đầu quản lý phương tiện. & UC01\\
+Chủ xe & Người sử dụng chính & Quản lý xe, ghi hoạt động, lập kế hoạch, xem nhắc và báo cáo của tài khoản mình. & UC01--UC10\\
+Quản trị danh mục & Người quản trị & Duy trì danh mục loại xe, hãng và dòng xe. & UC11\\
+Nhóm phát triển & Phát triển hệ thống & Phân tích yêu cầu, thiết kế, xây dựng, kiểm thử và bảo trì ứng dụng. & Toàn hệ thống\\
+Người vận hành & Vận hành hệ thống & Cấu hình môi trường, giám sát hoạt động, sao lưu và phục hồi dữ liệu. & NFR08, NFR10\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\section{Mục tiêu và phạm vi}
+\subsection{Mục tiêu của đề tài}
+Nhóm hướng đến việc xây dựng một nơi lưu trữ thống nhất cho thông tin sử dụng xe. Chủ xe có thể tra cứu các hoạt động đã ghi, xem chi phí theo từng khoảng thời gian và theo dõi những hạng mục bảo dưỡng cần thực hiện. Các thông tin về hạn bảo dưỡng cần đi kèm ngày hoặc số km làm mốc để người dùng dễ kiểm tra.
+
+Thông qua đề tài, nhóm vận dụng kiến thức phân tích yêu cầu, thiết kế hướng đối tượng, cơ sở dữ liệu và lập trình web để xây dựng một hệ thống hoàn chỉnh theo từng luồng nghiệp vụ. Nhóm đồng thời chú trọng kiểm thử các tình huống dễ gây sai lệch dữ liệu, như gửi lặp yêu cầu, sửa lịch sử hoặc cập nhật cùng một bản ghi từ hai phiên làm việc.
+
+\subsection{Phạm vi chức năng}
+Phiên bản đầu tiên phục vụ chủ xe máy và ô tô sử dụng nhiên liệu. Các chức năng chính gồm quản lý tài khoản; quản lý nhiều xe; ghi số km, nhiên liệu và dịch vụ; lập kế hoạch bảo dưỡng; xem thông báo nhắc; tra cứu lịch sử; tổng hợp chi phí và điều chỉnh cài đặt cá nhân. Danh mục loại xe, hãng và dòng xe được dùng thống nhất khi nhập thông tin phương tiện~\cite{design}.
+
+Hệ thống sử dụng km cho quãng đường, lít cho nhiên liệu và VNĐ cho tiền. Ngày thực hiện hoạt động được xác định theo múi giờ Việt Nam. Những nghiệp vụ như quản lý đội xe, đặt lịch tại gara, thanh toán, kết nối GPS/OBD và chẩn đoán hư hỏng nằm ngoài phạm vi phiên bản này.
+
+\subsection{Điều kiện sử dụng}
+Mỗi phương tiện thuộc một tài khoản và chưa được chia sẻ cho tài khoản khác. Người dùng chủ động nhập số liệu và lựa chọn chu kỳ bảo dưỡng phù hợp với xe. Các thao tác lưu dữ liệu cần kết nối mạng. Số km hiện tại được xác định từ lịch sử đã nhập; hệ thống hiển thị ngày cập nhật để người dùng nhận biết khi thông tin cần bổ sung.
+
+\section{Kịch bản minh họa}
+Để thống nhất các ví dụ trong báo cáo, nhóm sử dụng tài khoản A có xe máy mang tên \enquote{Xe đi học} với số km ban đầu là 10.000 km. Ngày 20/10/2026, chủ xe ghi một lần đổ 4,500 lít nhiên liệu, thanh toán 200.000 VNĐ tại 10.200 km. Ngày 25/10/2026, xe được sửa chữa với chi phí 100.000 VNĐ và thay dầu với chi phí 150.000 VNĐ tại 10.300 km. Tổng chi phí của hai hoạt động là 450.000 VNĐ.
+
+Hạng mục thay dầu được liên kết với kế hoạch có chu kỳ 3 tháng hoặc 1.000 km, theo điều kiện đến trước. Với mốc hoàn thành ngày 25/10/2026 tại 10.300 km, hạn tiếp theo là ngày 25/01/2027 hoặc 11.300 km. Đây là dữ liệu minh họa do nhóm đặt ra để giải thích cách xử lý của hệ thống.

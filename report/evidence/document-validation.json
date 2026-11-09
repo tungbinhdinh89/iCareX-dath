@@ -1,0 +1,21 @@
+{
+  "pdf_bytes": 1854774,
+  "physical_pages": 91,
+  "editable_tikz_diagrams": 38,
+  "use_case_cards": 24,
+  "business_test_cases": 53,
+  "required_text_present": true,
+  "missing_required_text": [],
+  "prohibited_text_present": [],
+  "unverified_brand_or_wireframe_assets": [],
+  "design_images_used": 29,
+  "design_asset_provenance_failures": [],
+  "test_plan_id_mismatch": [],
+  "text_outside_page_safe_bounds": [],
+  "tex_errors_or_overfull_or_missing_glyph": [],
+  "font_warnings": [],
+  "underfull_box_count": 0,
+  "unresolved_source_labels": [],
+  "pdfinfo": "Title:           iCareX\nSubject:         \nKeywords:        \nAuthor:          Nhóm 2: Nguyễn Thanh Tùng, Ngô Minh Triết, Nông Thế Vinh\nCreator:         LaTeX with hyperref\nProducer:        LuaTeX-1.24.0\nCreationDate:    Sat Nov  7 18:18:26 2026 SE Asia Standard Time\nModDate:         Sat Nov  7 18:18:26 2026 SE Asia Standard Time\nCustom Metadata: yes\nMetadata Stream: no\nTagged:          no\nUserProperties:  no\nSuspects:        no\nForm:            none\nJavaScript:      no\nPages:           91\nEncrypted:       no\nPage size:       595.276 x 841.89 pts (A4)\nPage rot:        0\nFile size:       1854774 bytes\nOptimized:       no\nPDF version:     1.7\n",
+  "note": "Business tests are Planned/Not run. Design screenshots and exact logo/icon crops are user-provided source material; screenshot fallback was explicitly authorized. No direct Figma file read is claimed."
+}

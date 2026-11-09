@@ -1,0 +1,118 @@
+\chapter{Đặc tả yêu cầu hệ thống}\label{chap:requirements}
+\section{Danh sách use case}
+Các yêu cầu được chia thành yêu cầu chức năng (FR), yêu cầu phi chức năng (NFR) và quy tắc nghiệp vụ (BR). Mỗi use case (UC) mô tả một mục tiêu của người sử dụng; các thao tác con được đánh số để thuận tiện đối chiếu với kế hoạch kiểm thử.
+
+\paragraph{DEC07 -- Xác thực và quản lý phiên.}
+iCareX sử dụng cookie HttpOnly để duy trì đăng nhập và lưu phiên trong cơ sở dữ liệu. Mỗi yêu cầu được kiểm tra theo tài khoản, thời hạn và trạng thái thu hồi của phiên. Các thao tác thay đổi dữ liệu phải có CSRF token hợp lệ. Khi tải lại trang, ứng dụng gọi \code{/api/v1/auth/me} để khôi phục thông tin tài khoản nếu phiên còn hiệu lực. Đăng xuất thu hồi phiên tương ứng và xóa cookie trên trình duyệt~\cite{csrf}.
+
+\begin{smalltable}\begin{longtable}{L{1.3cm}L{3.5cm}L{5.7cm}L{1.8cm}L{2cm}}
+\caption{Danh mục use case và phạm vi}\label{tab:uc-list}\\
+\toprule ID & Tên & Phân rã thao tác & FR & Ưu tiên\\\midrule\endfirsthead
+\toprule ID & Tên & Phân rã thao tác & FR & Ưu tiên\\\midrule\endhead
+UC01 & Tài khoản và phiên & .1 Đăng ký; .2 Đăng nhập; .3 Đăng xuất & FR01 & Cao\\
+UC02 & Quản lý xe & .1 Thêm; .2 Sửa; .3 Archive/restore & FR02 & Cao\\
+UC03 & Quản lý ODO & .1 Thêm manual; .2 Sửa/xóa manual & FR03 & Cao\\
+UC04 & Nhiên liệu & .1 Thêm; .2 Sửa/xóa & FR04 & Cao\\
+UC05 & Dịch vụ / completion & .1 Thêm nhiều dòng; .2 Sửa/xóa và tính lại & FR05,08 & Cao\\
+UC06 & Kế hoạch & .1 Tạo/sửa; .2 Pause/resume/xóa có điều kiện & FR06 & Cao\\
+UC07 & Trạng thái và nhắc & .1 Xem hạn; .2 Đọc inbox & FR07,09 & Cao\\
+UC08 & Lịch sử & .1 Tra cứu, lọc, mở nguồn & FR10 & Cao\\
+UC09 & Dashboard / báo cáo & .1 Tổng quan; .2 Báo cáo & FR11 & Cao\\
+UC10 & Hồ sơ / cài đặt & .1 Hồ sơ; .2 Mật khẩu; .3 Cài đặt & FR01,12 & Cao\\
+UC11 & Catalog & .1 Đọc cascade; .2 Quản trị metadata & FR02 mở rộng & Bổ sung\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\section{Sơ đồ use case tổng quát và phân hệ}
+\diagram{uc-overall.tex}{Use case tổng thể: actor ngoài ranh giới, các chức năng trong iCareX}{uc-overall}
+Khách thực hiện đăng ký và đăng nhập. Chủ xe sử dụng các chức năng quản lý dữ liệu cá nhân, còn quản trị danh mục duy trì thông tin loại xe, hãng và dòng xe.
+\diagram{uc-vehicle.tex}{Use case xe/ODO; kiểm tra chuỗi là hành vi bắt buộc khi ghi reading}{uc-vehicle}
+\diagram{uc-records.tex}{Use case hoạt động: liên kết completion mở rộng việc ghi dịch vụ}{uc-records}
+Liên kết completion là tùy chọn tại extension point chọn hạng mục Maintenance; mũi tên extend đi từ hành vi tùy chọn về ghi dịch vụ. Khi không chọn plan, dịch vụ vẫn ghi lịch sử và chi phí. Transaction là hành vi nội bộ bắt buộc của việc ghi dịch vụ trong thiết kế đích.
+\diagram{uc-plans.tex}{Use case kế hoạch/nhắc: đọc nhắc độc lập với ghi việc đã làm}{uc-plans}
+
+\section{Yêu cầu chức năng}
+\begin{smalltable}\begin{longtable}{L{1.2cm}L{3.1cm}L{10.3cm}}
+\caption{Yêu cầu chức năng và điều kiện hoàn thành}\label{tab:fr}\\
+\toprule Mã & Nhóm & Hành vi yêu cầu\\\midrule\endfirsthead
+\toprule Mã & Nhóm & Hành vi yêu cầu\\\midrule\endhead
+FR01 & Tài khoản & Đăng ký không tự login; phiên riêng; logout thu hồi; xem/sửa tên, email chỉ đọc; đổi password cần password cũ và thu hồi phiên.\\
+FR02 & Phương tiện & Thêm/xem/sửa; archive/restore giữ lịch sử. Chọn model thuộc brand/type active; plate unique theo owner kể cả archive.\\
+FR03 & ODO & Thêm/sửa/xóa manual; giữ chuỗi theo ngày; reading từ nguồn phải sửa qua nguồn; current ODO không lùi khi nhập quá khứ.\\
+FR04 & Nhiên liệu & Ngày, ODO, lít, tiền, ghi chú; tạo có RequestId; sửa/xóa có version; nguồn và reading cùng transaction.\\
+FR05 & Dịch vụ & Ít nhất một dòng Repair/Maintenance, tổng dương; mỗi Maintenance có thể liên kết plan cùng xe. Lỗi một dòng rollback cả dịch vụ.\\
+FR06 & Kế hoạch & Time/Distance/Either; baseline có ý nghĩa rõ, chu kỳ/ngưỡng; pause/resume; chỉ xóa nếu chưa completion.\\
+FR07 & Trạng thái & Unknown/NotDue/Soon/Due/Overdue; reason, ngày/km còn lại, ngày cập nhật ODO và cờ dữ liệu cũ.\\
+FR08 & Completion & Chỉ dòng Maintenance liên kết mới chuyển kỳ; sửa/xóa phải tìm latest hợp lệ còn lại; không cộng chi phí hai lần.\\
+FR09 & Notification & Inbox DB, đọc, badge, Superseded; unique plan/kỳ/mức; worker startup/định kỳ; browser permission fallback.\\
+FR10 & Lịch sử & Lọc xe/ngày/loại/từ khóa, phân trang ổn định; một nguồn không thành hai hoạt động do reading tự sinh.\\
+FR11 & Tổng hợp & Dashboard và báo cáo chung filter; fuel amount + service item amount; nhóm tháng/xe/loại; số liệu đối chiếu được.\\
+FR12 & Cài đặt / UX & Nhắc, ngưỡng ODO cũ, trạng thái loading/error/empty/conflict; responsive và thao tác bàn phím.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\subsection{Tiền điều kiện và hậu điều kiện chung}
+Các thao tác dữ liệu lấy account từ phiên server và kiểm tra quan hệ owner/vehicle; không dùng accountId trong payload làm nguồn phân quyền. Xe archived chỉ đọc. Query không thay dữ liệu nghiệp vụ. Thành công mutation chỉ được báo sau commit; lỗi phải giữ bản ghi nhất quán. Validation phía UI hỗ trợ trải nghiệm, không thay kiểm tra server. Version cũ trả 409 để tải lại; form đang nhập được giữ khi lỗi mạng, không báo lưu thành công từ dữ liệu trong memory.
+
+\subsection{Đặc tả chi tiết từng thao tác}
+Mỗi bảng use case trình bày tác nhân, điều kiện bắt đầu, luồng xử lý, ngoại lệ và kết quả mong đợi. Các mã AT liên kết use case với tiêu chí nghiệm thu tương ứng.
+\input{chapters/02-usecase-details}
+
+\section{Quy tắc nghiệp vụ}\label{sec:business-rules}
+\subsection{BR01 -- Quyền sở hữu}
+Account là từ claim đã xác thực. Mọi lookup theo tài nguyên riêng có điều kiện owner; activity, reading, plan và từng item liên kết phải cùng xe. ID tồn tại ở tài khoản khác trả 404 như không tồn tại, không trả tên xe hoặc metadata. Catalog dùng chung có scope khác; Admin catalog không được bỏ kiểm tra owner ở API xe.
+\subsection{BR02 -- Ngày và chuỗi ODO}
+Ngày nghiệp vụ không sau ngày hiện tại Việt Nam, độc lập timezone OS. Timestamp audit dùng UTC. Số km được ghi bằng số nguyên không âm; chuỗi tăng không giảm giữa các ngày; cùng ngày cho bằng nhau và sắp ODO tăng, thêm ID để ổn định. Khi chèn/sửa, loại chính reading đang sửa rồi kiểm tra max ngày trước và min ngày sau. Current ODO là ODO lớn nhất ở ngày mới nhất; với chuỗi hợp lệ không giảm, cũng bằng max toàn chuỗi và baseline.
+
+Baseline xe không xóa bằng endpoint manual; đổi qua sửa xe và kiểm tra toàn chuỗi. Xóa reading max làm current ODO giảm về reading còn lại nếu hợp lệ. Fuel/service reading chỉ sửa/xóa qua nguồn.
+\subsection{BR03 -- Baseline và cấu hình plan}
+Time cần ngày baseline, chu kỳ tháng nguyên dương và ngưỡng ngày không âm. Distance cần baseline ODO, chu kỳ km nguyên dương và ngưỡng km không âm. Either cần cả hai. Baseline phân biệt ``lần bảo dưỡng đã biết'' với ``bắt đầu theo dõi''; không tạo chi phí giả. Ngày không tương lai; ODO không vượt current và phải phù hợp lịch sử.
+
+Ngưỡng km không vượt chu kỳ km. Ngưỡng ngày không vượt độ dài kỳ tương ứng tính theo tháng lịch; nếu đổi baseline/chu kỳ khiến ngưỡng không phù hợp phải báo lỗi, không silently clamp. Đối với chiều không dùng, field phải null/absent theo kiểu kế hoạch, tránh giữ giá trị ẩn ảnh hưởng evaluator.
+\subsection{BR04 -- Hạn và mốc hoàn thành}
+Chọn completion hợp lệ mới nhất theo ngày của plan; chưa có thì dùng baseline. Hạn ngày = ngày mốc cộng số tháng lịch, ngày cuối tháng chặn về ngày hợp lệ. Hạn ODO = ODO mốc + chu kỳ km. Không liên kết completion trước baseline ở chiều cấu hình. Dịch vụ cũ vẫn có thể lưu không liên kết. Không có hai completion của một plan cùng ngày; ràng buộc này được kiểm tra khi lưu dữ liệu.
+\subsection{BR05 -- Trạng thái có thể giải thích}
+Từng chiều dùng thứ tự: vượt hạn là Overdue; bằng hạn là Due; chưa đến nhưng còn trong ngưỡng là Soon; xa hơn là NotDue; thiếu dữ liệu là Unknown. Either ưu tiên Overdue $>$ Due $>$ Soon $>$ NotDue. Nếu thiếu một chiều, chiều còn lại Soon/Due/Overdue đủ để kết luận mức cần chú ý; nếu chỉ NotDue thì kết quả Unknown kèm lý do thiếu. Pause, archive và ODO cũ là các cờ riêng. Không coi ODO cũ là chứng cứ xe vẫn chưa đến hạn.
+\subsection{BR06 -- Tính lại sau sửa/xóa}
+Chỉ Maintenance có plan mới chuyển kỳ. Repair hoặc Maintenance không liên kết chỉ đóng góp lịch sử/chi phí. Sửa/xóa dịch vụ tìm lại latest completion của toàn bộ plan bị ảnh hưởng, gồm cả plan bị bỏ liên kết. Không lấy bản vừa sửa làm mốc chỉ vì nó được gửi gần nhất. Thay nguồn, reading, kỳ và notification phải nhất quán trong transaction; lỗi rollback.
+\subsection{BR07 -- Tiền và báo cáo}
+Tiền được ghi bằng VNĐ nguyên dưới dạng decimal/numeric; fuel amount dương, liters dương tối đa ba số lẻ. Dịch vụ có ít nhất một item, mỗi tiền không âm và tổng dương. Tổng bằng fuel amount cộng từng service item amount; không cộng thêm header total. Khoảng ngày bao gồm hai đầu; from $>$ to bị từ chối. Mặc định loại archive, có tùy chọn đưa vào. Biểu đồ, bảng và số tổng lấy cùng tập dữ liệu.
+\subsection{BR08 -- Vòng đời nhắc}
+Tối đa một notification cho plan/kỳ/mức. Kỳ định danh bằng mốc baseline/completion ổn định, không dùng tên plan hoặc thời điểm quét. Đổi tên/đọc không tạo kỳ. Nhắc cũ Superseded không tính badge. Pause/archive/tắt nhắc dừng tạo nhắc chủ động; resume/restore/bật lại đánh giá hiện hành. Đọc không hoàn thành plan.
+
+Khi cùng một thông báo được kích hoạt lại, hệ thống giữ trạng thái đã đọc. Nếu kế hoạch chuyển sang mức cần chú ý cao hơn, hệ thống tạo thông báo cho mức mới và đánh dấu chưa đọc. Thông báo trình duyệt chỉ được phát khi có thay đổi phù hợp và người dùng đã cấp quyền.
+\subsection{BR09 -- Retry và cạnh tranh}
+Fuel/service create có RequestId theo owner; cùng ID và canonical payload trả tài nguyên đã tạo, payload khác trả 409. Kiểm tra replay trước điều kiện version để retry thành công không thành stale error. Khóa yêu cầu được lưu cùng kết quả của giao dịch để hỗ trợ việc thử lại sau khi mất kết nối. Thời gian lưu khóa được quy định trong hợp đồng của từng chức năng.
+
+Update/delete có version. Mutation ảnh hưởng chuỗi và kỳ cần guard cấp xe trong transaction bằng concurrency token của xe hoặc cơ chế khóa phù hợp. Version từng reading chỉ chống ghi đè cùng reading, chưa ngăn hai create khác ID tạo chuỗi sai. Mức isolation/locking phải được kiểm thử bằng hai DbContext/connection thật.
+
+\section{Validation và hợp đồng dữ liệu đầu vào}
+Các trường dữ liệu được kiểm tra ở máy chủ trước khi lưu. Biểu mẫu hiển thị lỗi tại trường liên quan và giữ nội dung đã nhập để người dùng sửa lại.
+\begin{smalltable}\begin{longtable}{L{2.1cm}L{8.6cm}L{3.8cm}}
+\caption{Ma trận validation và phản hồi người dùng}\label{tab:validation}\\\toprule Đối tượng & Ràng buộc kiểm tra tại server & Lỗi / phục hồi\\\midrule\endfirsthead
+\toprule Đối tượng & Ràng buộc kiểm tra tại server & Lỗi / phục hồi\\\midrule\endhead
+Đăng ký & Email hợp lệ/unique; tên 2--60 ký tự; phone rỗng hoặc 10 số bắt đầu 0; password theo chính sách mật khẩu. & Lỗi theo trường, không log password; đăng ký xong đăng nhập riêng.\\
+Xe & Tên 2--60; biển số 2--20 và chuẩn hóa unique theo owner; năm 1980--2100 và danh mục loại--hãng--dòng xe còn hoạt động; ngày và số km ban đầu hợp lệ. & Giữ input; đổi type/brand phải xóa lựa chọn con không còn hợp lệ.\\
+Reading & Ngày không tương lai theo Việt Nam; ODO nguyên 0--9.999.999; phù hợp reading trước/sau; baseline và nguồn được bảo vệ. & Giải thích khoảng hợp lệ; đọc nguồn để sửa fuel/service reading.\\
+Nhiên liệu & Title 2--100; note tối đa 500; lít dương, tối đa 500, không quá ba số lẻ; VNĐ nguyên dương tối đa 10 tỷ; RequestId khi tạo. & Một payload sai không tạo nguồn/reading; không tự suy tiền từ giá thị trường.\\
+Dịch vụ & Ít nhất một item; mỗi item loại hợp lệ, có tên, tiền nguyên không âm tối đa 10 tỷ; tổng dương. Chỉ Maintenance link plan cùng xe. & Chỉ đúng dòng lỗi nhưng rollback toàn yêu cầu; không báo đã lưu một phần.\\
+Kế hoạch & Mode và meaning đóng; trường đủ theo mode; chu kỳ dương; ngưỡng không âm/không vượt kỳ; baseline tương thích lịch sử; tên unique trong xe. & Chỉ rõ field lỗi; không để giá trị ẩn của mode trước ảnh hưởng evaluator.\\
+Cài đặt & remindersEnabled là boolean; staleOdoDays nguyên dương, mặc định 30 ngày; kiểm tra phiên bản khi cập nhật. & Giữ giá trị thật khi save lỗi; phân biệt ODO cũ với ngưỡng sắp hạn.\\
+Query & from không sau to; IDs thuộc owner; loại/nhóm/page/pageSize hợp lệ. Mỗi trang mặc định 20 bản ghi, tối đa 100 bản ghi. & Giữ filter khi empty/error; lỗi tải không thành tổng 0.\\\bottomrule
+\end{longtable}\end{smalltable}
+Ngày nghiệp vụ dùng \code{YYYY-MM-DD}; timestamp kỹ thuật UTC; JSON camelCase. Không nhận owner từ payload làm quyền truy cập. Số lẻ vượt precision bị từ chối, không âm thầm làm tròn.
+
+\section{Yêu cầu phi chức năng}
+Bên cạnh chức năng nghiệp vụ, nhóm xác định các yêu cầu về bảo mật, tính toàn vẹn, khả năng sử dụng và vận hành. Các tiêu chí sau là cơ sở xây dựng bài kiểm tra nghiệm thu.
+\begin{smalltable}\begin{longtable}{L{1.3cm}L{3cm}L{6.2cm}L{4cm}}
+\caption{NFR và phương pháp chứng minh}\label{tab:nfr}\\\toprule Mã & Thuộc tính & Tiêu chí có thể kiểm tra & Minh chứng cần có\\\midrule\endfirsthead
+\toprule Mã & Thuộc tính & Tiêu chí có thể kiểm tra & Minh chứng cần có\\\midrule\endhead
+NFR01 & Auth/ownership & Chưa auth: 401. Hai user không xem/sửa/xóa/link chéo ở mọi API dữ liệu riêng. & HTTP integration bằng A/B và DB assert.\\
+NFR02 & Bảo mật web & Theo DEC07: cookie HttpOnly và Secure trên HTTPS; phiên lưu DB, kiểm tra hết hạn và thu hồi; CSRF bảo vệ mọi thao tác thay đổi dữ liệu. & AT16; kiểm thuộc tính cookie, CSRF, đăng xuất, hết hạn và đổi mật khẩu.\\
+NFR03 & Toàn vẹn & FK/unique/check, rollback, idempotency và 409 version; không dữ liệu một phần. & PostgreSQL riêng; fault injection và concurrent writes.\\
+NFR04 & Khả dụng UI & 360/768/1440px; keyboard/focus/label; trạng thái có chữ; không tràn toàn trang. & Checklist trình duyệt, ảnh và ghi nhận thao tác.\\
+NFR05 & Hiệu năng & 10.000 hoạt động, 10 user đồng thời; p95 danh sách/báo cáo không quá 1 giây sau warmup. & Script tải, dữ liệu seed, raw samples, máy và DB/network.\\
+NFR06 & Nhắc / phục hồi & Khi server bình thường, tạo nhắc thời gian trong 120 giây; tab active nhận trong 60 giây tiếp; restart không trùng/mất. & Controlled clock, worker logs và DB unique assertions.\\
+NFR07 & Bảo trì & Các tầng tuân thủ hướng phụ thuộc; quy tắc nghiệp vụ có thể kiểm thử độc lập; quy trình build và kiểm tra được thống nhất. & Kết quả kiểm tra kiến trúc và các bước build, test.\\
+NFR08 & Tái lập / bền vững & Checkout sạch, migration rõ ràng, restart giữ dữ liệu, restore trên DB riêng. & Runbook, log cài đặt/build và backup/restore drill.\\
+NFR09 & Độ đúng & Cuối tháng/năm nhuận/VN date, tiền/ODO, ngày biên và sửa lịch sử cho kết quả đúng. & Test vectors có expected tính tay.\\
+NFR10 & Quan sát / lỗi & ProblemDetails có code/traceId trong phản hồi lỗi; log không secret; ready phản ánh DB, worker hồi phục vòng sau. & Gây lỗi có kiểm soát, đối chiếu response/log/health.\\\bottomrule
+\end{longtable}\end{smalltable}

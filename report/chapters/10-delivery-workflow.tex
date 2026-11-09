@@ -1,0 +1,24 @@
+\chapter{Quy trình triển khai và tiêu chí bàn giao}
+\section{Ticket, branch, commit và review}
+Quy trình lấy từ \code{doc/ticket-workflow.md}. Mỗi ticket có một label loại chính: feature, bug, fix, enhanced, test, ui, docs, refactor hoặc chore. Tiêu đề có dạng \code{[label] module: kết quả}; nội dung gồm bối cảnh, phạm vi, AC kiểm chứng được, test plan, dependency và rủi ro.
+
+Khi implement một ticket thật, tạo branch \code{<label>/<issue-number>-<slug>} từ base được xác định, trước khi sửa implementation. Commit có dạng \texttt{<type>(<scope>): <summary> (\#<issue>)}. Dùng \code{feat} cho feature, \code{fix} cho bug/fix, \code{enhance} cho enhanced và type tương ứng với các label còn lại. Không dùng mã Txx thay số issue GitHub.
+
+Sau self-review, test và cập nhật tài liệu, tạo PR có \texttt{Refs \#<issue>}, mô tả thay đổi, đối chiếu AC và lệnh/kết quả thật. \textbf{Sau khi tạo PR phải chờ owner review.} Không tự approve, merge, bật auto-merge, đóng issue/PR hoặc chuyển Done; review không tự cấp quyền merge. Phản hồi sửa được xử lý trên cùng branch/PR và kiểm tra lại phần chịu ảnh hưởng.
+
+\section{Definition of Ready và Done}
+Ready cần có phạm vi đủ nhỏ, AC rõ, contract/dependency xác định, dữ liệu và môi trường kiểm tra phù hợp. Một slice chỉ có UI hoặc entity chưa đủ Done nếu hành vi đã cam kết cần API và DB.
+
+Điều kiện Done: dữ liệu được commit đúng quyền; regression phù hợp đạt; lỗi và giới hạn được công bố; DTO/TypeScript và tài liệu đồng bộ; owner đã review và cho phép tích hợp/kết thúc. Ticket bị chặn cần nêu nguyên nhân, người/quyết định cần thiết và bước gỡ, không chuyển thành Passed hay Done.
+
+\section{Runbook phát triển và vận hành}
+Development dùng API tại cổng 5080 và Vite tại 8443 theo README; ưu tiên tái sử dụng dịch vụ đang chạy. Root pnpm scripts chuyển tiếp vào Client. Kết nối DB lấy qua User Secrets hoặc biến môi trường backend; không đưa vào \code{VITE_*}.
+
+Trước thay schema: so model/snapshot, tạo migration, đọc migration và SQL, xác định DB đích. Áp dụng migration là hành động riêng, không chạy tự động lúc API startup. Backup/restore và integration dùng DB thử riêng; không dùng NAS hay dữ liệu thật làm target phá hủy.
+
+Build/check theo phạm vi thay đổi: .NET solution, unit/host/integration khi backend bị ảnh hưởng; frontend typecheck/test/build khi UI bị ảnh hưởng; generator TypeScript với \code{--check} khi DTO thay đổi. Kết quả cần command, exit code, commit, môi trường, thời điểm và evidence. Docker không sẵn sàng phải ghi Blocked/Not run tương ứng.
+
+\section{Gói hồ sơ nghiệm thu}
+Gói bàn giao gồm mã nguồn/manifests, migration đã review, cấu hình mẫu không secret, OpenAPI, báo cáo đặc tả, traceability, test actual/evidence, hướng dẫn chạy và script demo. Mục tiêu hiệu năng, độ trễ nhắc và phục hồi chỉ được công bố đạt khi có phép đo đúng điều kiện NFR.
+
+Mốc kế hoạch T01--T12 kết thúc 05/12/2026 là baseline; không suy từ ngày đã qua rằng task hoàn tất. Forecast 282 giờ người trong \code{doc/work-flow.md} là ước lượng, chưa có capacity thực để khẳng định lịch khả thi. Owner quyết định phạm vi và ưu tiên khi remaining effort vượt capacity; không giảm kiểm tra quyền/toàn vẹn để đổi lấy số màn hình.

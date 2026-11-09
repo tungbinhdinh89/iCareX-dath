@@ -1,0 +1,30 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+box/.style={draw=ink,fill=pale,rounded corners=2pt,align=center,text width=3.3cm,minimum height=.85cm,inner sep=6pt},
+decision/.style={diamond,draw=ink,fill=white,aspect=2.3,align=center,text width=2.6cm,inner sep=2pt},
+state/.style={draw=ink,rounded corners=7pt,fill=pale,align=center,text width=2.7cm,minimum height=.9cm},
+initial/.style={circle,fill=ink,minimum size=.22cm,inner sep=0pt},
+final/.style={circle,draw=ink,double,fill=ink,minimum size=.28cm,inner sep=0pt},
+uc/.style={ellipse,draw=ink,fill=pale,align=center,text width=3.5cm,minimum height=1.1cm},
+edge/.style={->,draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\node[initial] (start) at (0,1) {};
+\node[box] (inbox) at (0,0) {Mở nhắc hiện hành};
+\node[box] (reason) at (0,-1.5) {Xem xe, hạn và lý do};
+\node[decision] (done) at (0,-3.6) {Đã thực hiện bảo dưỡng?};
+\node[box] (read) at (5,-3.6) {Chỉ đọc nhắc; giữ nguyên kỳ};
+\node[box] (form) at (0,-6) {Nhập dịch vụ và liên kết plan};
+\node[decision] (saved) at (0,-8) {Hợp lệ và lưu được?};
+\node[box] (error) at (5,-8) {Giữ form; sửa hoặc retry};
+\node[box] (result) at (0,-10.6) {Xem hạn kỳ tiếp theo};
+\node[final] (end) at (0,-12.2) {};
+\draw[edge] (start) -- node[lbl] {} (inbox);
+\draw[edge] (inbox) -- node[lbl] {} (reason);
+\draw[edge] (reason) -- node[lbl] {} (done);
+\draw[edge] (done) -- node[lbl] {Chưa} (read);
+\draw[edge] (done) -- node[lbl] {Rồi} (form);
+\draw[edge] (form) -- node[lbl] {} (saved);
+\draw[edge] (saved) -- node[lbl] {Không} (error);
+\draw[edge] (error) |- node[lbl] {sửa / thử lại} (form);
+\draw[edge] (saved) -- node[lbl] {Có} (result);
+\draw[edge] (result) -- node[lbl] {} (end);
+\draw[edge] (read.east) -- (7.5,-3.6) -- (7.5,-12.2) -- (end.east);
+\end{tikzpicture}

@@ -1,0 +1,18 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+box/.style={draw=ink,fill=pale,rounded corners=2pt,align=center,text width=3.3cm,minimum height=.85cm,inner sep=6pt},
+decision/.style={diamond,draw=ink,fill=white,aspect=2.3,align=center,text width=2.6cm,inner sep=2pt},
+state/.style={draw=ink,rounded corners=7pt,fill=pale,align=center,text width=2.7cm,minimum height=.9cm},
+initial/.style={circle,fill=ink,minimum size=.22cm,inner sep=0pt},
+final/.style={circle,draw=ink,double,fill=ink,minimum size=.28cm,inner sep=0pt},
+uc/.style={ellipse,draw=ink,fill=pale,align=center,text width=3.5cm,minimum height=1.1cm},
+edge/.style={->,draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\node[state] (unread) at (-1,0) {Current / Unread};
+\node[state] (read) at (7,0) {Current / Read};
+\node[state] (sup) at (3,-4) {Superseded};
+\draw[edge] (unread) -- node[lbl] {đánh dấu đã đọc} (read);
+\draw[edge] (unread.south) -- node[lbl,pos=.4,text width=2.5cm] {đổi kỳ / mức\\hoặc inactive} (sup.north west);
+\draw[edge] (read.south) -- node[lbl,pos=.4,text width=2.5cm] {đổi kỳ / mức\\hoặc inactive} (sup.north east);
+\draw[edge] (sup.west) -- (-3,-4) -- node[lbl,text width=3cm] {cùng khóa\\readAt NULL:\\khôi phục current} (-3,0) -- (unread.west);
+\draw[edge] (sup.east) -- (9,-4) -- node[lbl,text width=3cm] {cùng khóa\\đã đọc:\\giữ readAt} (9,0) -- (read.east);
+\node[align=left,text width=13cm] at (3,-6) {\raggedright Badge đếm Current chưa đọc. Tái dùng khóa plan/kỳ/mức, không insert trùng; giữ readAt khi tái kích hoạt cùng khóa. Mức mới có khóa khác và unread. Đọc nhắc không tạo completion.};
+\end{tikzpicture}

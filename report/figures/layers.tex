@@ -1,0 +1,19 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+box/.style={draw=ink,fill=pale,rounded corners=2pt,align=center,text width=3.5cm,minimum height=1.1cm,inner sep=6pt},
+edge/.style={->,draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\node[box] (fe) at (0,0) {React SPA\\UI, forms, Query};
+\node[box] (api) at (5,0) {API\\Controller, composition};
+\node[box] (shared) at (0,-3) {Shared\\DTO public + TypeScript\\không EF/HTTP/Identity};
+\node[box] (app) at (5,-3) {Application\\service contracts, lỗi, ports};
+\node[box] (domain) at (5,-6) {Domain\\entity, enum, rule thuần};
+\node[box] (infra) at (10,-3) {Infrastructure\\service, repository, EF};
+\draw[edge] (fe) -- node[lbl] {HTTP DTO} (api);
+\draw[edge] (fe) -- node[lbl] {generated types} (shared);
+\draw[edge] (api) -- node[lbl] {dùng DTO} (shared);
+\draw[edge] (api) -- node[lbl] {gọi interface} (app);
+\draw[edge] (app) -- node[lbl] {transport contracts} (shared);
+\draw[edge] (app) -- node[lbl] {domain contracts} (domain);
+\draw[edge] (infra) -- node[lbl] {implements ports} (app);
+\draw[edge] (infra) -- node[lbl] {entity/rules} (domain);
+\draw[edge] (api.east) -- (10,0) -- node[lbl] {đăng ký DI} (infra);
+\end{tikzpicture}

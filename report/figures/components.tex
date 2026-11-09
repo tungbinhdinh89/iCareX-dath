@@ -1,0 +1,23 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+box/.style={draw=ink,fill=pale,rounded corners=2pt,align=center,text width=3.3cm,minimum height=.85cm,inner sep=6pt},
+decision/.style={diamond,draw=ink,fill=white,aspect=2.3,align=center,text width=2.6cm,inner sep=2pt},
+state/.style={draw=ink,rounded corners=7pt,fill=pale,align=center,text width=2.7cm,minimum height=.9cm},
+initial/.style={circle,fill=ink,minimum size=.22cm,inner sep=0pt},
+final/.style={circle,draw=ink,double,fill=ink,minimum size=.28cm,inner sep=0pt},
+uc/.style={ellipse,draw=ink,fill=pale,align=center,text width=3.5cm,minimum height=1.1cm},
+edge/.style={->,draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\node[box] (ui) at (0,0) {React UI\\routes, form, Query cache};
+\node[box] (http) at (5,0) {HTTP controllers\\Auth / Vehicles / Catalog};
+\node[box] (service) at (5,-2.5) {Business services\\Auth / Vehicle / Catalog};
+\node[box] (rules) at (0,-2.5) {GarageRules\\ODO, số, tính hạn};
+\node[box] (repo) at (5,-5) {Repositories / DbContext\\mapping và truy vấn};
+\node[box] (db) at (10,-5) {PostgreSQL\\constraints / indexes};
+\node[box] (future) at (10,0) {<<đề xuất>>\\Fuel / Service / Plan\\Notification / Report};
+\draw[edge] (ui) -- node[lbl] {JSON / cookie} (http);
+\draw[edge] (http) -- node[lbl] {interface} (service);
+\draw[edge] (service) -- node[lbl] {gọi logic thuần} (rules);
+\draw[edge] (service) -- node[lbl] {persistence} (repo);
+\draw[edge] (repo) -- node[lbl] {Npgsql} (db);
+\draw[edge] (future) -- node[lbl] {mở rộng theo feature} (service);
+
+\end{tikzpicture}

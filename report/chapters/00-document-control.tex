@@ -1,0 +1,35 @@
+\chapter*{Kiểm soát tài liệu và cách đọc}
+\addcontentsline{toc}{chapter}{Kiểm soát tài liệu và cách đọc}
+Báo cáo iCareX-report tổng hợp đặc tả yêu cầu, kiến trúc, dữ liệu, hành vi, giao diện và kế hoạch kiểm thử cho hệ thống quản lý phương tiện cá nhân. Mục tiêu là cung cấp đủ thông tin để triển khai và kiểm chứng FR01--FR12; bản đặc tả không thay thế biên bản nghiệm thu sản phẩm~\cite{wiki,design}.
+
+\field{Tác giả}{Nguyễn Thanh Tùng, MSSV 2449106; thông tin kế thừa metadata của template được cung cấp.}
+\field{Phiên bản}{1.1; ngày đối chiếu 06/11/2026, múi giờ Việt Nam.}
+\field{Phạm vi}{Web cá nhân, ODO, nhiên liệu, dịch vụ nhiều dòng, kế hoạch, completion, inbox, lịch sử, báo cáo và cài đặt.}
+\field{Mốc mã nguồn}{HEAD \code{5f15fe2}, nhánh \code{main} tại lúc bắt đầu soạn. Working tree có thay đổi local; không đồng nhất nội dung đã đọc với commit đã công bố.}
+\field{Nguồn ưu tiên}{Lời giao việc và quy tắc repository; Wiki cho yêu cầu đích; mã/manifest cho hiện trạng; bộ tài liệu trong doc cho thiết kế. PDF cũ và template cung cấp nội dung/kết cấu tham khảo.}
+
+\begin{smalltable}\begin{longtable}{L{3cm}L{12cm}}
+\caption{Trạng thái khẳng định trong báo cáo}\\
+\toprule Nhãn & Ý nghĩa\\\midrule\endfirsthead
+\toprule Nhãn & Ý nghĩa\\\midrule\endhead
+Yêu cầu đích & Hành vi cần đạt khi nghiệm thu, chưa mặc nhiên đã triển khai.\\
+Hiện trạng có mã & Có source/manifest đọc được; không tương đương một lần test thành công.\\
+Ghi nhận lịch sử & Kết quả do README hoặc báo cáo cũ ghi lại, không phải kết quả thực thi trong lần viết này.\\
+Đề xuất / chưa chốt & Phương án cần owner quyết định trước triển khai; ảnh hưởng được nêu ở chương tương ứng.\\
+Planned / Not run & Test có dữ liệu/bước/expected, chưa có actual và evidence mới.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\section*{Đối chiếu các nguồn khác thời điểm}
+PDF đầu vào \code{doc/latex-local-studio/icarex-report/main.pdf} được đọc tại các trang vật lý 1--8 (bìa, mục lục, danh mục) và 30--44 (rules, NFR và thiết kế). Bản PDF này còn một số tên VehicleCare ở caption; mã LaTeX đi kèm đã dùng iCareX. Báo cáo hiện tại kế thừa cấu trúc và các đặc tả còn đúng, thống nhất tên iCareX và cập nhật theo nguồn ngày 06/11~\cite{previousreport}.
+
+Các tài liệu lập kế hoạch và PDF cũ ghi nhận một số file NUL. README hiện tại đã ghi việc phục hồi client/model/project và kiểm tra runtime ngày 06/11. Vì vậy không dùng tình trạng NUL lịch sử để kết luận ứng dụng hiện tại không thể build. File \code{doc/rules.md} đang thiếu trong lần khảo sát; quy tắc từ AGENTS.md và lời giao việc vẫn được áp dụng. Không phục hồi hay sửa ứng dụng trong phạm vi soạn báo cáo.
+
+\section*{Quyết định còn cần owner chốt}
+DEC07/Wiki định hướng JWT access token trong memory và refresh rotation; mã hiện tại dùng cookie HttpOnly, session lưu DB và CSRF. Báo cáo giữ yêu cầu JWT của baseline, mô tả cookie đúng như source và ghi đây là khoảng cách cần ADR. Không tự xác nhận một quyết định chuyển hay giữ cơ chế xác thực.
+
+Schema Entry đơn là hiện trạng; schema reading chuẩn hóa, nguồn typed, ServiceItem và Notification là đích. Các sơ đồ, dictionary và HTTP operation đích không phải migration/endpoint đã được thực thi.
+
+\section*{Nhận diện và minh chứng giao diện}
+Logo trường có sẵn trong template. Nhận diện iCareX và icon minh họa được tái dựng từ component/token/MUI của source frontend đã cung cấp, có bảng nguồn tài nguyên~\cite{brandlocal}. Figma MCP chưa kết nối ở thời điểm lấy nguồn; không khẳng định đã xuất trực tiếp logo, icon hoặc screenshot từ file Figma trực tuyến. Các wireframe là thiết kế, không là ảnh bằng chứng lưu dữ liệu.
+
+Việc kiểm chứng trong lần này gồm biên dịch LuaLaTeX, tham chiếu, cấu trúc PDF và trang render. Toàn bộ test nghiệp vụ được giữ trạng thái chưa chạy; kết quả kiểm tra tài liệu được bàn giao riêng trong \code{BUILD-VALIDATION.md}.

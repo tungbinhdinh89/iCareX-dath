@@ -1,0 +1,21 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+state/.style={draw=ink,rounded corners=7pt,fill=pale,align=center,text width=2.7cm,minimum height=.9cm},
+edge/.style={->,draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\node[state,fill=white,text width=4cm] (evaluate) at (5,-3) {Evaluate(plan, completion,\\reading, today)};
+\node[state] (unknown) at (0,0) {Unknown};
+\node[state] (notdue) at (5,0) {NotDue};
+\node[state] (soon) at (10,0) {Soon};
+\node[state] (due) at (10,-6) {Due};
+\node[state] (over) at (0,-6) {Overdue};
+\draw[edge] (evaluate) -- node[lbl,pos=.78,text width=3cm] {thiếu dữ liệu\\quyết định} (unknown);
+\draw[edge] (evaluate) -- node[lbl,pos=.78,text width=3cm] {đủ dữ liệu,\\mọi chiều còn xa} (notdue);
+\draw[edge] (evaluate) -- node[lbl,pos=.78,text width=3cm] {trong ngưỡng,\\chưa tới hạn} (soon);
+\draw[edge] (evaluate) -- node[lbl,pos=.68,text width=3cm] {bằng hạn,\\chưa chiều nào quá} (due);
+\draw[edge] (evaluate) -- node[lbl,pos=.68,text width=3cm] {ít nhất một chiều\\vượt hạn} (over);
+\draw[edge,dashed] (unknown.west) -- (-2,0) -- (-2,-3) -- (evaluate.west);
+\draw[draw=ink,dashed] (notdue.north) -- (5,1.2) -- (-2,1.2) -- (-2,0);
+\draw[edge,dashed] (soon.east) -- (12,0) -- (12,-3) -- (evaluate.east);
+\draw[draw=ink,dashed] (due.east) -- (12,-6) -- (12,-3);
+\draw[draw=ink,dashed] (over.west) -- (-2,-6) -- (-2,-3);
+\node[align=flush left,text width=13cm,font=\scriptsize] at (5,-8.7) {Trạng thái được tính lại khi ngày, số km, lịch sử dịch vụ hoặc cấu hình thay đổi. EITHER ưu tiên Overdue, Due, Soon; nếu chỉ NotDue nhưng thiếu dữ liệu ở chiều còn lại thì Unknown. Tạm dừng, lưu trữ và độ cũ số km được theo dõi riêng.};
+\end{tikzpicture}

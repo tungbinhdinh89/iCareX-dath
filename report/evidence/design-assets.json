@@ -1,0 +1,557 @@
+{
+    "revision_date":  "2026-11-07",
+    "authority":  "User-supplied design screenshots; screenshot fallback explicitly authorized",
+    "figma_file":  "dhuYBdCuQxXFoNb6OpOjdW",
+    "figma_node":  "35:451",
+    "mcp_file_read":  false,
+    "note":  "Screenshot text is reference material; DEC07 and the agreed account requirements remain authoritative.",
+    "assets":  [
+                   {
+                       "asset":  "figures/design/component-library.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "byte-for-byte copy",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "width":  3600,
+                       "height":  10398
+                   },
+                   {
+                       "asset":  "figures/design/design-foundations.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.54.30 AM.png",
+                       "operation":  "byte-for-byte copy",
+                       "source_sha256":  "e2d506da00079095c359ad192f1797bd72c29e10d9c5f2791897ef03a33c93c5",
+                       "asset_sha256":  "e2d506da00079095c359ad192f1797bd72c29e10d9c5f2791897ef03a33c93c5",
+                       "source_width":  3200,
+                       "source_height":  4480,
+                       "width":  3200,
+                       "height":  4480
+                   },
+                   {
+                       "asset":  "figures/design/login.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.41.53 AM.png",
+                       "operation":  "byte-for-byte copy",
+                       "source_sha256":  "865b322ea4259cc24e1cbcc7d0c72f02da94dd50dd3f9cfb664d6a99faeea4d1",
+                       "asset_sha256":  "865b322ea4259cc24e1cbcc7d0c72f02da94dd50dd3f9cfb664d6a99faeea4d1",
+                       "source_width":  2880,
+                       "source_height":  2000,
+                       "width":  2880,
+                       "height":  2000
+                   },
+                   {
+                       "asset":  "figures/design/landing.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.42.33 AM.png",
+                       "operation":  "byte-for-byte copy",
+                       "source_sha256":  "86f0e4f3f2cfbe3634217d86390040b28681e4b0ec09f6cbf5031698e8e056ca",
+                       "asset_sha256":  "86f0e4f3f2cfbe3634217d86390040b28681e4b0ec09f6cbf5031698e8e056ca",
+                       "source_width":  2880,
+                       "source_height":  3728,
+                       "width":  2880,
+                       "height":  3728
+                   },
+                   {
+                       "asset":  "figures/design/register.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.16 AM.png",
+                       "operation":  "byte-for-byte copy",
+                       "source_sha256":  "6edfacd5ed4ceaf2763a05265bfb47bb4cb5c799a3408e1d64654117d55df43a",
+                       "asset_sha256":  "6edfacd5ed4ceaf2763a05265bfb47bb4cb5c799a3408e1d64654117d55df43a",
+                       "source_width":  2880,
+                       "source_height":  2210,
+                       "width":  2880,
+                       "height":  2210
+                   },
+                   {
+                       "asset":  "figures/design/vehicle-overview.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.58 AM.png",
+                       "operation":  "byte-for-byte copy",
+                       "source_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "asset_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "source_width":  2880,
+                       "source_height":  2246,
+                       "width":  2880,
+                       "height":  2246
+                   },
+                   {
+                       "asset":  "figures/design/fuel-create.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.44.23 AM.png",
+                       "operation":  "byte-for-byte copy",
+                       "source_sha256":  "6a24f162f3f13dd4119d12e2500eb8b974a30f525a58c25e7574b45801793be2",
+                       "asset_sha256":  "6a24f162f3f13dd4119d12e2500eb8b974a30f525a58c25e7574b45801793be2",
+                       "source_width":  2880,
+                       "source_height":  2048,
+                       "width":  2880,
+                       "height":  2048
+                   },
+                   {
+                       "asset":  "figures/design/notifications.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.44.42 AM.png",
+                       "operation":  "byte-for-byte copy",
+                       "source_sha256":  "c89abd90a2fd397b27346a8e79bb8a0b80d7696b87438f7c91feb10eee14d9e5",
+                       "asset_sha256":  "c89abd90a2fd397b27346a8e79bb8a0b80d7696b87438f7c91feb10eee14d9e5",
+                       "source_width":  2880,
+                       "source_height":  2580,
+                       "width":  2880,
+                       "height":  2580
+                   },
+                   {
+                       "asset":  "figures/design/logo-light.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.54.30 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "e2d506da00079095c359ad192f1797bd72c29e10d9c5f2791897ef03a33c93c5",
+                       "asset_sha256":  "70ae23f81b4f3a5aaa6b298b83941e00fe4333efa6b50274c68a82e95bfcf95f",
+                       "source_width":  3200,
+                       "source_height":  4480,
+                       "crop_xywh":  [
+                                         150,
+                                         1028,
+                                         270,
+                                         90
+                                     ],
+                       "width":  270,
+                       "height":  90
+                   },
+                   {
+                       "asset":  "figures/design/logo-dark.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.54.30 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "e2d506da00079095c359ad192f1797bd72c29e10d9c5f2791897ef03a33c93c5",
+                       "asset_sha256":  "8592e116077eb3a53827b20b36e28b7b5e0f22c708acf438b9f7a482f4dfb441",
+                       "source_width":  3200,
+                       "source_height":  4480,
+                       "crop_xywh":  [
+                                         518,
+                                         1032,
+                                         252,
+                                         82
+                                     ],
+                       "width":  252,
+                       "height":  82
+                   },
+                   {
+                       "asset":  "figures/design/symbol-light.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.54.30 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "e2d506da00079095c359ad192f1797bd72c29e10d9c5f2791897ef03a33c93c5",
+                       "asset_sha256":  "ac95e747585691f743b01fcfff7351f9686bcb99572a21c723395eb60b37a736",
+                       "source_width":  3200,
+                       "source_height":  4480,
+                       "crop_xywh":  [
+                                         175,
+                                         720,
+                                         232,
+                                         232
+                                     ],
+                       "width":  232,
+                       "height":  232
+                   },
+                   {
+                       "asset":  "figures/design/symbol-dark.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.54.30 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "e2d506da00079095c359ad192f1797bd72c29e10d9c5f2791897ef03a33c93c5",
+                       "asset_sha256":  "7a52c60ce61fab71bfab87bd30f623e3cca4c7279fb1c625b2ce5369831194b0",
+                       "source_width":  3200,
+                       "source_height":  4480,
+                       "crop_xywh":  [
+                                         460,
+                                         700,
+                                         268,
+                                         268
+                                     ],
+                       "width":  268,
+                       "height":  268
+                   },
+                   {
+                       "asset":  "figures/design/controls.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "fac4379b6c565f1ca5798e7e68861a50aafe9449608761c1d1c9e58a3ba1c7f0",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         110,
+                                         450,
+                                         3380,
+                                         570
+                                     ],
+                       "width":  3380,
+                       "height":  570
+                   },
+                   {
+                       "asset":  "figures/design/status-chips.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "f686e930a2917e4ce6d1cfdea7efaaa5836bd9c6c14c0dabef4a5cade3423df0",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         110,
+                                         1080,
+                                         3380,
+                                         320
+                                     ],
+                       "width":  3380,
+                       "height":  320
+                   },
+                   {
+                       "asset":  "figures/design/status-badges.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "a660e479d10a72acc80efda979b947959549f9e3d640851b0ed08195cdd87cbb",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         145,
+                                         1205,
+                                         1230,
+                                         85
+                                     ],
+                       "width":  1230,
+                       "height":  85
+                   },
+                   {
+                       "asset":  "figures/design/component-cards.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "7aa103029f3bfdf1b77ed1480f3d8fbeef21ed81a005bc31f5e29bad7bf17d68",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         110,
+                                         2145,
+                                         3380,
+                                         665
+                                     ],
+                       "width":  3380,
+                       "height":  665
+                   },
+                   {
+                       "asset":  "figures/design/list-feedback.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "92556b7c207d5df2e3304778a0b113594ecf0968a2f2cd2f64de43929a0657fa",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         110,
+                                         4380,
+                                         3380,
+                                         460
+                                     ],
+                       "width":  3380,
+                       "height":  460
+                   },
+                   {
+                       "asset":  "figures/design/field-focus.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "5019f0cbb6f9db32e58dea7bab20db3a2d2ed028ede793bc15e85a366a42ea5a",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         975,
+                                         760,
+                                         830,
+                                         260
+                                     ],
+                       "width":  830,
+                       "height":  260
+                   },
+                   {
+                       "asset":  "figures/design/field-error.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "188a2824f7b75502392d78f0dd6c4adedf79828e66158f9c5e684cc43358a320",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         1810,
+                                         760,
+                                         830,
+                                         260
+                                     ],
+                       "width":  830,
+                       "height":  260
+                   },
+                   {
+                       "asset":  "figures/design/card-vehicle.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "a48c00e612003f2df102b3cebbeda0c3293bdbfa5f997bdfe596911f64c309ee",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         110,
+                                         2145,
+                                         810,
+                                         665
+                                     ],
+                       "width":  810,
+                       "height":  665
+                   },
+                   {
+                       "asset":  "figures/design/card-odometer.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "ec1b47f53a54b0226d1db9408bc61045fd69d138a055ca5a23d2bb34523e90e2",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         968,
+                                         2145,
+                                         810,
+                                         665
+                                     ],
+                       "width":  810,
+                       "height":  665
+                   },
+                   {
+                       "asset":  "figures/design/card-reminder.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "bd2bdae6e15d2d5551194484a7061d4f65eff33602566ba783dfea11e006c29a",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         1826,
+                                         2145,
+                                         810,
+                                         665
+                                     ],
+                       "width":  810,
+                       "height":  665
+                   },
+                   {
+                       "asset":  "figures/design/card-expenses.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "9f1d490bbbeb74085791e3bd140285a50661bb7b4c0c74011c598dfe385194d5",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         2684,
+                                         2145,
+                                         806,
+                                         665
+                                     ],
+                       "width":  806,
+                       "height":  665
+                   },
+                   {
+                       "asset":  "figures/design/feedback-loading.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "27c913d2dccbfaa9d19a65643edc668d7cd960e80ff47e5cb7847dc6c6b86890",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         110,
+                                         4380,
+                                         810,
+                                         460
+                                     ],
+                       "width":  810,
+                       "height":  460
+                   },
+                   {
+                       "asset":  "figures/design/feedback-empty.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "9754185b1f8119e04b2f44bb5d11f3cfea8b31645b6732177d07484187463455",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         968,
+                                         4380,
+                                         810,
+                                         460
+                                     ],
+                       "width":  810,
+                       "height":  460
+                   },
+                   {
+                       "asset":  "figures/design/feedback-error.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "4a77b42da3e3d891e70bec786aeda7e08a35b953f9f9226e34717b674a6ff809",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         1826,
+                                         4380,
+                                         810,
+                                         460
+                                     ],
+                       "width":  810,
+                       "height":  460
+                   },
+                   {
+                       "asset":  "figures/design/feedback-success.png",
+                       "source":  "Design/Pasted 2026-11-07 at 6.53.49 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "3130e44d328f86e3626a9c419f1a9eb307165774e0772b1052f2fa40a7ea9ea9",
+                       "asset_sha256":  "a14301d6ad67057051f975ad53a8882867ded308c01ebf06fab654390af5bab5",
+                       "source_width":  3600,
+                       "source_height":  10398,
+                       "crop_xywh":  [
+                                         2684,
+                                         4380,
+                                         806,
+                                         460
+                                     ],
+                       "width":  806,
+                       "height":  460
+                   },
+                   {
+                       "asset":  "figures/design/nav-overview.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.58 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "asset_sha256":  "82fda19b513b1e6b8f231987560d0dcd8340810cd3d14e080e133fe98b522adb",
+                       "source_width":  2880,
+                       "source_height":  2246,
+                       "crop_xywh":  [
+                                         54,
+                                         215,
+                                         48,
+                                         48
+                                     ],
+                       "width":  48,
+                       "height":  48
+                   },
+                   {
+                       "asset":  "figures/design/nav-vehicles.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.58 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "asset_sha256":  "d31c70cb11bf9890acfedf481aba0bc6fc5d28f6cb195b9f91a8b204435e63b9",
+                       "source_width":  2880,
+                       "source_height":  2246,
+                       "crop_xywh":  [
+                                         54,
+                                         319,
+                                         48,
+                                         48
+                                     ],
+                       "width":  48,
+                       "height":  48
+                   },
+                   {
+                       "asset":  "figures/design/nav-fuel.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.58 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "asset_sha256":  "6afbf5dfd5ba5ae8e8e81e622327020e0c8a0bc4bc11b4021d5f783693f2731a",
+                       "source_width":  2880,
+                       "source_height":  2246,
+                       "crop_xywh":  [
+                                         54,
+                                         423,
+                                         48,
+                                         48
+                                     ],
+                       "width":  48,
+                       "height":  48
+                   },
+                   {
+                       "asset":  "figures/design/nav-expenses.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.58 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "asset_sha256":  "a4a7277752d1c3a82ac0949ce105c35e406d3751d07bb81896c8a80687f05186",
+                       "source_width":  2880,
+                       "source_height":  2246,
+                       "crop_xywh":  [
+                                         54,
+                                         527,
+                                         48,
+                                         48
+                                     ],
+                       "width":  48,
+                       "height":  48
+                   },
+                   {
+                       "asset":  "figures/design/nav-maintenance.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.58 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "asset_sha256":  "c5ab0ce4f9018084c4ff9e15ad4aeddcb1a8dfd54031d814bf58a1460aa66285",
+                       "source_width":  2880,
+                       "source_height":  2246,
+                       "crop_xywh":  [
+                                         54,
+                                         631,
+                                         48,
+                                         48
+                                     ],
+                       "width":  48,
+                       "height":  48
+                   },
+                   {
+                       "asset":  "figures/design/nav-inbox.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.58 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "asset_sha256":  "e7ee60364e1adb8cef9e4ec120cf8e795757872321f0428bdf0a32f86f46294b",
+                       "source_width":  2880,
+                       "source_height":  2246,
+                       "crop_xywh":  [
+                                         54,
+                                         735,
+                                         48,
+                                         48
+                                     ],
+                       "width":  48,
+                       "height":  48
+                   },
+                   {
+                       "asset":  "figures/design/nav-reports.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.58 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "asset_sha256":  "d9c9658e5e431119639f519306598bfd04028fdbd681cb2ebb7d849ac1161361",
+                       "source_width":  2880,
+                       "source_height":  2246,
+                       "crop_xywh":  [
+                                         54,
+                                         839,
+                                         48,
+                                         48
+                                     ],
+                       "width":  48,
+                       "height":  48
+                   },
+                   {
+                       "asset":  "figures/design/nav-settings.png",
+                       "source":  "Design/Pasted 2026-11-07 at 8.43.58 AM.png",
+                       "operation":  "exact pixel crop; no resampling, recoloring or content editing",
+                       "source_sha256":  "ee91adeedcecee99a7efcb362be3d695a81f1832c805d96c971b510ae8ca68e1",
+                       "asset_sha256":  "55d9b98b0f5e70944d5204976870eefd36f353725af8f0549d43c77bbc8fa464",
+                       "source_width":  2880,
+                       "source_height":  2246,
+                       "crop_xywh":  [
+                                         54,
+                                         943,
+                                         48,
+                                         48
+                                     ],
+                       "width":  48,
+                       "height":  48
+                   }
+               ]
+}
