@@ -1,0 +1,90 @@
+% LuaLaTeX Unicode; Latin Modern kế thừa họ Computer Modern của template.
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}[Scale=MatchLowercase]
+\setmonofont{lmmono10-regular.otf}[Scale=.85,
+  BoldFont=lmmonolt10-bold.otf,ItalicFont=lmmono10-italic.otf,
+  BoldItalicFont=lmmonolt10-boldoblique.otf]
+\usepackage[main=vietnamese,english]{babel}
+\usepackage[a4paper,left=2.5cm,right=2.3cm,top=2.9cm,bottom=2.3cm,
+  headheight=32pt,headsep=9pt,footskip=24pt]{geometry}
+\usepackage{amsmath,amssymb,graphicx,xcolor}
+\usepackage{array,booktabs,longtable,ragged2e,tabularx,multirow}
+\usepackage{adjustbox,pdflscape}
+\usepackage{setspace,titlesec,fancyhdr,caption,float,tikz,listings}
+\usepackage{enumitem}
+\usepackage{xurl}
+\usepackage[autostyle=false,style=english]{csquotes}
+\usepackage[backend=biber,style=numeric,sorting=none,maxbibnames=5]{biblatex}
+\DeclareLanguageMapping{vietnamese}{english}
+\AtBeginBibliography{\raggedright}
+\addbibresource{references.bib}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc}
+\definecolor{ReportBlue}{RGB}{10,44,167}
+\definecolor{HeadingColor}{RGB}{30,40,59}
+\definecolor{ink}{HTML}{173B52}
+\definecolor{accent}{HTML}{217C84}
+\definecolor{pale}{HTML}{EEF5F7}
+\definecolor{warn}{HTML}{96601D}
+\definecolor{ICNavy}{HTML}{11223E}
+\definecolor{ICMint}{HTML}{60D4A6}
+\definecolor{ICMuted}{HTML}{97A6BD}
+\usetikzlibrary{svg.path}
+\usepackage[unicode,colorlinks=true,linkcolor=ReportBlue,citecolor=ReportBlue,
+  urlcolor=ReportBlue,hypertexnames=false]{hyperref}
+\hypersetup{
+  pdftitle={\ReportTitle},
+  pdfauthor={\ReportAuthor}}
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\listfigurename}{Danh sách hình vẽ}
+\addto\captionsvietnamese{\renewcommand{\listtablename}{Mục lục}}
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\bibname}{Tài liệu tham khảo}
+\setcounter{tocdepth}{2}
+\titleformat{\section}{\Large\bfseries\color{HeadingColor}}{\thesection}{.7em}{}
+\titleformat{\chapter}[hang]{\LARGE\bfseries\color{HeadingColor}}{\thechapter.}{.5em}{}
+\titlespacing*{\chapter}{0pt}{0pt}{18pt}
+\titleformat{\subsection}{\large\bfseries\color{HeadingColor}}{\thesubsection}{.7em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{.7em}{}
+\titlespacing*{\section}{0pt}{18pt}{10pt}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+\titlespacing*{\subsubsection}{0pt}{12pt}{6pt}
+\setstretch{1.15}
+\setlength{\parindent}{1cm}
+\setlength{\parskip}{3.3pt}
+\setlength{\LTpre}{8pt}
+\setlength{\LTpost}{10pt}
+\newcolumntype{P}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\captionsetup{font=small,labelfont=bf,skip=7pt}
+\setlist{leftmargin=1.8em,itemsep=4pt,topsep=4pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\begin{tabular}{@{}m{.95cm}@{\hspace{.4cm}}l@{}}
+  \includegraphics[width=.94cm]{figures/hcmut.png}&
+  \begin{tabular}{@{}l@{}}\small Trường Đại học Bách Khoa - ĐHQG TP.HCM\\[-2pt]
+  \small Khoa Khoa học và Kỹ thuật Máy tính\end{tabular}
+\end{tabular}}
+\fancyfoot[L]{\footnotesize \ReportFooter}
+\fancyfoot[R]{\footnotesize Trang \thepage}
+\renewcommand{\headrulewidth}{.4pt}
+\renewcommand{\footrulewidth}{.4pt}
+\lstdefinelanguage{TypeScript}{
+  keywords={type,interface,class,constructor,private,async,if,return,await,const,string,number,boolean,void},
+  sensitive=true,comment=[l]{//},morestring=[b]"}
+\lstset{language=TypeScript,basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\bfseries,commentstyle=\itshape\color{gray!70!black},
+  columns=fullflexible,keepspaces=true,showstringspaces=false,
+  breaklines=true,frame=single,backgroundcolor=\color{gray!4},
+  captionpos=t,aboveskip=10pt,belowskip=10pt,tabsize=2}
+\emergencystretch=4em
+\urlstyle{tt}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\code}[1]{\nolinkurl{#1}}
+\newcommand{\sourcecode}{\textbf{Hiện trạng mã nguồn.} }
+\newcommand{\target}{\textbf{Đặc tả đích.} }
+\newcommand{\note}[1]{\begin{quote}\small\color{ink}\textbf{Ghi chú:} #1\end{quote}}
+\newcommand{\diagram}[3]{\begin{figure}[H]\centering\begin{adjustbox}{max width=.99\linewidth,max totalheight=.70\textheight,keepaspectratio}\input{figures/#1}\end{adjustbox}\caption{#2}\label{fig:#3}\end{figure}}
+\newenvironment{smalltable}{\begingroup\small\setstretch{1.05}\setlength{\tabcolsep}{3pt}\renewcommand{\arraystretch}{1.18}}{\endgroup}
+\newcommand{\field}[2]{\textbf{#1:} #2\par}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[L]{\footnotesize\ReportFooter}\fancyfoot[R]{\footnotesize Trang \thepage}\renewcommand{\headrulewidth}{0pt}\renewcommand{\footrulewidth}{.4pt}}

@@ -1,0 +1,317 @@
+\chapter{Từ điển dữ liệu và ràng buộc triển khai}
+\label{app:data-dictionary}
+Phụ lục này tổng hợp dictionary cột, quan hệ và constraint từ \code{doc/schema.md}, mục 6--8, đọc ngày 06/11/2026. Đây là thiết kế đích phục vụ triển khai, chưa phải schema đã được migrate. Trừ cột ghi NULL rõ ràng, cột đích là NOT NULL. Source/migration là căn cứ cho trạng thái đang triển khai.
+Quyết định bảo mật còn mở: Wiki chọn JWT, source dùng cookie + DB session. Schema cơ sở giữ auth\_sessions theo source; không coi lựa chọn đó là owner đã chốt thay thế JWT. Chuyển JWT cần ADR, contract và kiểm thử bảo mật riêng.
+\section{Relationship catalogue — FK và delete behavior đích}
+Các bảng business dùng \texttt{id uuid} làm PK, trừ settings và idempotency có PK chuyên biệt. \texttt{account\_\allowbreak{}id} và \texttt{vehicle\_\allowbreak{}id} trong bảng con không được sửa để chuyển tài nguyên sang xe/chủ khác.\par
+\begin{smalltable}\begin{longtable}{L{0.65cm}L{4.05cm}L{4.05cm}L{2.8cm}L{2.85cm}}
+\caption{Relationship catalogue — FK và delete behavior đích}\label{tab:dictionary-1}\\\toprule
+Mã & Bảng con / FK & Bảng cha / khóa được tham chiếu & Quan hệ & ON DELETE đề xuất\\\midrule\endfirsthead
+\toprule Mã & Bảng con / FK & Bảng cha / khóa được tham chiếu & Quan hệ & ON DELETE đề xuất\\\midrule\endhead
+R01 & \texttt{accounts(id)} & \texttt{AspNetUsers(Id)} & Shared PK; account đúng 1 user & CASCADE, nhưng các phụ thuộc nghiệp vụ có RESTRICT vẫn có thể chặn purge\\
+R02 & \texttt{user\_\allowbreak{}settings(account\_\allowbreak{}id)} & \texttt{accounts(id)} & Shared PK; tối đa 1 settings/account & CASCADE\\
+R03 & \texttt{auth\_\allowbreak{}sessions(account\_\allowbreak{}id)} & \texttt{accounts(id)} & Account 1–N session & CASCADE\\
+R04 & \texttt{idempotency\_\allowbreak{}records(account\_\allowbreak{}id)} & \texttt{accounts(id)} & Account 1–N request key & CASCADE\\
+R05 & \texttt{vehicles(account\_\allowbreak{}id)} & \texttt{accounts(id)} & Account 1–N vehicle & RESTRICT\\
+R06 & \texttt{vehicle\_\allowbreak{}brands(vehicle\_\allowbreak{}type\_\allowbreak{}id)} & \texttt{vehicle\_\allowbreak{}types(id)} & Type 1–N brand & RESTRICT\\
+R07 & \texttt{vehicle\_\allowbreak{}models(vehicle\_\allowbreak{}brand\_\allowbreak{}id)} & \texttt{vehicle\_\allowbreak{}brands(id)} & Brand 1–N model & RESTRICT\\
+R08 & \texttt{vehicles(vehicle\_\allowbreak{}model\_\allowbreak{}id)} & \texttt{vehicle\_\allowbreak{}models(id)} & Model 1–N vehicle & RESTRICT\\
+R09 & \texttt{odometer\_\allowbreak{}readings(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id)} & \texttt{vehicles(account\_\allowbreak{}id,\allowbreak{} id)} & Vehicle 1–N reading & RESTRICT\\
+R10 & \texttt{fuel\_\allowbreak{}records(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} reading\_\allowbreak{}id,\allowbreak{} reading\_\allowbreak{}source\_\allowbreak{}kind)} & \texttt{odometer\_\allowbreak{}readings(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} id,\allowbreak{} source\_\allowbreak{}kind)} & Fuel bắt buộc 1 reading loại FUEL & RESTRICT\\
+R11 & \texttt{service\_\allowbreak{}records(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} reading\_\allowbreak{}id,\allowbreak{} reading\_\allowbreak{}source\_\allowbreak{}kind)} & \texttt{odometer\_\allowbreak{}readings(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} id,\allowbreak{} source\_\allowbreak{}kind)} & Service bắt buộc 1 reading loại SERVICE & RESTRICT\\
+R12 & \texttt{service\_\allowbreak{}items(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} service\_\allowbreak{}record\_\allowbreak{}id)} & \texttt{service\_\allowbreak{}records(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} id)} & Header có nhiều item & CASCADE khi xóa header có chủ đích\\
+R13 & \texttt{maintenance\_\allowbreak{}plans(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id)} & \texttt{vehicles(account\_\allowbreak{}id,\allowbreak{} id)} & Vehicle 1–N plan & RESTRICT\\
+R14 & \texttt{service\_\allowbreak{}items(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} plan\_\allowbreak{}id)} & \texttt{maintenance\_\allowbreak{}plans(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} id)} & Item tùy chọn 1 plan; plan có nhiều item lịch sử & RESTRICT\\
+R15 & \texttt{notifications(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} plan\_\allowbreak{}id)} & \texttt{maintenance\_\allowbreak{}plans(account\_\allowbreak{}id,\allowbreak{} vehicle\_\allowbreak{}id,\allowbreak{} id)} & Plan 1–N notification & CASCADE nếu plan được phép xóa\\
+R16 & \texttt{AspNetUserRoles(UserId)} & \texttt{AspNetUsers(Id)} & User 1–N membership & CASCADE\\
+R17 & \texttt{AspNetUserRoles(RoleId)} & \texttt{AspNetRoles(Id)} & Role 1–N membership & CASCADE\\
+R18 & \texttt{AspNetUserClaims(UserId)} & \texttt{AspNetUsers(Id)} & User 1–N claim & CASCADE\\
+R19 & \texttt{AspNetRoleClaims(RoleId)} & \texttt{AspNetRoles(Id)} & Role 1–N claim & CASCADE\\
+R20 & \texttt{AspNetUserLogins(UserId)} & \texttt{AspNetUsers(Id)} & User 1–N external login & CASCADE\\
+R21 & \texttt{AspNetUserTokens(UserId)} & \texttt{AspNetUsers(Id)} & User 1–N framework token & CASCADE\\
+\bottomrule\end{longtable}\end{smalltable}
+R10/R11 \textbf{đồng thời} bảo đảm owner, xe, reading và loại nguồn đúng. Không cần thêm FK trực tiếp fuel/service → account/vehicle nếu chuỗi composite FK đã chứng minh quan hệ đó. Tương tự, notification sở hữu cùng owner/xe với plan qua R15. FK không thay authorization: query API vẫn lọc theo account từ claim.\par
+Các unique constraint hỗ trợ FK ghép phải được tạo rõ ràng, dù trong đó có cột \texttt{id} vốn đã là PK:\par
+\begin{lstlisting}[language=SQL]
+-- Thiết kế minh họa; chưa thực thi trên database.
+ALTER TABLE vehicles
+  ADD CONSTRAINT uq_vehicle_owner UNIQUE (account_id, id);
+
+ALTER TABLE odometer_readings
+  ADD CONSTRAINT uq_reading_owner_vehicle_kind
+    UNIQUE (account_id, vehicle_id, id, source_kind);
+
+ALTER TABLE service_records
+  ADD CONSTRAINT uq_service_owner_vehicle
+    UNIQUE (account_id, vehicle_id, id);
+
+ALTER TABLE maintenance_plans
+  ADD CONSTRAINT uq_plan_owner_vehicle
+    UNIQUE (account_id, vehicle_id, id);
+
+ALTER TABLE fuel_records
+  ADD CONSTRAINT ck_fuel_reading_kind CHECK (reading_source_kind = 'FUEL'),
+  ADD CONSTRAINT fk_fuel_reading
+    FOREIGN KEY (account_id, vehicle_id, reading_id, reading_source_kind)
+    REFERENCES odometer_readings(account_id, vehicle_id, id, source_kind)
+    ON DELETE RESTRICT;
+
+ALTER TABLE service_items
+  ADD CONSTRAINT ck_item_plan_kind
+    CHECK (plan_id IS NULL OR item_kind = 'MAINTENANCE'),
+  ADD CONSTRAINT fk_item_plan
+    FOREIGN KEY (account_id, vehicle_id, plan_id)
+    REFERENCES maintenance_plans(account_id, vehicle_id, id)
+    ON DELETE RESTRICT;
+\end{lstlisting}
+FK plan tùy chọn dùng mặc định \texttt{MATCH SIMPLE}: \texttt{plan\_\allowbreak{}id = NULL} nghĩa không liên kết; khi có plan thì cả bộ owner/vehicle phải khớp. \textbf{Không dùng composite \texttt{ON DELETE SET NULL} cho toàn bộ FK}, vì có thể làm null cả owner/vehicle. Plan từng có completion không được xóa; pause thay cho xóa. Plan chưa từng có completion có thể xóa cùng notification của plan đó. FK R14 chặn khi item liên kết còn tồn tại; dấu vết \texttt{first\_\allowbreak{}completed\_\allowbreak{}at\_\allowbreak{}utc} và service/trigger guard bảo vệ quy tắc này cả khi item nguồn đã bị xóa sau đó.\par
+Archive chỉ \texttt{UPDATE vehicles.archived\_\allowbreak{}at\_\allowbreak{}utc}; không DELETE và không kích hoạt cascade. Hard-delete account/vehicle không thuộc UI v1; nếu cần purge vận hành phải có quy trình riêng, xóa dữ liệu theo thứ tự phụ thuộc và không dựa vào cascade toàn bộ lịch sử.\par
+\section{Data dictionary — cột, kiểu, nullable và ý nghĩa}
+\subsection{Quy ước kiểu và audit}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{Quy ước kiểu và audit}\label{tab:dictionary-2}\\\toprule
+Nhóm dữ liệu & Kiểu đích & Quy tắc\\\midrule\endfirsthead
+\toprule Nhóm dữ liệu & Kiểu đích & Quy tắc\\\midrule\endhead
+Entity ID / FK & \texttt{uuid} & Tương ứng C\# \texttt{Guid}; sinh phía server; không dùng ID do client khai làm quyền truy cập.\\
+Ngày nghiệp vụ & \texttt{date} & So với ngày hiện tại \texttt{Asia/Ho\_\allowbreak{}Chi\_\allowbreak{}Minh}; không lấy timezone của máy chạy API làm mặc định nghiệp vụ.\\
+Timestamp kỹ thuật & \texttt{timestamptz} & UTC; giao diện chuyển timezone khi hiển thị.\\
+ODO / chu kỳ km & \texttt{bigint} & ODO nguyên không âm; khoảng nhập ODO giữ 0..9.999.999 như giới hạn source hiện tại. Chu kỳ km có giới hạn riêng.\\
+Tiền VNĐ & \texttt{numeric} + CHECK & \texttt{amount\_\allowbreak{}vnd = trunc(amount\_\allowbreak{}vnd)} và giới hạn hợp lý; dùng C\# decimal.\\
+Số lít & \texttt{numeric} + CHECK & Dương, tối đa 3 số lẻ, tối đa 500 theo giới hạn hiện có.\\
+Enum nghiệp vụ & \texttt{varchar} + CHECK & Có tập giá trị đóng; không sinh bảng lookup chỉ để giữ vài trạng thái cố định.\\
+Phiên bản & \texttt{bigint} & Đích mặc định 1, tăng mỗi mutation; cấu hình EF concurrency token cho từng aggregate cần bảo vệ.\\
+\bottomrule\end{longtable}\end{smalltable}
+\textbf{Chọn \texttt{numeric} không ép scale cho tiền/lít} để CHECK có thể phát hiện dư số lẻ. Nếu khai báo \texttt{numeric(20,\allowbreak{}0)} hoặc \texttt{numeric(20,\allowbreak{}3)}, PostgreSQL có thể làm tròn đầu vào trước CHECK. Khi implementation chọn kiểu có scale, phải kiểm precision trên server trước khi gửi DB; không ghi nhận đã có kiểm tra đó chỉ vì cột mang scale tương ứng.\par
+12 bảng business sau có chung \texttt{created\_\allowbreak{}at\_\allowbreak{}utc timestamptz NOT NULL}, \texttt{updated\_\allowbreak{}at\_\allowbreak{}utc timestamptz NOT NULL}, \texttt{version bigint NOT NULL DEFAULT 1 CHECK(version >= 1)}:\par
+\texttt{accounts}, \texttt{user\_\allowbreak{}settings}, \texttt{vehicle\_\allowbreak{}types}, \texttt{vehicle\_\allowbreak{}brands}, \texttt{vehicle\_\allowbreak{}models}, \texttt{vehicles}, \texttt{odometer\_\allowbreak{}readings}, \texttt{fuel\_\allowbreak{}records}, \texttt{service\_\allowbreak{}records}, \texttt{service\_\allowbreak{}items}, \texttt{maintenance\_\allowbreak{}plans}, \texttt{notifications}.\par
+Default timestamp chỉ khởi tạo lúc INSERT; UPDATE phải cập nhật \texttt{updated\_\allowbreak{}at\_\allowbreak{}utc}/\texttt{version} bằng service hoặc trigger được thống nhất. \texttt{auth\_\allowbreak{}sessions} và \texttt{idempotency\_\allowbreak{}records} có timestamps riêng ghi ở dưới. Những cột audit chung được lược khỏi các bảng dictionary để tránh lặp.\par
+\subsection{\texttt{accounts} — hồ sơ và quyền sở hữu}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{accounts} — hồ sơ và quyền sở hữu}\label{tab:dictionary-3}\\\toprule
+Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endhead
+\texttt{id} & \texttt{uuid} & PK và FK R01; bằng \texttt{AspNetUsers.Id}.\\
+\texttt{name} & \texttt{varchar(60)} & Trim, 2..60 ký tự.\\
+\texttt{phone} & \texttt{varchar(10)} & Mặc định chuỗi rỗng; nếu có thì dạng \texttt{0} + 9 chữ số như source.\\
+\texttt{garage\_\allowbreak{}revision} & \texttt{bigint} & Mặc định 0, không âm; giữ để tương thích entity hiện tại/cache revision nếu còn sử dụng.\\
+\bottomrule\end{longtable}\end{smalltable}
+Email, hash, lockout nằm ở Identity. Không dùng \texttt{garage\_\allowbreak{}revision} thay guard/version cấp xe cho chuỗi ODO; revision toàn account và version entity có mục đích khác nhau.\par
+\subsection{\texttt{user\_\allowbreak{}settings} — cấu hình của chủ xe}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{user\_\allowbreak{}settings} — cấu hình của chủ xe}\label{tab:dictionary-4}\\\toprule
+Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endhead
+\texttt{account\_\allowbreak{}id} & \texttt{uuid} & PK/FK R02.\\
+\texttt{reminders\_\allowbreak{}enabled} & \texttt{boolean} & Mặc định true.\\
+\texttt{stale\_\allowbreak{}odo\_\allowbreak{}days} & \texttt{integer} & Nguyên dương; mặc định đích 30 ngày theo Wiki 11/US15, chưa là field có sẵn trong source.\\
+\bottomrule\end{longtable}\end{smalltable}
+\texttt{threshold\_\allowbreak{}days}/\texttt{threshold\_\allowbreak{}km} đích nằm trên \textbf{từng plan}. Hai ngưỡng global của \texttt{UserSettings} hiện tại chỉ có thể giữ làm default nhập form hoặc chuyển sang từng plan khi migration; không đồng thời coi cả hai nơi là nguồn chuẩn. \texttt{stale\_\allowbreak{}odo\_\allowbreak{}days} nói về độ cũ ODO, không phải khoảng cảnh báo sắp đến hạn.\par
+\subsection{\texttt{vehicle\_\allowbreak{}types}, \texttt{vehicle\_\allowbreak{}brands}, \texttt{vehicle\_\allowbreak{}models}}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{vehicle\_\allowbreak{}types}, \texttt{vehicle\_\allowbreak{}brands}, \texttt{vehicle\_\allowbreak{}models}}\label{tab:dictionary-5}\\\toprule
+Bảng & Cột ngoài audit & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Bảng & Cột ngoài audit & Khóa / quy tắc\\\midrule\endhead
+\texttt{vehicle\_\allowbreak{}types} & \texttt{id uuid}, \texttt{code varchar(32)}, \texttt{name varchar(60)}, \texttt{is\_\allowbreak{}active boolean DEFAULT true} & PK \texttt{id}, UK \texttt{code}; code trim/uppercase, ví dụ CAR/MOTORCYCLE.\\
+\texttt{vehicle\_\allowbreak{}brands} & \texttt{id uuid}, \texttt{vehicle\_\allowbreak{}type\_\allowbreak{}id uuid}, \texttt{name varchar(60)}, \texttt{normalized\_\allowbreak{}name varchar(60)}, \texttt{is\_\allowbreak{}active boolean DEFAULT true} & PK \texttt{id}, FK R06, UK \texttt{(vehicle\_\allowbreak{}type\_\allowbreak{}id,\allowbreak{} normalized\_\allowbreak{}name)}.\\
+\texttt{vehicle\_\allowbreak{}models} & \texttt{id uuid}, \texttt{vehicle\_\allowbreak{}brand\_\allowbreak{}id uuid}, \texttt{name varchar(60)}, \texttt{normalized\_\allowbreak{}name varchar(60)}, \texttt{is\_\allowbreak{}active boolean DEFAULT true} & PK \texttt{id}, FK R07, UK \texttt{(vehicle\_\allowbreak{}brand\_\allowbreak{}id,\allowbreak{} normalized\_\allowbreak{}name)}.\\
+\bottomrule\end{longtable}\end{smalltable}
+Đích đề xuất chuẩn hóa tên bằng trim + quy tắc casing nhất quán, không tự bỏ dấu tiếng Việt. Tên rỗng bị từ chối. IsActive là soft-disable catalog, không xóa catalog đang được xe cũ tham chiếu.\par
+\subsection{\texttt{vehicles} — phương tiện}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{vehicles} — phương tiện}\label{tab:dictionary-6}\\\toprule
+Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endhead
+\texttt{id} & \texttt{uuid} & PK.\\
+\texttt{account\_\allowbreak{}id} & \texttt{uuid} & FK R05; UK phụ \texttt{(account\_\allowbreak{}id,\allowbreak{}id)}.\\
+\texttt{vehicle\_\allowbreak{}model\_\allowbreak{}id} & \texttt{uuid} & FK R08; model, brand và type phải active khi tạo/đổi model.\\
+\texttt{name} & \texttt{varchar(60)} & Tên tự đặt, 2..60 ký tự.\\
+\texttt{plate} & \texttt{varchar(20)} & Giá trị hiển thị.\\
+\texttt{plate\_\allowbreak{}normalized} & \texttt{varchar(20)} & UK \texttt{(account\_\allowbreak{}id,\allowbreak{}plate\_\allowbreak{}normalized)}, gồm cả xe archived.\\
+\texttt{year} & \texttt{integer} & Giữ validation 1980..2100 của service hiện có; nếu đổi giới hạn phải đồng bộ contract.\\
+\texttt{image\_\allowbreak{}url} & \texttt{varchar(2048) NULL} & URL ảnh; chưa có bảng upload/ảnh hóa đơn.\\
+\texttt{archived\_\allowbreak{}at\_\allowbreak{}utc} & \texttt{timestamptz NULL} & NULL = active; có giá trị = lưu trữ, lịch sử vẫn đọc được.\\
+\bottomrule\end{longtable}\end{smalltable}
+\texttt{Vehicle.BaseOdo} hiện tại được thay bởi reading \texttt{BASELINE} trong đích; không giữ hai nguồn ODO ban đầu độc lập. API có thể vẫn trả \texttt{baseOdo} bằng JOIN baseline để tương thích UI. Chuẩn hóa plate giữ hành vi source: ASCII chữ/số/underscore và uppercase; đây là quy tắc khóa trùng, không phải xác minh pháp lý biển số.\par
+\subsection{\texttt{odometer\_\allowbreak{}readings} — chuỗi ngày/ODO duy nhất}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{odometer\_\allowbreak{}readings} — chuỗi ngày/ODO duy nhất}\label{tab:dictionary-7}\\\toprule
+Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endhead
+\texttt{id} & \texttt{uuid} & PK.\\
+\texttt{account\_\allowbreak{}id}, \texttt{vehicle\_\allowbreak{}id} & \texttt{uuid} & Composite FK R09.\\
+\texttt{reading\_\allowbreak{}date} & \texttt{date} & Không tương lai theo ngày Việt Nam; baseline cũng cần ngày đáng tin cậy.\\
+\texttt{odo\_\allowbreak{}km} & \texttt{bigint} & 0..9.999.999, tăng không giảm giữa các ngày.\\
+\texttt{source\_\allowbreak{}kind} & \texttt{varchar(16)} & BASELINE / MANUAL / FUEL / SERVICE; không đổi loại nguồn sau tạo.\\
+\texttt{note} & \texttt{varchar(500)} & Mặc định chuỗi rỗng; manual/baseline dùng trực tiếp.\\
+\bottomrule\end{longtable}\end{smalltable}
+UK phụ \texttt{(account\_\allowbreak{}id,\allowbreak{}vehicle\_\allowbreak{}id,\allowbreak{}id,\allowbreak{}source\_\allowbreak{}kind)} hỗ trợ FK typed của nguồn. Partial unique \texttt{(vehicle\_\allowbreak{}id) WHERE source\_\allowbreak{}kind='BASELINE'} cho \textbf{tối đa một baseline} mỗi xe. Luồng tạo xe phải có một baseline trong cùng transaction; để bảo đảm cả phía xe ở mức DB cần deferred trigger kiểm đúng một baseline lúc commit.\par
+Cùng ngày cho ODO bằng nhau; không unique trên \texttt{(vehicle\_\allowbreak{}id,\allowbreak{}reading\_\allowbreak{}date)} hoặc \texttt{(vehicle\_\allowbreak{}id,\allowbreak{}reading\_\allowbreak{}date,\allowbreak{}odo\_\allowbreak{}km)}, vì một lần đổ nhiên liệu và một dịch vụ có thể cùng ngày/km. Không dùng \texttt{created\_\allowbreak{}at\_\allowbreak{}utc} để suy ngày chạy xe.\par
+\subsection{\texttt{fuel\_\allowbreak{}records} — nhật ký nhiên liệu}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{fuel\_\allowbreak{}records} — nhật ký nhiên liệu}\label{tab:dictionary-8}\\\toprule
+Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endhead
+\texttt{id} & \texttt{uuid} & PK, ID hoạt động nguồn.\\
+\texttt{account\_\allowbreak{}id}, \texttt{vehicle\_\allowbreak{}id} & \texttt{uuid} & Thành phần FK R10, owner/xe bắt buộc khớp reading.\\
+\texttt{reading\_\allowbreak{}id} & \texttt{uuid} & UNIQUE; một nguồn dùng một reading, không dùng chung giữa hai lần đổ.\\
+\texttt{reading\_\allowbreak{}source\_\allowbreak{}kind} & \texttt{varchar(16)} & DEFAULT FUEL, CHECK bằng FUEL; thành phần typed FK.\\
+\texttt{title} & \texttt{varchar(100)} & Nội dung, 2..100 ký tự.\\
+\texttt{liters} & \texttt{numeric} & \texttt{0 < liters <= 500}, \texttt{liters = round(liters,\allowbreak{}3)}.\\
+\texttt{amount\_\allowbreak{}vnd} & \texttt{numeric} & Nguyên, \texttt{0 < amount\_\allowbreak{}vnd <= 10.000.000.000}.\\
+\texttt{note} & \texttt{varchar(500)} & Mặc định rỗng; ghi chú nghiệp vụ đặt ở nguồn.\\
+\bottomrule\end{longtable}\end{smalltable}
+Ngày/ODO đọc qua R10; không có \texttt{plan\_\allowbreak{}id}. Ghi chú nguồn và note kỹ thuật reading có ý nghĩa khác nhau; nguồn tự sinh có thể để note reading rỗng. Đổi/xóa fuel phải đổi/xóa reading liên kết, kiểm toàn chuỗi và tính lại trạng thái theo current ODO.\par
+\subsection{\texttt{service\_\allowbreak{}records} — một lần thực hiện dịch vụ}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{service\_\allowbreak{}records} — một lần thực hiện dịch vụ}\label{tab:dictionary-9}\\\toprule
+Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endhead
+\texttt{id} & \texttt{uuid} & PK; UK phụ \texttt{(account\_\allowbreak{}id,\allowbreak{}vehicle\_\allowbreak{}id,\allowbreak{}id)}.\\
+\texttt{account\_\allowbreak{}id}, \texttt{vehicle\_\allowbreak{}id} & \texttt{uuid} & Thành phần FK R11.\\
+\texttt{reading\_\allowbreak{}id} & \texttt{uuid} & UNIQUE; FK tới reading của đúng owner/xe.\\
+\texttt{reading\_\allowbreak{}source\_\allowbreak{}kind} & \texttt{varchar(16)} & DEFAULT SERVICE, CHECK bằng SERVICE.\\
+\texttt{title} & \texttt{varchar(100)} & Tiêu đề chung lần dịch vụ.\\
+\texttt{note} & \texttt{varchar(500)} & Ghi chú, mặc định rỗng.\\
+\bottomrule\end{longtable}\end{smalltable}
+Không lưu tiền header như một khoản chi độc lập. \texttt{total\_\allowbreak{}amount\_\allowbreak{}vnd} của response là \texttt{SUM(service\_\allowbreak{}items.amount\_\allowbreak{}vnd)} và có thể là cột trong view, không phải nguồn báo cáo thứ hai. Một header phải có ít nhất một item và tổng tiền >0 tại commit.\par
+\subsection{\texttt{service\_\allowbreak{}items} — hạng mục và liên kết hoàn thành}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{service\_\allowbreak{}items} — hạng mục và liên kết hoàn thành}\label{tab:dictionary-10}\\\toprule
+Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endhead
+\texttt{id} & \texttt{uuid} & PK; dùng làm định danh completion khi có link.\\
+\texttt{account\_\allowbreak{}id}, \texttt{vehicle\_\allowbreak{}id}, \texttt{service\_\allowbreak{}record\_\allowbreak{}id} & \texttt{uuid} & Composite FK R12.\\
+\texttt{line\_\allowbreak{}number} & \texttt{integer} & >0; UK \texttt{(service\_\allowbreak{}record\_\allowbreak{}id,\allowbreak{}line\_\allowbreak{}number)}.\\
+\texttt{item\_\allowbreak{}kind} & \texttt{varchar(16)} & REPAIR / MAINTENANCE.\\
+\texttt{title} & \texttt{varchar(100)} & Nội dung hạng mục, 2..100 ký tự.\\
+\texttt{amount\_\allowbreak{}vnd} & \texttt{numeric} & Nguyên, từ 0 đến 10.000.000.000; tổng toàn service phải dương.\\
+\texttt{plan\_\allowbreak{}id} & \texttt{uuid NULL} & FK R14; chỉ được có khi item\_kind=MAINTENANCE.\\
+\bottomrule\end{longtable}\end{smalltable}
+Một plan có thể có nhiều item completion qua nhiều lần dịch vụ, nên đây là quan hệ \textbf{service $\leftrightarrow$ plan N–N tùy chọn qua item}, có dữ liệu riêng là loại/nội dung/tiền. Partial unique \texttt{(service\_\allowbreak{}record\_\allowbreak{}id,\allowbreak{}plan\_\allowbreak{}id) WHERE plan\_\allowbreak{}id IS NOT NULL} chặn cùng plan xuất hiện hai lần trong một service.\par
+Không lặp ngày/ODO trên item chỉ để tạo unique plan/ngày. Quy tắc \textbf{mỗi plan tối đa một completion mỗi ngày nghiệp vụ} cần kiểm JOIN đọc ngày từ reading, có guard xe và deferred constraint trigger; bảng~\ref{tab:dictionary-15} mô tả nơi thực thi.\par
+\subsection{\texttt{maintenance\_\allowbreak{}plans} — cấu hình kế hoạch}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{maintenance\_\allowbreak{}plans} — cấu hình kế hoạch}\label{tab:dictionary-11}\\\toprule
+Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endhead
+\texttt{id} & \texttt{uuid} & PK; UK phụ \texttt{(account\_\allowbreak{}id,\allowbreak{}vehicle\_\allowbreak{}id,\allowbreak{}id)}.\\
+\texttt{account\_\allowbreak{}id}, \texttt{vehicle\_\allowbreak{}id} & \texttt{uuid} & Composite FK R13.\\
+\texttt{title}, \texttt{title\_\allowbreak{}normalized} & \texttt{varchar(100)} & UK \texttt{(vehicle\_\allowbreak{}id,\allowbreak{}title\_\allowbreak{}normalized)}; tên hạng mục trong xe không trùng.\\
+\texttt{mode} & \texttt{varchar(16)} & TIME / DISTANCE / EITHER.\\
+\texttt{baseline\_\allowbreak{}meaning} & \texttt{varchar(24)} & LAST\_SERVICE / TRACKING\_START; ghi rõ ý nghĩa mốc.\\
+\texttt{baseline\_\allowbreak{}date} & \texttt{date NULL} & Bắt buộc với TIME/EITHER, không tương lai.\\
+\texttt{baseline\_\allowbreak{}odo\_\allowbreak{}km} & \texttt{bigint NULL} & Bắt buộc với DISTANCE/EITHER, không âm, không vượt ODO hiện tại.\\
+\texttt{interval\_\allowbreak{}months} & \texttt{integer NULL} & Bắt buộc với TIME/EITHER, 1..120.\\
+\texttt{interval\_\allowbreak{}km} & \texttt{bigint NULL} & Bắt buộc với DISTANCE/EITHER, 1..1.000.000.\\
+\texttt{threshold\_\allowbreak{}days} & \texttt{integer NULL} & Bắt buộc với TIME/EITHER, không âm; so với độ dài kỳ tháng ở service.\\
+\texttt{threshold\_\allowbreak{}km} & \texttt{bigint NULL} & Bắt buộc với DISTANCE/EITHER, \texttt{0 <= threshold\_\allowbreak{}km <= interval\_\allowbreak{}km}.\\
+\texttt{is\_\allowbreak{}paused} & \texttt{boolean} & DEFAULT false; pause không reset baseline/completion.\\
+\texttt{baseline\_\allowbreak{}revision} & \texttt{bigint} & DEFAULT 1, >0; chỉ tăng khi thay mốc baseline.\\
+\texttt{first\_\allowbreak{}completed\_\allowbreak{}at\_\allowbreak{}utc} & \texttt{timestamptz NULL} & Dấu vết đích đề xuất: đặt đúng một lần khi lần đầu có completion; không xóa khi sửa/xóa dịch vụ, dùng chặn xóa plan từng có lịch sử.\\
+\bottomrule\end{longtable}\end{smalltable}
+Field của chiều không dùng phải NULL: TIME không giữ dữ liệu distance ẩn, DISTANCE không giữ dữ liệu time ẩn. EITHER cần đủ hai chiều khi cấu hình; kết quả đánh giá vẫn xử lý Unknown nếu dữ liệu vận hành không đủ/không đáng tin cậy. Việc đổi baseline không tạo service hoặc chi phí giả. \texttt{first\_\allowbreak{}completed\_\allowbreak{}at\_\allowbreak{}utc} là timestamp ghi nhận kỹ thuật lần đầu, không thay ngày nghiệp vụ của completion và không tham gia tính latest/hạn.\par
+\subsection{\texttt{notifications} — inbox nhắc bảo dưỡng}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{notifications} — inbox nhắc bảo dưỡng}\label{tab:dictionary-12}\\\toprule
+Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endfirsthead
+\toprule Cột & Kiểu / nullable & Khóa / quy tắc\\\midrule\endhead
+\texttt{id} & \texttt{uuid} & PK.\\
+\texttt{account\_\allowbreak{}id}, \texttt{vehicle\_\allowbreak{}id}, \texttt{plan\_\allowbreak{}id} & \texttt{uuid} & Composite FK R15; notification đúng owner và xe của plan.\\
+\texttt{cycle\_\allowbreak{}key} & \texttt{varchar(160)} & Khóa nghiệp vụ của kỳ theo quy tắc tại mục~\ref{sec:cycle-key}.\\
+\texttt{level} & \texttt{varchar(16)} & SOON / DUE / OVERDUE; Unknown/NotDue không tạo nhắc chủ động.\\
+\texttt{title\_\allowbreak{}snapshot} & \texttt{varchar(100)} & Nội dung hiển thị ở lần đánh giá.\\
+\texttt{reason\_\allowbreak{}snapshot} & \texttt{text} & Lý do/hạn/thiếu dữ liệu; không chứa secrets hoặc dữ liệu account khác.\\
+\texttt{due\_\allowbreak{}date\_\allowbreak{}snapshot} & \texttt{date NULL} & Hạn ngày ở lần đánh giá; NULL nếu không dùng/thiếu.\\
+\texttt{due\_\allowbreak{}odo\_\allowbreak{}snapshot} & \texttt{bigint NULL} & Hạn km ở lần đánh giá; NULL nếu không dùng/thiếu.\\
+\texttt{evaluated\_\allowbreak{}at\_\allowbreak{}utc} & \texttt{timestamptz} & Lần gần nhất đồng bộ nội dung nhắc.\\
+\texttt{read\_\allowbreak{}at\_\allowbreak{}utc} & \texttt{timestamptz NULL} & NULL = chưa đọc.\\
+\texttt{superseded\_\allowbreak{}at\_\allowbreak{}utc} & \texttt{timestamptz NULL} & NULL = nhắc còn current; có giá trị = lỗi thời.\\
+\bottomrule\end{longtable}\end{smalltable}
+UK \texttt{(plan\_\allowbreak{}id,\allowbreak{}cycle\_\allowbreak{}key,\allowbreak{}level)} chống trùng qua mọi vòng quét. Current là \texttt{superseded\_\allowbreak{}at\_\allowbreak{}utc IS NULL}, không tạo thêm boolean dễ lệch. Badge đếm current + unread. Đề xuất giữ \texttt{read\_\allowbreak{}at\_\allowbreak{}utc} khi tái kích hoạt cùng key; mức mới dùng key mức khác và unread. Đọc nhắc không đổi service, completion hoặc kỳ.\par
+Các cột snapshot phục vụ giải thích thông báo lịch sử, \textbf{không phải nguồn chuẩn để tính kỳ}. Evaluator luôn tính từ plan + nguồn dịch vụ + ODO hiện tại. Có thể cập nhật snapshot của nhắc current khi nguồn/cấu hình thay đổi và supersede nhắc không còn đúng; không cần tạo bảng cycle riêng trong v1.\par
+\subsubsection{Định danh kỳ và tính ổn định của khóa}\label{sec:cycle-key}
+Quy tắc này kế thừa \code{doc/schema.md}, mục 5.2. Khi chưa có completion hợp lệ, khóa trong phạm vi plan là \code{B:<baseline-revision>}. Khi có completion hợp lệ mới nhất, khóa là \code{C:<service-item-id>}. Toàn bộ khóa chống trùng của notification vẫn gồm plan, cycle key và level; hai plan khác nhau có thể có cùng chuỗi khóa baseline mà không xung đột.
+
+Đổi tên plan hoặc đọc nhắc không đổi cycle key. Chỉ thay mốc baseline mới tăng \code{baselineRevision}; không dùng version chung vì việc đổi tên không được tạo kỳ. Khi sửa completion nhưng giữ item ID, kỳ vẫn nhận diện bằng item đó: cập nhật hạn/snapshot và dùng khóa mức mới nếu level đổi. Khi xóa item mới nhất hoặc bỏ liên kết, quay về key của completion còn hợp lệ trước đó, hoặc key baseline nếu không còn completion.
+
+ID item nằm trong cycle key là định danh lịch sử, \textbf{không phải FK} từ notification tới item. Xóa dịch vụ không làm mất notification lịch sử; service/worker đánh dấu nhắc không còn hợp lệ là superseded và đồng bộ current trong transaction. Đây là đặc tả đích, chưa là cơ chế đã được triển khai.
+\subsection{\texttt{auth\_\allowbreak{}sessions} và \texttt{idempotency\_\allowbreak{}records}}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{\texttt{auth\_\allowbreak{}sessions} và \texttt{idempotency\_\allowbreak{}records}}\label{tab:dictionary-13}\\\toprule
+Bảng & Cột / kiểu & Quy tắc\\\midrule\endfirsthead
+\toprule Bảng & Cột / kiểu & Quy tắc\\\midrule\endhead
+\texttt{auth\_\allowbreak{}sessions} & \texttt{id uuid PK}, \texttt{account\_\allowbreak{}id uuid FK}, \texttt{protected\_\allowbreak{}ticket text}, \texttt{created\_\allowbreak{}at\_\allowbreak{}utc timestamptz}, \texttt{expires\_\allowbreak{}at\_\allowbreak{}utc timestamptz}, \texttt{revoked\_\allowbreak{}at\_\allowbreak{}utc timestamptz NULL} & Giữ cơ chế source; expiry > created; cookie chỉ hợp lệ khi sid/account còn phiên chưa revoke và chưa hết hạn.\\
+\texttt{idempotency\_\allowbreak{}records} & \texttt{account\_\allowbreak{}id uuid PK/FK}, \texttt{request\_\allowbreak{}key varchar(128) PK}, \texttt{operation varchar(100)}, \texttt{request\_\allowbreak{}hash varchar(64)}, \texttt{response\_\allowbreak{}status integer}, \texttt{response\_\allowbreak{}body jsonb}, \texttt{response\_\allowbreak{}etag varchar(64) NULL}, \texttt{created\_\allowbreak{}at\_\allowbreak{}utc timestamptz}, \texttt{expires\_\allowbreak{}at\_\allowbreak{}utc timestamptz} & Key theo account; hash bao gồm method/path/payload chuẩn hóa. Lưu response thành công cùng transaction nguồn.\\
+\bottomrule\end{longtable}\end{smalltable}
+\texttt{response\_\allowbreak{}body} chỉ lưu DTO kết quả cần cho replay, không lưu password, cookie, token hoặc payload đăng nhập. \texttt{operation} định danh tác vụ/route, không phải FK. Đích đề xuất giữ key ít nhất 24 giờ như thiết kế backend cũ; đây là policy cần chốt, không phải worker cleanup đã tồn tại.\par
+Scope key là \texttt{(account\_\allowbreak{}id,\allowbreak{} request\_\allowbreak{}key)}; cùng key đổi operation/payload cũng conflict. Cơ chế guard request key phải áp dụng cả trường hợp hai request cùng key nhưng chọn \textbf{hai xe khác nhau}; guard riêng từng xe không đủ thay unique key theo account.\par
+\section{Constraint, index và invariant nghiệp vụ}
+\subsection{Unique/index cần tạo}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{Unique/index cần tạo}\label{tab:dictionary-14}\\\toprule
+Bảng & Unique / index đề xuất & Mục đích\\\midrule\endfirsthead
+\toprule Bảng & Unique / index đề xuất & Mục đích\\\midrule\endhead
+\texttt{AspNetUsers} & Unique normalized email/username theo Identity & FR01: tài khoản không trùng.\\
+\texttt{AspNetRoles} & Unique normalized role name & Phân quyền ổn định.\\
+\texttt{vehicles} & UK \texttt{(account\_\allowbreak{}id,\allowbreak{}plate\_\allowbreak{}normalized)}; UK \texttt{(account\_\allowbreak{}id,\allowbreak{}id)}; index \texttt{(account\_\allowbreak{}id,\allowbreak{}archived\_\allowbreak{}at\_\allowbreak{}utc,\allowbreak{}id)} & Trùng plate theo owner; composite FK; danh sách active/archive.\\
+\texttt{vehicle\_\allowbreak{}types} & UK \texttt{code} & Loại xe chuẩn.\\
+\texttt{vehicle\_\allowbreak{}brands} & UK \texttt{(vehicle\_\allowbreak{}type\_\allowbreak{}id,\allowbreak{}normalized\_\allowbreak{}name)} & Không trùng hãng trong loại.\\
+\texttt{vehicle\_\allowbreak{}models} & UK \texttt{(vehicle\_\allowbreak{}brand\_\allowbreak{}id,\allowbreak{}normalized\_\allowbreak{}name)} & Không trùng dòng trong hãng.\\
+\texttt{odometer\_\allowbreak{}readings} & UK typed FK ở bảng~\ref{tab:dictionary-1}; partial UK baseline; index \texttt{(account\_\allowbreak{}id,\allowbreak{}vehicle\_\allowbreak{}id,\allowbreak{}reading\_\allowbreak{}date DESC,\allowbreak{}odo\_\allowbreak{}km DESC,\allowbreak{}id DESC)} & FK đúng loại, một baseline, đọc current/láng giềng.\\
+\texttt{fuel\_\allowbreak{}records} & UK \texttt{reading\_\allowbreak{}id}; index \texttt{(account\_\allowbreak{}id,\allowbreak{}vehicle\_\allowbreak{}id,\allowbreak{}id)} & Reading không được dùng lại; lookup/filter owner.\\
+\texttt{service\_\allowbreak{}records} & UK \texttt{reading\_\allowbreak{}id}; UK \texttt{(account\_\allowbreak{}id,\allowbreak{}vehicle\_\allowbreak{}id,\allowbreak{}id)} & Quan hệ 1–1 reading và composite FK item.\\
+\texttt{service\_\allowbreak{}items} & UK \texttt{(service\_\allowbreak{}record\_\allowbreak{}id,\allowbreak{}line\_\allowbreak{}number)}; partial UK \texttt{(service\_\allowbreak{}record\_\allowbreak{}id,\allowbreak{}plan\_\allowbreak{}id)}; index \texttt{(account\_\allowbreak{}id,\allowbreak{}vehicle\_\allowbreak{}id,\allowbreak{}plan\_\allowbreak{}id,\allowbreak{}service\_\allowbreak{}record\_\allowbreak{}id)} & Thứ tự dòng, không lặp plan trong service, tìm completion.\\
+\texttt{maintenance\_\allowbreak{}plans} & UK \texttt{(vehicle\_\allowbreak{}id,\allowbreak{}title\_\allowbreak{}normalized)}; UK \texttt{(account\_\allowbreak{}id,\allowbreak{}vehicle\_\allowbreak{}id,\allowbreak{}id)}; index \texttt{(account\_\allowbreak{}id,\allowbreak{}vehicle\_\allowbreak{}id,\allowbreak{}is\_\allowbreak{}paused,\allowbreak{}id)} & Tên, FK owner và danh sách plan.\\
+\texttt{notifications} & UK \texttt{(plan\_\allowbreak{}id,\allowbreak{}cycle\_\allowbreak{}key,\allowbreak{}level)}; partial index \texttt{(account\_\allowbreak{}id,\allowbreak{}created\_\allowbreak{}at\_\allowbreak{}utc DESC,\allowbreak{}id DESC) WHERE superseded\_\allowbreak{}at\_\allowbreak{}utc IS NULL}; thêm predicate unread cho badge nếu cần & Dedup, inbox và badge.\\
+\texttt{auth\_\allowbreak{}sessions} & index \texttt{(account\_\allowbreak{}id,\allowbreak{}expires\_\allowbreak{}at\_\allowbreak{}utc)} & Revoke phiên và cleanup. PK id dùng cho check sid.\\
+\texttt{idempotency\_\allowbreak{}records} & PK \texttt{(account\_\allowbreak{}id,\allowbreak{}request\_\allowbreak{}key)}; index \texttt{expires\_\allowbreak{}at\_\allowbreak{}utc} & Replay và cleanup TTL.\\
+\bottomrule\end{longtable}\end{smalltable}
+Không thêm mọi index có thể nghĩ đến: đo execution plan khi có dữ liệu mục tiêu. Search không phân biệt hoa/thường/dấu và index tìm kiếm cần chốt contract trước khi chọn \texttt{ILIKE}, trigram hoặc full-text; hiện chưa có cơ sở khẳng định đã cài extension search.\par
+\subsection{Phân biệt việc DB làm được và transaction/service phải làm}
+\begin{smalltable}\begin{longtable}{L{3.0cm}L{3.2cm}L{8.2cm}}
+\caption{Phân biệt việc DB làm được và transaction/service phải làm}\label{tab:dictionary-15}\\\toprule
+Invariant & Cơ chế đích & Vì sao\\\midrule\endfirsthead
+\toprule Invariant & Cơ chế đích & Vì sao\\\midrule\endhead
+Owner / vehicle / plan khớp & Composite FK R09–R15 + owner scope ở API & Chặn liên kết chéo từ cả code lỗi.\\
+Plan chỉ link Maintenance & Row CHECK trên \texttt{service\_\allowbreak{}items} & Không cần query bảng khác.\\
+Tiền nguyên, lít đúng precision, enum hợp lệ & Row CHECK & Kiểm trên chính dòng, không làm tròn ngầm.\\
+Mode dùng đúng các field NULL/non-NULL & Row CHECK trên plan & Chặn field ẩn của mode khác.\\
+Mỗi xe đúng một baseline & Partial UK cho tối đa một + deferred constraint trigger cho tối thiểu một & FK/index đơn thuần không ép cha có con.\\
+Reading FUEL/SERVICE có đúng một nguồn & UK reading\_id + typed FK + deferred constraint trigger kiểm chiều ngược & Không để reading nguồn mồ côi sau commit.\\
+Service có >=1 item, tổng >0 & Deferred constraint trigger trên header/items + validation service & Không thể CHECK một dòng bằng SUM bảng con.\\
+Một plan không có hai completion cùng ngày & Guard xe + query JOIN + deferred constraint trigger trên item/header/reading liên quan & Ngày lưu ở reading, unique index trên item không tự kiểm được JOIN.\\
+Không xóa plan từng có completion & Đặt \texttt{first\_\allowbreak{}completed\_\allowbreak{}at\_\allowbreak{}utc} một lần trong transaction completion, giữ bất biến; kiểm DELETE qua service/trigger & Chỉ dựa FK sẽ không nhớ lịch sử nếu item nguồn đã bị xóa; không dùng dấu vết này để tính kỳ.\\
+Chuỗi ODO trước/sau đúng & Transaction guard theo xe rồi validation toàn đoạn bị ảnh hưởng & CHECK từng row không kiểm lịch sử hoặc chống write skew.\\
+Baseline plan không vượt current/không phá completion & Business validation khi tạo/sửa plan và sửa nguồn & So sánh nhiều bảng, ngày địa phương và mode.\\
+Ngưỡng ngày không vượt độ dài kỳ & Business validation theo tháng lịch và mốc hiện hành & Một tháng không luôn bằng 30 ngày; không dùng CHECK số ngày cố định giả định.\\
+Archived không được ghi mới & Service/transaction guard active; trigger bảo vệ nếu yêu cầu chống ghi SQL trực tiếp & FK không biết quy tắc archive. Restore vẫn được phép.\\
+Nhắc hiện hành và kỳ tính đúng & Evaluator + synchronizer, transaction với mutation nguồn & Unique chỉ chống duplicate, không tính nghiệp vụ.\\
+Version cũ không ghi đè & EF concurrency token + tăng version + bắt conflict & Cột version có tồn tại chưa tự tạo optimistic concurrency.\\
+\bottomrule\end{longtable}\end{smalltable}
+Deferred trigger được nêu là \textbf{yêu cầu implementation cần viết và kiểm thử}, không phải DDL đã tồn tại. Trigger phải bao phủ UPDATE/DELETE làm đổi ngày reading hoặc liên kết item, không chỉ INSERT. Nếu chọn bỏ trigger cho một invariant, phải ghi rõ chỉ được service enforce và hạn chế quyền ghi trực tiếp; không tuyên bố DB đã tự bảo đảm.\par
+\subsection{CHECK theo mode của kế hoạch}
+Mẫu dưới minh họa shape và miền giá trị, không thay các validation liên bảng:\par
+\begin{lstlisting}[language=SQL]
+CHECK (
+  (mode = 'TIME'
+   AND baseline_date IS NOT NULL
+   AND interval_months IS NOT NULL AND interval_months BETWEEN 1 AND 120
+   AND threshold_days IS NOT NULL AND threshold_days >= 0
+   AND baseline_odo_km IS NULL AND interval_km IS NULL AND threshold_km IS NULL)
+  OR
+  (mode = 'DISTANCE'
+   AND baseline_odo_km IS NOT NULL AND baseline_odo_km >= 0
+   AND interval_km IS NOT NULL AND interval_km BETWEEN 1 AND 1000000
+   AND threshold_km IS NOT NULL AND threshold_km BETWEEN 0 AND interval_km
+   AND baseline_date IS NULL AND interval_months IS NULL AND threshold_days IS NULL)
+  OR
+  (mode = 'EITHER'
+   AND baseline_date IS NOT NULL
+   AND interval_months IS NOT NULL AND interval_months BETWEEN 1 AND 120
+   AND threshold_days IS NOT NULL AND threshold_days >= 0
+   AND baseline_odo_km IS NOT NULL AND baseline_odo_km >= 0
+   AND interval_km IS NOT NULL AND interval_km BETWEEN 1 AND 1000000
+   AND threshold_km IS NOT NULL AND threshold_km BETWEEN 0 AND interval_km)
+)
+\end{lstlisting}
+Các \texttt{IS NOT NULL} có chủ đích: PostgreSQL CHECK chấp nhận kết quả UNKNOWN/NULL, nên chỉ viết \texttt{interval\_\allowbreak{}months > 0} chưa đủ để bắt field bắt buộc theo mode. Các cột \texttt{mode}, \texttt{baseline\_\allowbreak{}meaning} vẫn \texttt{NOT NULL} và có CHECK tập enum riêng.\par

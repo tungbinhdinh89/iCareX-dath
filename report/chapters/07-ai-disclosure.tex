@@ -1,0 +1,14 @@
+\chapter{Khai báo sử dụng AI tạo sinh}\label{chap:ai}
+Tài liệu này được soạn với hỗ trợ của OpenAI Codex/ChatGPT theo yêu cầu người dùng. AI đã đọc các nguồn cục bộ có thể truy cập, đối chiếu Wiki và source, tra cứu các trang chính thức được dẫn, viết nội dung tiếng Việt, mã LaTeX và TikZ, đồng thời hỗ trợ biên dịch/kiểm tra PDF. Đây là mức hỗ trợ rộng đối với bản nháp tài liệu; không bịa tỷ lệ đóng góp của nhóm hoặc tự khai nhóm đã làm 80\% khi chưa có dữ liệu.
+\begin{smalltable}\begin{longtable}{L{3cm}L{6.2cm}L{5.3cm}}
+\caption{Kê khai AI và trách nhiệm kiểm chứng}\\\toprule Công cụ & Phạm vi dùng trong bản này & Người thực hiện cần rà soát\\\midrule\endfirsthead
+\toprule Công cụ & Phạm vi dùng trong bản này & Người thực hiện cần rà soát\\\midrule\endhead
+OpenAI Codex / ChatGPT & Tổng hợp nguồn, phân tích khác biệt, viết đặc tả/thiết kế/test, LaTeX/TikZ, hỗ trợ build/visual review. & Đọc lại toàn bộ lập luận, xác nhận scope/ADR và đối chiếu source đúng phiên bản nộp.\\
+Web browsing & Mở trang chính thức Fuelio, Drivvo, Fleetio, Microsoft để kiểm thông tin được dẫn. & Link có hỗ trợ đúng mệnh đề; không xem tài liệu nhà cung cấp là kết quả dùng thử.\\
+LuaLaTeX / latexmk / Biber & Biên dịch, tham chiếu, bibliography; đây là công cụ build, không là mô hình AI. & Log exit code, font, bảng/hình và số trang render.\\\bottomrule
+\end{longtable}\end{smalltable}
+AI không tiến hành phỏng vấn, khảo sát người thật, usability study hoặc xác nhận sản phẩm đạt NFR. Không có kết quả benchmark/acceptance ứng dụng mới do lần soạn tài liệu này tạo. Không có cơ sở khai nhóm đã dùng Gemini/Copilot hoặc công cụ khác chỉ vì PDF mẫu ghi các tên đó.
+
+Nhóm sinh viên chịu trách nhiệm về bản nộp cuối: cập nhật thông tin bìa, rà yêu cầu môn học thực tế, sửa các giả định, xác nhận nguồn và ghi kết quả test thật. Cần hiểu và giải thích được từng sơ đồ/thuật toán khi bảo vệ; giữ lịch sử sửa và công khai phạm vi AI theo quy định giảng viên. Không cung cấp secret hoặc dữ liệu người dùng thật cho công cụ; fixture trong báo cáo là giả.
+
+Tài nguyên nhận diện lấy từ source frontend local và bộ font/MUI đã có; không dùng AI sinh logo hoặc giả lập screenshot Figma. Chưa truy cập được Figma MCP trực tuyến. Công cụ AI hỗ trợ rà soát yêu cầu, thiết kế và UI; trách nhiệm xác nhận nội dung thuộc tác giả.

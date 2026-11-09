@@ -1,0 +1,23 @@
+% !TeX program = lualatex
+% !TeX encoding = UTF-8
+% Root document: iCareX group 2 specification.
+\documentclass[a4paper,11pt,oneside]{report}
+\input{metadata.tex}
+\input{preamble.tex}
+\begin{document}
+\hypersetup{pageanchor=false}
+\input{cover.tex}
+\hypersetup{pageanchor=true}
+\pagenumbering{arabic}
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+\input{chapters/01-overview.tex}
+\input{chapters/02-requirements.tex}
+\input{chapters/03-architecture.tex}
+\input{chapters/04-behavior.tex}
+\input{chapters/05-interface-demo.tex}
+\input{chapters/06-testing.tex}
+\printbibliography[heading=bibintoc,title={Tài liệu tham khảo}]
+\end{document}

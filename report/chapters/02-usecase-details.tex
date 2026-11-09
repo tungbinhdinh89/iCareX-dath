@@ -1,0 +1,480 @@
+\subsubsection{UC01.1 -- Đăng ký tài khoản}\label{uc:UC01.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC01.1 -- Đăng ký tài khoản}\label{tab:UC01.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC01.1; Khách; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR01; Chọn Đăng ký.\\
+\textbf{Tiền điều kiện} & Có kết nối mạng; CSRF token hợp lệ.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Nhập tên, email, password, xác nhận password và phone tùy chọn; UI kiểm tra trường.
+\item Server chuẩn hóa email/tên, kiểm tra email và policy password.
+\item Trong transaction, tạo Identity user, role User, Account và UserSettings.
+\item Commit rồi trả 201 AccountResponse; không trả hash/password.
+\item Hiển thị đăng ký thành công và chuyển người dùng sang đăng nhập.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Hủy form không ghi dữ liệu. Xác nhận password là kiểm tra UX; server vẫn tự enforce policy.\\
+\textbf{Ngoại lệ} & Email trùng: 409; trường sai/CSRF sai: 400. DB lỗi không để account thiếu settings.\\
+\textbf{Hậu điều kiện / chấp nhận} & Có một bộ user/profile/settings nhất quán; chưa có session login.\\
+\textbf{Kiểm thử liên quan} & AT01, AT17.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC01.2 -- Đăng nhập và khôi phục phiên hợp lệ}\label{uc:UC01.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC01.2 -- Đăng nhập và khôi phục phiên hợp lệ}\label{tab:UC01.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC01.2; Khách / chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR01; Gửi biểu mẫu đăng nhập.\\
+\textbf{Tiền điều kiện} & Tài khoản đã đăng ký; auth service và DB truy cập được.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Browser lấy CSRF token rồi gửi credentials qua kênh HTTPS khi triển khai.
+\item Server kiểm tra CSRF, tìm user chuẩn hóa, kiểm tra lockout và password.
+\item Tạo AuthSession trong DB với thời hạn 8 giờ; reset failed count khi thành công.
+\item Controller phát cookie HttpOnly chứa identity/role/sid; trả thông tin tài khoản.
+\item Khi khởi tạo UI, gọi /auth/me để lấy account nếu cookie/session còn hợp lệ.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Khi tải lại trang, trình duyệt gửi cookie phiên. Ứng dụng lấy thông tin qua /auth/me nếu phiên trong DB còn hiệu lực; nếu phiên hết hạn hoặc bị thu hồi, người dùng được yêu cầu đăng nhập lại.\\
+\textbf{Ngoại lệ} & Thông tin sai/locked: 401 chung; CSRF: 400; DB: 503. Không phân biệt email tồn tại bằng thông báo login.\\
+\textbf{Hậu điều kiện / chấp nhận} & Chỉ phiên chưa revoke/chưa hết hạn truy cập dữ liệu riêng; UI nhận account.\\
+\textbf{Kiểm thử liên quan} & AT01.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC01.3 -- Đăng xuất}\label{uc:UC01.3}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC01.3 -- Đăng xuất}\label{tab:UC01.3}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC01.3; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR01; Chọn Đăng xuất.\\
+\textbf{Tiền điều kiện} & Phiên hợp lệ; CSRF token.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item UI gửi POST logout với cookie và CSRF header.
+\item Server đọc account/sid từ claim và revoke đúng phiên trong DB.
+\item Controller xóa cookie và trả 204.
+\item UI xóa account, query cache và dữ liệu nhạy cảm đang mở.
+\item Request tiếp theo với phiên cũ phải bị từ chối.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Nếu phiên đã hết hạn, UI chuyển trạng thái chưa đăng nhập sau 401. Revoke đã thực hiện có thể xử lý idempotent.\\
+\textbf{Ngoại lệ} & Mạng lỗi: không thông báo đã revoke; cho thử lại. CSRF sai: không đổi session.\\
+\textbf{Hậu điều kiện / chấp nhận} & Phiên tương ứng không dùng được; cache không còn dữ liệu account cũ.\\
+\textbf{Kiểm thử liên quan} & AT01, AT02.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC02.1 -- Thêm phương tiện}\label{uc:UC02.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC02.1 -- Thêm phương tiện}\label{tab:UC02.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC02.1; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR02; Chọn Thêm xe.\\
+\textbf{Tiền điều kiện} & Phiên hợp lệ; model/brand/type đang active.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Đọc loại xe, chọn hãng rồi dòng theo cascade.
+\item Nhập tên tự đặt, plate, year, ngày baseline và ODO ban đầu; ImageUrl tùy chọn.
+\item Server lấy owner từ claim, kiểm tra model active toàn chuỗi, chuẩn hóa plate.
+\item Kiểm tra unique theo owner kể cả archived; ghi vehicle.
+\item Trả 201 DTO với type/brand/model suy ra; refetch danh sách và chi tiết.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Đổi loại/hãng phải xóa lựa chọn con không tương thích. Có thể dùng ảnh mặc định khi không nhập URL.\\
+\textbf{Ngoại lệ} & Thiếu trường/inactive catalog: 400; plate trùng: 409. Race unique phải được ánh xạ, không lộ SQL.\\
+\textbf{Hậu điều kiện / chấp nhận} & Xe thuộc đúng owner và một model hợp lệ; chưa phát sinh chi phí.\\
+\textbf{Kiểm thử liên quan} & AT02, AT03, AT04.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC02.2 -- Sửa thông tin và mốc xe}\label{uc:UC02.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC02.2 -- Sửa thông tin và mốc xe}\label{tab:UC02.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC02.2; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR02,FR03; Mở Sửa xe.\\
+\textbf{Tiền điều kiện} & Xe active thuộc owner; có version mới nhất.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Tải thông tin và version; hiển thị catalog hiện tại.
+\item Chỉnh tên/plate/model/year/ảnh hoặc baseline theo trường cho phép.
+\item Server kiểm tra owner, active, version và model active.
+\item Đổi baseline phải ValidateBaseOdo với lịch sử liên quan; kiểm tra plate không trùng.
+\item Tăng version, lưu với concurrency token và trả DTO; UI cập nhật sau commit.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Hủy bỏ không ghi. Model cũ inactive vẫn cần hiển thị để hiểu lịch sử nhưng không chọn cho dữ liệu mới.\\
+\textbf{Ngoại lệ} & Version cũ: 409; xe khác owner: 404; baseline vượt history bị từ chối. Form giữ giá trị để sửa.\\
+\textbf{Hậu điều kiện / chấp nhận} & Thông tin mới nhất quán với chuỗi và catalog; lịch sử không bị gán chủ khác.\\
+\textbf{Kiểm thử liên quan} & AT04, AT11.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC02.3 -- Lưu trữ và khôi phục phương tiện}\label{uc:UC02.3}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC02.3 -- Lưu trữ và khôi phục phương tiện}\label{tab:UC02.3}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC02.3; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR02,FR09; Chọn Lưu trữ hoặc Khôi phục.\\
+\textbf{Tiền điều kiện} & Xe thuộc owner; biết version.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Hiển thị xác nhận rõ lịch sử được giữ và thao tác ghi sẽ bị chặn.
+\item Gửi archive/restore với version.
+\item Server kiểm tra owner/version rồi đặt hoặc xóa ArchivedAtUtc, tăng version.
+\item thay trạng thái nhắc và đánh giá lại kế hoạch khi restore.
+\item Refetch danh sách; xe archived chỉ xuất hiện khi chọn gồm lưu trữ.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Hủy xác nhận không thay đổi. Báo cáo chỉ gồm archived khi người dùng chọn.\\
+\textbf{Ngoại lệ} & 404 cho sai owner; 409 cho version cũ. Mutation hoạt động trên xe archived phải bị chặn.\\
+\textbf{Hậu điều kiện / chấp nhận} & Không xóa cứng xe hay lịch sử; restore không tạo completion giả.\\
+\textbf{Kiểm thử liên quan} & AT03, AT09.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC03.1 -- Thêm ODO thủ công}\label{uc:UC03.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC03.1 -- Thêm ODO thủ công}\label{tab:UC03.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC03.1; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR03; Chọn Cập nhật ODO.\\
+\textbf{Tiền điều kiện} & Xe active; ngày nghiệp vụ và ODO được biết.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Nhập ngày, ODO và ghi chú; UI ghi rõ km và ngày cập nhật.
+\item Server đọc xe theo owner, tải history và baseline.
+\item Kiểm tra ngày không tương lai, ODO nằm giữa reading trước/sau; cùng ngày cho bằng nhau.
+\item Ghi Entry kind Odo với cost/liters bằng 0.
+\item Refetch current ODO; thiết kế đích đánh giá lại trạng thái và nhắc.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Cho nhập quá khứ nếu chuỗi hợp lệ; reading cũ không thay current bằng giá trị thấp hơn.\\
+\textbf{Ngoại lệ} & ODO âm/sai chuỗi/ngày tương lai: validation; archived bị chặn. Hai create đồng thời cần guard xe.\\
+\textbf{Hậu điều kiện / chấp nhận} & Có một manual reading hợp lệ, không sinh chi phí.\\
+\textbf{Kiểm thử liên quan} & AT04, AT11.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC03.2 -- Sửa hoặc xóa ODO thủ công}\label{uc:UC03.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC03.2 -- Sửa hoặc xóa ODO thủ công}\label{tab:UC03.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC03.2; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR03; Mở reading và chọn Sửa hoặc Xóa.\\
+\textbf{Tiền điều kiện} & Reading manual của xe active; version hiện có.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Server tìm reading manual theo owner + vehicle + reading ID.
+\item Nếu sửa, nhập ngày/ODO/note; loại reading hiện tại khỏi tập so sánh.
+\item Validate chuỗi hoặc xác nhận xóa; kiểm tra version.
+\item Lưu thay đổi với concurrency token; xóa reading thủ công không làm thay đổi hoạt động nguồn khác.
+\item Tính current từ phần còn lại; thiết kế đích cập nhật hạn/nhắc.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Reading từ nhiên liệu/dịch vụ dẫn tới form nguồn; baseline xe dẫn tới Sửa xe.\\
+\textbf{Ngoại lệ} & 409 nếu stale; 404 nếu không phải manual hoặc khác owner; sai chuỗi không được ghi.\\
+\textbf{Hậu điều kiện / chấp nhận} & Không đọc mồ côi; xóa max có thể hạ current về mốc hợp lệ còn lại.\\
+\textbf{Kiểm thử liên quan} & AT04, AT11.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC04.1 -- Ghi nhiên liệu}\label{uc:UC04.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC04.1 -- Ghi nhiên liệu}\label{tab:UC04.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC04.1; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR04; Chọn Thêm nhiên liệu.\\
+\textbf{Tiền điều kiện} & Xe active; có ngày/ODO/lít/tiền; API đích được triển khai.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Nhập ngày, ODO, lít dương tối đa ba số lẻ và tiền VNĐ nguyên dương.
+\item UI tạo RequestId và giữ ID đó cho cùng lần gửi/retry.
+\item Server kiểm tra owner, active, số và chuỗi; tìm replay trước khi ghi.
+\item Trong transaction có guard xe, ghi FuelRecord và linked reading; cập nhật dữ liệu liên quan.
+\item Commit rồi trả tài nguyên; invalidate history, xe và report.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Cùng key/payload trả kết quả đã tạo; không tạo chi phí thứ hai.\\
+\textbf{Ngoại lệ} & Khác payload cùng key: 409; lỗi giữa ghi rollback; mất response thì retry cùng ID.\\
+\textbf{Hậu điều kiện / chấp nhận} & Một nguồn nhiên liệu và reading liên kết; tổng tiền tăng đúng một lần.\\
+\textbf{Kiểm thử liên quan} & AT05, AT10.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC04.2 -- Điều chỉnh hoặc xóa nhiên liệu}\label{uc:UC04.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC04.2 -- Điều chỉnh hoặc xóa nhiên liệu}\label{tab:UC04.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC04.2; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR04,FR03; Mở lịch sử nhiên liệu.\\
+\textbf{Tiền điều kiện} & Nguồn nhiên liệu thuộc xe active; version.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Tải nguồn và version; cho sửa trường allowlist hoặc xác nhận xóa.
+\item Kiểm tra owner, active, version và reading nguồn.
+\item Guard xe; validate chuỗi sau thay đổi.
+\item Trong cùng transaction sửa/xóa fuel và reading, đánh giá lại plan bị ảnh hưởng ODO.
+\item Commit rồi làm mới lịch sử và báo cáo.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Hủy không ghi. Khi xóa fuel không xóa dịch vụ hoặc kế hoạch cùng ngày.\\
+\textbf{Ngoại lệ} & Stale 409; invalid ODO không commit; lỗi DB giữ nguyên nguồn/reading.\\
+\textbf{Hậu điều kiện / chấp nhận} & Tổng báo cáo phản ánh dữ liệu còn lại; không có reading mồ côi.\\
+\textbf{Kiểm thử liên quan} & AT05, AT11.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC05.1 -- Ghi dịch vụ nhiều dòng và completion}\label{uc:UC05.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC05.1 -- Ghi dịch vụ nhiều dòng và completion}\label{tab:UC05.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC05.1; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR05,FR08; Thêm dịch vụ hoặc Ghi đã thực hiện từ nhắc.\\
+\textbf{Tiền điều kiện} & Xe active; plan liên kết nếu có cùng xe/owner.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Nhập ngày/ODO và ít nhất một item gồm loại, tên và tiền.
+\item Item Maintenance tùy chọn plan; Repair không có plan; không lặp plan trong cùng dịch vụ.
+\item Server kiểm tra tổng dương, baseline, uniqueness completion cùng ngày và RequestId.
+\item Guard xe và transaction: ghi service/items/reading; tìm latest completion mỗi plan bị ảnh hưởng.
+\item Tính kỳ và nhắc; commit; hiển thị chi phí và hạn mới.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Mở từ nhắc điền sẵn xe/plan nhưng cho kiểm tra trước lưu. Dịch vụ không liên kết vẫn lưu lịch sử.\\
+\textbf{Ngoại lệ} & Plan sai xe/trước baseline/trùng ngày: từ chối; lỗi một item rollback mọi phần.\\
+\textbf{Hậu điều kiện / chấp nhận} & Chỉ plan được liên kết chuyển kỳ; tiền dịch vụ tính một lần.\\
+\textbf{Kiểm thử liên quan} & AT06, AT08, AT10.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC05.2 -- Sửa/xóa dịch vụ và tính lại kỳ}\label{uc:UC05.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC05.2 -- Sửa/xóa dịch vụ và tính lại kỳ}\label{tab:UC05.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC05.2; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR05,FR08; Chọn Sửa/Xóa từ lịch sử nguồn.\\
+\textbf{Tiền điều kiện} & Dịch vụ xe active; có version và các plan liên quan.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Tải service/items và version; giữ tập plan trước sửa.
+\item Nhập thay đổi hoặc xác nhận xóa; kiểm tra quyền và chuỗi.
+\item Guard xe, cập nhật nguồn/items/reading trong transaction.
+\item Lấy hợp của plan trước và sau sửa; tìm latest completion còn hợp lệ cho từng plan.
+\item Tính lại due/notification; commit rồi làm mới UI.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Bỏ liên kết không xóa plan. Khi không còn completion dùng baseline.\\
+\textbf{Ngoại lệ} & Plan liên kết không hợp lệ hoặc stale 409: không ghi phần nào. Không chọn mốc theo thời điểm request.\\
+\textbf{Hậu điều kiện / chấp nhận} & Kỳ dựa trên lịch sử còn lại; tổng tiền giảm/đổi đúng số liệu nguồn.\\
+\textbf{Kiểm thử liên quan} & AT08, AT11.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC06.1 -- Tạo hoặc sửa kế hoạch bảo dưỡng}\label{uc:UC06.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC06.1 -- Tạo hoặc sửa kế hoạch bảo dưỡng}\label{tab:UC06.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC06.1; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR06,FR07; Chọn Thêm/Sửa kế hoạch.\\
+\textbf{Tiền điều kiện} & Xe active; có baseline từ dữ liệu đáng tin cậy.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Nhập tên, mode Time/Distance/Either và ý nghĩa baseline.
+\item Hiện trường đúng mode: ngày/tháng/ngưỡng ngày hoặc ODO/km/ngưỡng km.
+\item Server kiểm tra baseline, chu kỳ, ngưỡng, tên unique trong xe và completion liên quan.
+\item Lưu trong transaction, đánh giá trạng thái từ dữ liệu hiện hành.
+\item Trả due, remaining, reason và cờ thiếu/cũ; UI giải thích điều kiện đến trước.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Baseline là bắt đầu theo dõi không sinh hóa đơn; sửa baseline khi có completion phải không phá lịch sử.\\
+\textbf{Ngoại lệ} & Chu kỳ 0, ngưỡng vượt kỳ, ngày tương lai hoặc ODO vượt current bị từ chối.\\
+\textbf{Hậu điều kiện / chấp nhận} & Kế hoạch đủ cấu hình cho mode; không tạo chi phí giả.\\
+\textbf{Kiểm thử liên quan} & AT07.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC06.2 -- Tạm dừng, tiếp tục hoặc xóa kế hoạch}\label{uc:UC06.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC06.2 -- Tạm dừng, tiếp tục hoặc xóa kế hoạch}\label{tab:UC06.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC06.2; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR06,FR09; Chọn Pause/Resume/Xóa.\\
+\textbf{Tiền điều kiện} & Plan thuộc xe active; version; biết đã có completion hay chưa.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Hiển thị tác động: pause dừng nhắc chủ động, không xóa lịch sử.
+\item Server kiểm tra owner/version và trạng thái xe.
+\item Pause/resume giữ baseline và lịch sử; resume đánh giá dữ liệu hiện hành.
+\item Chỉ cho xóa plan chưa có completion; đã có lịch sử hướng dẫn pause.
+\item Commit và cập nhật danh sách/badge.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Hủy xác nhận không đổi. Plan paused vẫn tra cứu được với nhãn riêng.\\
+\textbf{Ngoại lệ} & Xóa plan đã có completion bị từ chối; stale 409; sai owner 404.\\
+\textbf{Hậu điều kiện / chấp nhận} & Không reset kỳ; không làm mất dịch vụ/chi phí.\\
+\textbf{Kiểm thử liên quan} & AT07, AT09.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC07.1 -- Xem hạn và giải thích trạng thái}\label{uc:UC07.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC07.1 -- Xem hạn và giải thích trạng thái}\label{tab:UC07.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC07.1; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR07; Mở kế hoạch hoặc nhắc.\\
+\textbf{Tiền điều kiện} & Có quyền xe/plan; query không cần xe active để xem.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Đọc mode, mốc latest completion hoặc baseline và current ODO.
+\item Evaluator tính hạn tháng lịch và/hoặc ODO.
+\item So từng chiều với todayVN/current; lấy mức ưu tiên đúng cho Either.
+\item Trả trạng thái có chữ, lý do, remaining và missing-data flags.
+\item UI hiện thêm paused/archive/ODO updatedAt/stale theo dữ liệu riêng.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Thiếu một chiều nhưng chiều khác đã Soon/Due/Overdue vẫn cảnh báo; chỉ NotDue thì Unknown.\\
+\textbf{Ngoại lệ} & Không đủ dữ liệu không được hiện mọi thứ ổn. ODO cũ không là chứng cứ chưa vượt hạn.\\
+\textbf{Hậu điều kiện / chấp nhận} & Người dùng giải thích được nguồn hạn; không thay đổi completion.\\
+\textbf{Kiểm thử liên quan} & AT07.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC07.2 -- Đọc inbox và đánh dấu đã đọc}\label{uc:UC07.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC07.2 -- Đọc inbox và đánh dấu đã đọc}\label{tab:UC07.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC07.2; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR09; Mở biểu tượng nhắc hoặc một thông báo.\\
+\textbf{Tiền điều kiện} & Có notification của owner trong DB ở thiết kế đích.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Lấy inbox theo owner và trạng thái Current/Superseded, có phân trang.
+\item Hiển thị xe, plan, level, lý do và thời điểm tạo.
+\item Khi chọn đã đọc, cập nhật ReadAt idempotent.
+\item Làm mới badge chỉ đếm Current và Unread.
+\item Nếu đã làm bảo dưỡng, chuyển UC05.1 để ghi dịch vụ thật.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Từ chối browser permission vẫn dùng inbox; không buộc cấp quyền để xem dữ liệu.\\
+\textbf{Ngoại lệ} & 404 cho nhắc khác owner; lỗi mạng giữ unread thực tế; quét worker không tạo bản trùng.\\
+\textbf{Hậu điều kiện / chấp nhận} & Đọc chỉ đổi trạng thái đọc, không đổi kỳ hoặc chi phí.\\
+\textbf{Kiểm thử liên quan} & AT09.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC08.1 -- Tra cứu lịch sử thống nhất}\label{uc:UC08.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC08.1 -- Tra cứu lịch sử thống nhất}\label{tab:UC08.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC08.1; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR10; Mở Lịch sử hoặc lịch sử của xe.\\
+\textbf{Tiền điều kiện} & Có session; dữ liệu có thể rỗng.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Chọn xe, from/to, loại hoạt động, keyword và trang.
+\item Server validate khoảng và owner; archived theo filter.
+\item Query sort ổn định theo ngày và ID; reading sinh từ nhiên liệu hoặc dịch vụ không tạo thêm dòng hoạt động trùng.
+\item Hiện dòng ngày/xe/loại/nội dung/ODO/tiền; mở chi tiết nguồn.
+\item Chuyển sửa/xóa chỉ khi xe active và user có quyền.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Không kết quả: empty state kèm xóa lọc. Chuyển trang giữ bộ lọc.\\
+\textbf{Ngoại lệ} & from > to hoặc page sai: validation; lỗi mạng có retry; không rò số lượng tài khoản khác.\\
+\textbf{Hậu điều kiện / chấp nhận} & Query không ghi nghiệp vụ; một fuel/service chỉ là một hoạt động.\\
+\textbf{Kiểm thử liên quan} & AT12, AT14.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC09.1 -- Xem dashboard}\label{uc:UC09.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC09.1 -- Xem dashboard}\label{tab:UC09.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC09.1; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR11; Mở trang Tổng quan.\\
+\textbf{Tiền điều kiện} & Phiên hợp lệ; dữ liệu cùng owner.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Chọn một/tất cả xe và khoảng/tháng phù hợp.
+\item Query dữ liệu tổng hợp dùng cùng điều kiện owner/date/archive.
+\item Hiện số xe, chi phí, trạng thái cần chú ý và hoạt động gần đây.
+\item Từ thẻ chỉ số, đi đến lịch sử hoặc report với filter được giữ.
+\item Sau mutation liên quan, invalidate query để không hiển thị tổng cũ.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Tài khoản mới có zero/empty và CTA thêm xe; dữ liệu mẫu được tách khỏi số liệu cá nhân.\\
+\textbf{Ngoại lệ} & Loading/error phân biệt zero thực tế; không coi lỗi fetch là mọi thứ ổn.\\
+\textbf{Hậu điều kiện / chấp nhận} & Chỉ số đối chiếu được với nguồn; không phát sinh bản ghi.\\
+\textbf{Kiểm thử liên quan} & AT10, AT12.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC09.2 -- Lập báo cáo chi phí}\label{uc:UC09.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC09.2 -- Lập báo cáo chi phí}\label{tab:UC09.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC09.2; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR11; Mở Báo cáo.\\
+\textbf{Tiền điều kiện} & Dữ liệu có thể rỗng; cần khoảng ngày hợp lệ.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Chọn xe, ngày hai đầu, nhóm chi phí và tùy chọn archived.
+\item Server kiểm tra owner; không nhận owner tùy ý từ browser.
+\item Tổng hợp fuel amount và service item amount, nhóm theo tháng/xe/loại.
+\item Trả tổng, series và rows cùng filter; UI trình bày bảng kèm biểu đồ.
+\item Đối chiếu fixture 200.000 + 100.000 + 150.000 = 450.000.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Không dữ liệu trả 0 và empty series hợp lệ; mặc định không gồm archived.\\
+\textbf{Ngoại lệ} & Khoảng đảo bị từ chối; tiền không dùng floating point để tích lũy; không cộng header service lần hai.\\
+\textbf{Hậu điều kiện / chấp nhận} & Dashboard/bảng/biểu đồ nhất quán sau refresh; các khoản tiền đều có thể đối chiếu với bản ghi nguồn.\\
+\textbf{Kiểm thử liên quan} & AT10, AT13.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC10.1 -- Xem và sửa hồ sơ}\label{uc:UC10.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC10.1 -- Xem và sửa hồ sơ}\label{tab:UC10.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC10.1; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR01; Mở Hồ sơ.\\
+\textbf{Tiền điều kiện} & Có phiên; email chỉ đọc.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item GET hồ sơ account hiện tại từ session.
+\item Chỉnh tên và số điện thoại; email hiển thị ở chế độ chỉ đọc.
+\item Server allowlist field, kiểm tra tên/phone và version nếu contract có.
+\item Lưu thông tin cùng owner và trả DTO an toàn.
+\item UI cập nhật tên hiển thị sau commit.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Hủy bỏ thay đổi; email không có nút đổi trong v1.\\
+\textbf{Ngoại lệ} & Tên rỗng/phone sai bị từ chối; payload email/role/accountId không được mass assign.\\
+\textbf{Hậu điều kiện / chấp nhận} & Chỉ profile được sửa; quyền/identity không đổi.\\
+\textbf{Kiểm thử liên quan} & AT01, AT02.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC10.2 -- Đổi mật khẩu}\label{uc:UC10.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC10.2 -- Đổi mật khẩu}\label{tab:UC10.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC10.2; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR01,NFR02; Chọn Đổi mật khẩu.\\
+\textbf{Tiền điều kiện} & Có phiên; biết password cũ.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Nhập password hiện tại, password mới và xác nhận.
+\item Server kiểm tra CSRF và password cũ qua Identity.
+\item Áp policy password mới; cập nhật security state trong transaction phù hợp.
+\item Thu hồi các phiên theo policy đích: tất cả phiên của tài khoản, gồm phiên hiện tại.
+\item Trả thành công rồi xóa cache và yêu cầu đăng nhập lại.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Hủy không đổi; không cung cấp reset qua email trong v1.\\
+\textbf{Ngoại lệ} & Password cũ sai hoặc policy không đạt không đổi hash/session. Không log bất kỳ password nào.\\
+\textbf{Hậu điều kiện / chấp nhận} & Password cũ không login được, phiên cũ bị từ chối.\\
+\textbf{Kiểm thử liên quan} & AT01, AT16.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC10.3 -- Điều chỉnh nhắc và ngưỡng ODO cũ}\label{uc:UC10.3}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC10.3 -- Điều chỉnh nhắc và ngưỡng ODO cũ}\label{tab:UC10.3}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC10.3; Chủ xe; Ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR12,FR09; Mở Cài đặt.\\
+\textbf{Tiền điều kiện} & Có session; settings của owner.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Đọc remindersEnabled và staleOdoDays cùng cấu hình được hỗ trợ.
+\item Chọn bật/tắt, nhập staleOdoDays nguyên dương.
+\item Server validate/allowlist; lưu đúng owner.
+\item Tắt nhắc không xóa plan/lịch sử; loại nhắc không còn current theo policy.
+\item Bật lại đánh giá trạng thái hiện hành, không tạo nhắc cho mọi kỳ quá khứ.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Browser permission được hướng dẫn riêng, không đồng nghĩa cấu hình nhắc server.\\
+\textbf{Ngoại lệ} & Số âm/0/phần lẻ bị từ chối. Lỗi lưu không đổi giá trị thật bằng UI optimistic sai.\\
+\textbf{Hậu điều kiện / chấp nhận} & Cấu hình bền vững, ảnh hưởng đúng lần đánh giá tiếp theo.\\
+\textbf{Kiểm thử liên quan} & AT15.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC11.1 -- Đọc danh mục loại--hãng--dòng}\label{uc:UC11.1}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC11.1 -- Đọc danh mục loại--hãng--dòng}\label{tab:UC11.1}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC11.1; Khách / chủ xe; hỗ trợ FR02; ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR02 mở rộng; Mở form xe.\\
+\textbf{Tiền điều kiện} & Có quyền đọc catalog theo controller; catalog có thể rỗng.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item GET types active.
+\item Chọn type, GET brands thuộc type; xóa brand/model cũ khi type đổi.
+\item Chọn brand, GET models thuộc brand.
+\item Chọn modelId và gửi cùng vehicle form.
+\item Server suy ra type/brand từ model, không tin các tên do UI gửi.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Không có model: empty state, không cho gửi giá trị tự do thay ID.\\
+\textbf{Ngoại lệ} & ID không tồn tại/inactive bị từ chối lúc ghi; không gộp model khác brand.\\
+\textbf{Hậu điều kiện / chấp nhận} & Vehicle tham chiếu một model; quan hệ đúng được bảo đảm server và FK.\\
+\textbf{Kiểm thử liên quan} & AT03, AT16.\\
+\bottomrule\end{longtable}\end{smalltable}
+\subsubsection{UC11.2 -- Quản trị catalog}\label{uc:UC11.2}
+\begin{smalltable}\begin{longtable}{L{3.2cm}L{11.8cm}}
+\caption{UC11.2 -- Quản trị catalog}\label{tab:UC11.2}\\
+\toprule Trường & Đặc tả\\\midrule\endfirsthead
+\toprule Trường & Đặc tả\\\midrule\endhead
+\textbf{ID / tác nhân / ưu tiên} & UC11.2; Admin catalog; quản lý danh mục; ưu tiên cao.\\
+\textbf{Yêu cầu / kích hoạt} & FR02 mở rộng; Gọi API tạo/cập nhật metadata.\\
+\textbf{Tiền điều kiện} & Account đã được cấp role Admin hợp lệ; không có seed Admin được xác nhận.\\
+\textbf{Luồng chính} & \begin{enumerate}[leftmargin=*,nosep]
+\item Xác thực và kiểm tra role Admin ở controller.
+\item Tạo/sửa type code/name hoặc brand/model đúng parent.
+\item Kiểm tra tên unique trong parent, version và quan hệ.
+\item Khi ngừng dùng đặt IsActive=false; không phá vehicle lịch sử.
+\item Trả DTO và cập nhật danh mục cho thao tác sau.
+\end{enumerate}\\
+\textbf{Luồng thay thế} & Không làm admin dashboard/user management trong v1; chức năng này có thể thao tác qua API khi được cấp quyền đúng.\\
+\textbf{Ngoại lệ} & Không role: 403; trùng tên/version cũ: conflict; parent không phù hợp: validation.\\
+\textbf{Hậu điều kiện / chấp nhận} & Metadata đúng quan hệ; user thường không thay danh mục chung.\\
+\textbf{Kiểm thử liên quan} & AT03, AT16.\\
+\bottomrule\end{longtable}\end{smalltable}

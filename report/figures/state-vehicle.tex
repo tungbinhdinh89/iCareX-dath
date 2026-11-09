@@ -1,0 +1,16 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+box/.style={draw=ink,fill=pale,rounded corners=2pt,align=center,text width=3.3cm,minimum height=.85cm,inner sep=6pt},
+decision/.style={diamond,draw=ink,fill=white,aspect=2.3,align=center,text width=2.6cm,inner sep=2pt},
+state/.style={draw=ink,rounded corners=7pt,fill=pale,align=center,text width=2.7cm,minimum height=.9cm},
+initial/.style={circle,fill=ink,minimum size=.22cm,inner sep=0pt},
+final/.style={circle,draw=ink,double,fill=ink,minimum size=.28cm,inner sep=0pt},
+uc/.style={ellipse,draw=ink,fill=pale,align=center,text width=3.5cm,minimum height=1.1cm},
+edge/.style={->,draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\node[state] (active) at (0,0) {Active};
+\node[state] (arch) at (6,0) {Archived};
+\node[state] (read) at (6,-3) {Lịch sử chỉ đọc};
+\draw[edge] (active) -- node[lbl] {archive(version)} (arch);
+\draw[edge] (arch) to[bend left=30] node[lbl] {restore(version)} (active);
+\draw[edge] (arch) -- node[lbl] {xem lịch sử} (read);
+\node[align=left,text width=10cm] at (3,-5) {Archive giữ tất cả dữ liệu. Mutation bị chặn. Thiết kế đích: restore đánh giá lại kế hoạch, không tạo completion. Không có chuyển trạng thái xóa cứng ở UI.};
+\end{tikzpicture}

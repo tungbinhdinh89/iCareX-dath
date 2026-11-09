@@ -1,0 +1,19 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+entity/.style={draw=ink,fill=pale,align=flush left,text width=4.3cm,inner sep=7pt},
+edge/.style={draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\node[entity] (vehicle) at (0,0) {\textbf{vehicles}\\PK id; FK account, model\\UK account+id; owner+plate\\archived\_at; version};
+\node[entity] (reading) at (0,-3.2) {\textbf{odometer\_readings}\\PK id; FK owner+vehicle\\date; odo\_km; source\_kind\\UK owner+vehicle+id+kind};
+\node[entity] (fuel) at (6,-1.5) {\textbf{fuel\_records}\\PK id; UK reading\_id\\typed FK owner+vehicle+reading\\kind=FUEL; liters; amount};
+\node[entity] (service) at (6,-4.8) {\textbf{service\_records}\\PK id; UK reading\_id\\typed FK owner+vehicle+reading\\kind=SERVICE; title/note};
+\node[entity] (plan) at (0,-7.2) {\textbf{maintenance\_plans}\\PK id; FK owner+vehicle\\mode; baseline; interval/threshold\\paused; baseline revision};
+\node[entity] (items) at (6,-8.8) {\textbf{service\_items}\\PK id; FK service+owner+vehicle\\REPAIR / MAINTENANCE\\amount; optional plan FK};
+\node[entity] (notice) at (0,-10.7) {\textbf{notifications}\\FK owner+vehicle+plan\\UK plan+cycle+level\\read\_at; superseded\_at};
+\draw[edge] (vehicle) -- node[lbl] {1 : 0..*} (reading);
+\draw[edge] (reading.east) -- node[lbl] {1 : 0..1\\FUEL} (fuel.west);
+\draw[edge] (reading.east) -- node[lbl] {1 : 0..1\\SERVICE} (service.west);
+\draw[edge] (service) -- node[lbl] {1 : 1..*\\tại commit} (items);
+\draw[edge] (vehicle.west) -- (-3,0) -- node[lbl] {1 : 0..*} (-3,-7.2) -- (plan.west);
+\draw[edge] (plan) -- node[lbl] {0..1 : 0..*} (items);
+\draw[edge] (plan) -- node[lbl] {1 : 0..*} (notice);
+\node[align=left,text width=11cm,font=\scriptsize] at (3,-13) {Ngày/ODO chỉ lưu tại reading. FK typed + unique + kiểm tra deferred bảo đảm mỗi nguồn có đúng reading loại tương ứng; BASELINE/MANUAL không có nguồn. Các bảng catalog/Identity được lược khỏi hình phân hệ này.};
+\end{tikzpicture}

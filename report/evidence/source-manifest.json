@@ -1,0 +1,324 @@
+{
+  "baseline_date": "2026-11-06",
+  "note": "Source inventory; availability/hash does not assert that every page was individually read. No source contents or secrets included.",
+  "sources": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 4109,
+      "sha256": "8951cfaef857b466a009aec4db1dde507222dfbd79f4c6190262839692249a33",
+      "contains_nul": false
+    },
+    {
+      "path": "Directory.Packages.props",
+      "bytes": 1400,
+      "sha256": "ad8f1bc583c1a7f0bb66e2fac4d539adf07c4cb1f2f57dd9fc500994044d7ae7",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/explain-detail.md",
+      "bytes": 22061,
+      "sha256": "1fa8fac6acc172aa8cf4dd6a2067b3301edc21844ff7ae3cf607bd0b0b79ddc0",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/00-document-control.tex",
+      "bytes": 4004,
+      "sha256": "904a27065d4a71305cdaafa151626d6c670008448f73e60d8d6211f55439eb55",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/01-overview.tex",
+      "bytes": 8746,
+      "sha256": "d58525394246d63c1e32b3cb23a3b54f71fa8b2f1348f3e1f4637be9c2b10a4d",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/02-requirements.tex",
+      "bytes": 16354,
+      "sha256": "f790dbf75aaa2da4dadbcfab8529cdaf313539809f9fd82e5320a1864935b8ea",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/02-usecase-details.tex",
+      "bytes": 31397,
+      "sha256": "4be2e07d7dbe2bfa17f193554fc1a96765723d5e29b145ba2aca4ecf714ba826",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/03-architecture.tex",
+      "bytes": 19449,
+      "sha256": "bec7cc6a7ee5e5161adda2cd3c06063cf94567fe999a6c63a1c1e9d6b8b3628b",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/04-behavior.tex",
+      "bytes": 15059,
+      "sha256": "4e141d303cf631e1a0a0b3230a66ddbe2ea67c6a27636706fbdd3d3cf26400d9",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/05-interface-demo.tex",
+      "bytes": 11157,
+      "sha256": "3ee5cf9d6364185cfd18cfbb05fb954827af965e7942059985be2de692ea1d3b",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/06-testcase-details.tex",
+      "bytes": 13153,
+      "sha256": "9e22255ef7b95563ddad79d50e2af80eb5fd26084cb697b8e079547b5a9a90b8",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/06-testing.tex",
+      "bytes": 6742,
+      "sha256": "4f3856e036af5d93eb63070e49038a069538d501019f790d340269ec6aed78a9",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/07-ai-disclosure.tex",
+      "bytes": 2537,
+      "sha256": "32bcc9d1547e70259206dd1d002cbaeb5f81fa0913745eb097aa58704d169043",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/chapters/08-appendices.tex",
+      "bytes": 13493,
+      "sha256": "6c0b640046ab859de06317f10ab5050aa0100221aae00da322e8513e18ccf369",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/latex-local-studio/icarex-report/main.pdf",
+      "bytes": 380004,
+      "sha256": "ba20944e27d31a1bd24961e1a62ce7837b3652075a1986236436aec5f1155d58",
+      "contains_nul": null
+    },
+    {
+      "path": "doc/make-doc-plan.md",
+      "bytes": 15234,
+      "sha256": "0fe6b0b020a8352200033ee75ed58328c46a94763983acf206c6f63d6b04f48c",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/make-doc-skill-plan.md",
+      "bytes": 39768,
+      "sha256": "7ab1839197fd0f5730391cd0384e2854b5dd6d8ef09f3a6f0402fb64a2ccf676",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/reference.md",
+      "bytes": 46260,
+      "sha256": "56b344557f92c4d961a5da9adf62a6f81263cd1ffddc36cf8f8f02b26545cc29",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/schema-database.md",
+      "bytes": 41863,
+      "sha256": "c71b8ca5e2b3935f2d3f2f9e8409e6cb64693e1993e34456968305c0d2aa633c",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/schema.md",
+      "bytes": 66768,
+      "sha256": "c4febccd8bd70e28063e6c968208e45480e999c36257010390318b122d58df3b",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/skill.md",
+      "bytes": 3062,
+      "sha256": "d950205ccbb5f57a110160544c8d69b8b2257c7f31afd1f2d20fc8784c654df3",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/structure-architecture.md",
+      "bytes": 31993,
+      "sha256": "c07c1e752e166e7205d9cfab58d7e39a1a0ac96c49ec3d200591729ed1faeb33",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/sumary-assigment.md",
+      "bytes": 20907,
+      "sha256": "6db31803e17c6dd995d3966b6eb130463100b130e6e66d928b962b06d3143999",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/teach-stack.md",
+      "bytes": 20798,
+      "sha256": "96157c5cfab284a7e6ecf9e0990a8a9c7e058e2bdda8b5dcae80f1cd64817895",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/tech-stack.md",
+      "bytes": 1666,
+      "sha256": "97c70baaa09bf9ea64ac29a140f3d415180c5b4722effc50748e9997b25c68ca",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/ticket-workflow.md",
+      "bytes": 7593,
+      "sha256": "6e5037fc4771d95ca59fa02f95ddeefa5442877b4d00f98e3dc68b33d891fa44",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/user-flow.md",
+      "bytes": 32949,
+      "sha256": "51b8176e43c3748d61283d3d896f92197a5a6b3c04c35b606771152814fd16a0",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/work-flow.md",
+      "bytes": 38925,
+      "sha256": "6ac0c1b64cad3a57e31b797ee0aa2f6fdf999ebcf55a18044c913b16f9563518",
+      "contains_nul": false
+    },
+    {
+      "path": "doc/write-spec.md",
+      "bytes": 31630,
+      "sha256": "33440702867011fc2a3fea4e2f2c047f3c3bf7166f66057ce4e315bbc2a0c51a",
+      "contains_nul": false
+    },
+    {
+      "path": "global.json",
+      "bytes": 97,
+      "sha256": "1c6737f7e65b0108778ab30ace593c3ec63382090718c2cbc3d6752486178a35",
+      "contains_nul": false
+    },
+    {
+      "path": "README.md",
+      "bytes": 13363,
+      "sha256": "f726f099b70dfb109d5c7ff1df939eaae7485544f7601885a40572526d73c9c8",
+      "contains_nul": false
+    },
+    {
+      "path": "src/iCareX.Web/iCareX.Web.Client/package.json",
+      "bytes": 1275,
+      "sha256": "615536f9bbc67a5554f21047eef14c0d06ba3f6681fe9eb40f62d99bf3abf56a",
+      "contains_nul": false
+    },
+    {
+      "path": "src/iCareX.Web/iCareX.Web.Client/src/components/Layout.tsx",
+      "bytes": 16557,
+      "sha256": "24ae89c9a828061d7613bbbb8e4b0c3c67cdb5aac8f84df8724461b8aa979b82",
+      "contains_nul": false
+    },
+    {
+      "path": "src/iCareX.Web/iCareX.Web.Client/src/index.css",
+      "bytes": 14372,
+      "sha256": "c2bae1b2c503e81b0da10c7ab1e4c0377e1b27cf9b01d385b9ba7b9694598a5a",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/01-Project-Direction.md",
+      "bytes": 3694,
+      "sha256": "26fb76687e10bb602ac8c3961e2504009c6e3830bd0a2c9116f9a217ea3cc7e6",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/02-Platform-Rationale.md",
+      "bytes": 2804,
+      "sha256": "405689bf952a85b7a42c7db745c2488cf1665f3625b9701b478057adb49866a0",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/03-Critical-Assumptions.md",
+      "bytes": 3248,
+      "sha256": "ca93370fff92aacba50997503842df54042685ab9c8c7e54c3b349090f812076",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/04-Evidence-Plan.md",
+      "bytes": 4895,
+      "sha256": "ec3076c1baf8aad466a46d575955a32e04ec48c59d86df825a3743cd845c7f7f",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/05-User-Research.md",
+      "bytes": 3181,
+      "sha256": "8dc8909a9d9ee57adf5f78bf9a5ce463ae7cb7db1a323f2a93b9711eabbb3028",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/06-Existing-Solutions.md",
+      "bytes": 4997,
+      "sha256": "773f135d6a31516ba51dc76f2f9b085329161ab62b286df535d06a53717b4b02",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/07-Product-Decisions.md",
+      "bytes": 3123,
+      "sha256": "923148b2842d437a1abeea0416fe59487bb784c030da8419848dd1ddd20437f1",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/08-Business-Canvas.md",
+      "bytes": 2813,
+      "sha256": "b955b131f4854a3f93019e7ad6b2d97f664659b1c434ffab62f8f2cffb88535c",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/09-Feature-Prioritization.md",
+      "bytes": 2547,
+      "sha256": "f2f1fe5e98ffcf701b9166ec037698dbc8b9cac177141213067720fab033a046",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/10-MVP-Scope.md",
+      "bytes": 2939,
+      "sha256": "87f5960b7f5a1d10b75c648a9daecc57a084d8a3b850f7875f69e799e5b8fec8",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/11-User-Stories.md",
+      "bytes": 5290,
+      "sha256": "87898c452aa08423c49685a864e84a1017b7a315338452bb999db35b47408a89",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/12-Use-Cases-and-User-Flows.md",
+      "bytes": 9562,
+      "sha256": "ebcaae04579960da1a0a57434ffa3b14325e0dc47b2fbd1374b6c1387563aab1",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/13-Requirements-and-Business-Rules.md",
+      "bytes": 7457,
+      "sha256": "de707241e53b6298ebaaf3297fc69969db8c85b48a208beaaa0e775eea6541b5",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/14-Technical-Foundation.md",
+      "bytes": 7081,
+      "sha256": "305f348fbcf0cb438c149a8ebe250abd64b43af8bfb9a166a361c1a852dda531",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/15-Project-Plan.md",
+      "bytes": 11366,
+      "sha256": "f33b579e7d56f7b6564b827dbc2d4d7796076029156af0f7024b382b19aa618e",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/16-Traceability.md",
+      "bytes": 6087,
+      "sha256": "fef9711172ff0d2d7c019cf4069df2a0498d885b36763094cc677d899173d153",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/_Footer.md",
+      "bytes": 133,
+      "sha256": "3283198f7559e8a02b63967160b10b73330174a6ed07f031955f3172834370eb",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/_Sidebar.md",
+      "bytes": 1159,
+      "sha256": "df92865084c4db2ea68c3a399b3798f1c691aa28ee72e63e5e4533bbb66b1f47",
+      "contains_nul": false
+    },
+    {
+      "path": "Vehicles_management_dath.wiki/Home.md",
+      "bytes": 5089,
+      "sha256": "9cc0c726a49d71b98886b2aa9d4c705aa550c41a1058a216235a5446974bbda2",
+      "contains_nul": false
+    }
+  ]
+}

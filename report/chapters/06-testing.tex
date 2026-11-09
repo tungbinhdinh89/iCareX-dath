@@ -1,0 +1,41 @@
+\chapter{Kiểm thử}\label{chap:testing}
+\section{Mục tiêu và phạm vi}
+Nhóm xây dựng kế hoạch kiểm thử để đánh giá các chức năng của iCareX và phát hiện những tình huống có thể làm sai dữ liệu. Trọng tâm gồm quyền truy cập theo tài khoản, tính đúng của chuỗi số km, cách tổng hợp chi phí và việc chuyển kỳ bảo dưỡng sau khi thay đổi lịch sử.
+
+Kiểm thử đơn vị tập trung vào các quy tắc có thể đánh giá độc lập, như kiểm tra số km và tính hạn theo tháng. Kiểm thử API xem xét xác thực, CSRF, dữ liệu đầu vào và mã phản hồi. Kiểm thử tích hợp sử dụng PostgreSQL để kiểm tra quan hệ dữ liệu, giao dịch và cập nhật đồng thời. Kiểm thử toàn trình theo dõi thao tác từ trình duyệt đến dữ liệu đã lưu.
+
+\section{Dữ liệu và môi trường kiểm thử}
+\subsection{Bộ dữ liệu}
+Nhóm sử dụng hai tài khoản A và B để kiểm tra phân quyền. Tài khoản A có chiếc xe trong kịch bản minh họa ở chương 1, với khoản nhiên liệu 200.000 VNĐ và dịch vụ 250.000 VNĐ. Tổng tiền cần đối chiếu là 450.000 VNĐ. Các trường hợp tính ngày dùng thời điểm kiểm thử cố định để kết quả có thể lặp lại.
+
+Các trường hợp bổ sung gồm ngày cuối tháng, năm nhuận, ngày trong tương lai, số km bằng nhau, lịch sử nhập bổ sung và dữ liệu không hợp lệ. Mỗi kiểm thử tích hợp sử dụng dữ liệu riêng để tránh ảnh hưởng đến kết quả của trường hợp khác.
+
+\subsection{Điều kiện thực hiện}
+Cơ sở dữ liệu kiểm thử được tách biệt với dữ liệu đang sử dụng. Các bài kiểm tra cookie Secure được thực hiện qua HTTPS. Đối với kiểm thử hiệu năng, nhóm ghi nhận cấu hình máy, phiên bản phần mềm, số lượng bản ghi và tải đồng thời cùng kết quả đo.
+
+\section{Các trường hợp kiểm thử}
+Mỗi ca kiểm thử có mã TC, tiêu chí nghiệm thu liên quan, dữ liệu đầu vào, các bước thực hiện và kết quả mong đợi. Những ca dưới đây thuộc kế hoạch kiểm thử; kết quả thực tế được ghi nhận sau khi thực hiện, kèm trạng thái đạt, không đạt hoặc chưa thực hiện.
+\input{chapters/06-testcase-details}
+
+\section{Kiểm thử phi chức năng}
+\subsection{Hiệu năng}
+Bộ dữ liệu gồm 10.000 hoạt động và tải đồng thời 10 người dùng. Sau giai đoạn khởi động, nhóm đo thời gian phản hồi của danh sách và báo cáo. Phân vị 95 được đối chiếu với mục tiêu không quá 1 giây; số yêu cầu lỗi được thống kê riêng.
+
+\subsection{Độ trễ nhắc bảo dưỡng}
+Nhóm ghi thời điểm kế hoạch thỏa điều kiện nhắc, thời điểm thông báo được lưu và thời điểm xuất hiện trên trang đang mở. Mục tiêu là tạo thông báo trong 120 giây và hiển thị trên trang trong 60 giây tiếp theo khi hệ thống hoạt động bình thường. Các vòng quét lặp và lần khởi động lại phải giữ số lượng thông báo đúng theo khóa kế hoạch, kỳ và mức nhắc.
+
+\subsection{Bảo mật và quản lý phiên}
+Theo DEC07, các bài kiểm tra xác thực tập trung vào cookie HttpOnly, Secure, trạng thái phiên trong DB và CSRF. Nhóm kiểm tra yêu cầu thiếu hoặc sai CSRF token, phiên đã hết hạn, phiên đã thu hồi và thao tác đổi mật khẩu. Việc tải lại trang phải giữ đăng nhập khi phiên còn hợp lệ. Khi chuyển từ tài khoản A sang B, giao diện xóa dữ liệu tạm của tài khoản trước.
+
+Quyền truy cập được kiểm tra bằng yêu cầu API trực tiếp. Tài khoản khác không thể đọc, sửa, xóa hoặc liên kết tài nguyên ngoài phạm vi của mình. Nhật ký ứng dụng và phản hồi lỗi không chứa mật khẩu, cookie hoặc thông tin kết nối cơ sở dữ liệu.
+
+\subsection{Khả năng sử dụng}
+Nhóm kiểm tra các màn hình tại chiều rộng 360, 768 và 1440 px; thao tác bằng bàn phím; thứ tự focus; nhãn trường và thông báo lỗi. Các tình huống đang tải, chưa có dữ liệu, mất kết nối và xung đột phiên bản cần được phân biệt rõ.
+
+\subsection{Sao lưu và phục hồi}
+Trên môi trường kiểm thử, nhóm phục hồi bản sao lưu vào một cơ sở dữ liệu riêng. Kết quả được đối chiếu theo số phương tiện, số hoạt động, tổng tiền và quyền truy cập của hai tài khoản. Thời gian thực hiện được ghi nhận để đánh giá quy trình phục hồi.
+
+\section{Tiêu chí đánh giá}
+Các chức năng được chấp nhận khi luồng chính và những ngoại lệ liên quan cho kết quả đúng, không xảy ra truy cập chéo tài khoản, ghi trùng chi phí hoặc lưu dữ liệu một phần. Lỗi mất dữ liệu và sai quyền truy cập được ưu tiên xử lý trước; tiếp theo là lỗi tính hạn, số km, báo cáo và các vấn đề giao diện.
+
+Mỗi lỗi được ghi kèm dữ liệu, bước tái hiện, kết quả mong đợi và kết quả thực tế. Sau khi sửa, nhóm chạy lại ca kiểm thử liên quan và kiểm tra những chức năng chịu ảnh hưởng trước khi tổng hợp kết quả.

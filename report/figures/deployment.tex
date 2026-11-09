@@ -1,0 +1,24 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+box/.style={draw=ink,fill=pale,rounded corners=2pt,align=center,text width=3.3cm,minimum height=.85cm,inner sep=6pt},
+decision/.style={diamond,draw=ink,fill=white,aspect=2.3,align=center,text width=2.6cm,inner sep=2pt},
+state/.style={draw=ink,rounded corners=7pt,fill=pale,align=center,text width=2.7cm,minimum height=.9cm},
+initial/.style={circle,fill=ink,minimum size=.22cm,inner sep=0pt},
+final/.style={circle,draw=ink,double,fill=ink,minimum size=.28cm,inner sep=0pt},
+uc/.style={ellipse,draw=ink,fill=pale,align=center,text width=3.5cm,minimum height=1.1cm},
+edge/.style={->,draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\node[box] (browser) at (0,0) {<<device>>\\Thiết bị của chủ xe\\Browser React SPA};
+\node[box] (proxy) at (5,0) {<<node>>\\Web / reverse proxy\\HTTPS, static assets};
+\node[box] (api) at (5,-3) {<<runtime>>\\ASP.NET Core 10\\API monolith};
+\node[box] (db) at (10,-3) {<<database>>\\PostgreSQL\\Volume bền vững};
+\node[box] (keys) at (0,-3) {<<artifact>>\\Secrets / key ring\\ngoài source};
+\node[box] (worker) at (5,-6) {<<component, đề xuất>>\\Reminder worker\\cùng API host};
+\node[box] (backup) at (10,-6) {<<artifact, đề xuất>>\\Backup và bản phục hồi\\môi trường riêng};
+\draw[edge] (browser) -- node[lbl] {HTTPS} (proxy);
+\draw[edge] (proxy) -- node[lbl] {/api: HTTP nội bộ} (api);
+\draw[edge] (api) -- node[lbl] {Npgsql / TCP, TLS theo hạ tầng} (db);
+\draw[edge] (keys) -- node[lbl] {đọc cấu hình} (api);
+\draw[edge] (api) -- node[lbl] {DI scope mỗi vòng} (worker);
+\draw[edge] (worker) -- node[lbl] {đọc plan / ghi nhắc} (db);
+\draw[edge] (db) -- node[lbl] {backup có kiểm soát} (backup);
+
+\end{tikzpicture}

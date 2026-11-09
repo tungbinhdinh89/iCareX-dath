@@ -1,0 +1,260 @@
+\chapter{Giao diện người dùng}\label{chap:interface}
+\definecolor{DSBackground}{HTML}{F4F8F1}
+\definecolor{DSSurface}{HTML}{FFFFFF}
+\definecolor{DSText}{HTML}{14263E}
+\definecolor{DSSecondary}{HTML}{586A80}
+\definecolor{DSBorder}{HTML}{DCE3ED}
+\definecolor{DSNavigation}{HTML}{1F4D3A}
+\definecolor{DSPrimary}{HTML}{2F6B4A}
+\newcommand{\dscolor}[1]{\fcolorbox{DSBorder}{#1}{\rule{0pt}{.8em}\hspace{1em}}}
+
+\section{Định hướng và nguồn thiết kế}
+Giao diện iCareX được xây dựng quanh những công việc quen thuộc của chủ xe: ghi một lần đổ nhiên liệu, xem lại khoản chi và kiểm tra kỳ bảo dưỡng. Nhóm lựa chọn cách trình bày sáng, ít lớp trang trí, ưu tiên thông tin của chiếc xe và hành động người dùng cần thực hiện.
+
+Bộ hồ sơ giao diện gồm bảng nền tảng thị giác, thư viện thành phần và các trang mẫu: giới thiệu, đăng nhập, đăng ký, chi tiết xe, ghi nhiên liệu và hộp thư~\cite{designscreens}. Hình minh họa trong chương này được lấy từ bộ thiết kế đó. Tệp thiết kế được quản lý trên Figma~\cite{figma}.
+
+\section{Nguyên lý thiết kế}
+\subsection{Tập trung vào nhiệm vụ của chủ xe}
+Thông tin quan trọng được đặt gần thao tác liên quan. Tại trang xe, số km hiện tại, chi phí trong tháng và kế hoạch đang theo dõi xuất hiện trước lịch sử chi tiết. Tại biểu mẫu nhiên liệu, thông tin của xe được đặt cạnh trường nhập để người dùng dễ đối chiếu số km trước khi lưu.
+
+Mỗi khu vực có một hành động chính, chẳng hạn \enquote{Lưu nhiên liệu} hoặc \enquote{Ghi nhận bảo dưỡng}. Các hành động phụ như hủy, xem chi tiết và đánh dấu đã đọc có mức nhấn nhẹ hơn. Nhờ đó, người dùng có thể nhận ra bước tiếp theo mà không phải đọc toàn bộ màn hình.
+
+\subsection{Thông tin có thứ bậc và có thể đối chiếu}
+Tên xe và số liệu chính dùng cỡ chữ lớn hơn phần mô tả. Ngày cập nhật, nguồn nhập và đơn vị được đặt ngay cạnh dữ liệu. Một trạng thái bảo dưỡng đi cùng mốc đến hạn và khoảng còn lại, giúp người dùng hiểu vì sao xe được nhắc.
+
+Số tiền luôn được gắn với khoảng thời gian đang xem. Các thẻ tổng hợp dẫn về bản ghi hoặc danh sách liên quan để chủ xe có thể kiểm tra từng khoản. Phần giới thiệu sử dụng xe minh họa riêng; khi vào không gian cá nhân, người dùng chỉ xem dữ liệu của tài khoản mình.
+
+\subsection{Nhất quán trong thành phần và phản hồi}
+Các trang sử dụng cùng cách bố trí điều hướng, nhãn trường, nút, thẻ số liệu và nhãn trạng thái. Thành phần được tổ chức thành các biến thể dùng lại, thay vì mỗi màn hình có một cách thể hiện riêng.
+
+Phản hồi phân biệt rõ đang tải, chưa có hoạt động, tải thất bại và lưu thành công. Khi có lỗi, nội dung đã nhập được giữ để người dùng điều chỉnh. Những thao tác làm thay đổi lịch sử, như xóa một lần đổ nhiên liệu, có bước xác nhận và nêu tác động đến số km, chi phí liên quan.
+
+\subsection{Dễ đọc và sử dụng trên nhiều kích thước}
+Nội dung sử dụng tiếng Việt, đi kèm đơn vị km, lít và VNĐ. Màu trạng thái luôn có chữ hoặc ký hiệu để người dùng nhận biết bằng nhiều dấu hiệu. Điều hướng giữ tên chức năng khi thu gọn; biểu mẫu vẫn có nhãn và trạng thái focus khi thao tác bằng bàn phím.
+
+\section{Nhận diện và hệ thống thiết kế}
+\subsection{Logo và biểu tượng điều hướng}
+Nhận diện iCareX kết hợp dấu X với hình lá xanh và tên sản phẩm. Bản nền sáng sử dụng chữ xanh đậm; bản nền tối sử dụng chữ trắng. Dấu biểu tượng có thể dùng riêng ở vị trí hẹp, còn bộ logo đầy đủ được đặt tại đầu trang và thanh điều hướng.
+
+\begin{figure}[H]\centering
+\begin{tabular}{cc}
+\includegraphics[width=1.6cm]{figures/design/symbol-light.png} &
+\includegraphics[width=1.6cm]{figures/design/symbol-dark.png}\\[8pt]
+\includegraphics[width=4.3cm]{figures/design/logo-light.png} &
+\includegraphics[width=4.3cm]{figures/design/logo-dark.png}\\
+\small Nền sáng & \small Nền tối
+\end{tabular}
+\caption{Biểu tượng và logo iCareX trong bộ thiết kế}\label{fig:design-logo}
+\end{figure}
+
+Biểu tượng điều hướng đi cùng nhãn chữ, giúp người dùng nhận ra chức năng mà không phải ghi nhớ ý nghĩa của từng hình. Mục đang chọn có nền nhấn riêng và giữ nguyên vị trí trong menu.
+\begin{smalltable}\begin{longtable}{L{1.2cm}L{5.8cm}L{1.2cm}L{5.8cm}}
+\caption{Bộ biểu tượng điều hướng trong trang mẫu}\label{tab:design-icons}\\\toprule Biểu tượng & Chức năng & Biểu tượng & Chức năng\\\midrule\endfirsthead
+\toprule Biểu tượng & Chức năng & Biểu tượng & Chức năng\\\midrule\endhead
+\includegraphics[height=.55cm]{figures/design/nav-overview.png} & Tổng quan &
+\includegraphics[height=.55cm]{figures/design/nav-vehicles.png} & Xe của tôi\\
+\includegraphics[height=.55cm]{figures/design/nav-fuel.png} & Nhiên liệu &
+\includegraphics[height=.55cm]{figures/design/nav-expenses.png} & Chi phí\\
+\includegraphics[height=.55cm]{figures/design/nav-maintenance.png} & Bảo dưỡng &
+\includegraphics[height=.55cm]{figures/design/nav-inbox.png} & Hộp thư\\
+\includegraphics[height=.55cm]{figures/design/nav-reports.png} & Báo cáo &
+\includegraphics[height=.55cm]{figures/design/nav-settings.png} & Cài đặt\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\subsection{Bảng màu theo vai trò}
+Nhóm dùng nền xanh rất nhạt để tách vùng làm việc khỏi các thẻ trắng. Xanh đậm dành cho thanh điều hướng; xanh lá dành cho hành động chính và trạng thái focus. Màu của dữ liệu và trạng thái được quy định theo vai trò để các trang giữ cùng cách diễn đạt.
+\begin{smalltable}\begin{longtable}{L{1.2cm}L{3.5cm}L{2.6cm}L{7cm}}
+\caption{Màu nền, nội dung và hành động}\label{tab:design-tokens}\\\toprule Mẫu & Vai trò & Mã màu & Cách sử dụng\\\midrule\endfirsthead
+\toprule Mẫu & Vai trò & Mã màu & Cách sử dụng\\\midrule\endhead
+\dscolor{DSBackground} & Background & \texttt{\#F4F8F1} & Nền chung của trang và khoảng trống giữa các khối.\\
+\dscolor{DSSurface} & Surface & \texttt{\#FFFFFF} & Thẻ, biểu mẫu và phần nội dung cần tập trung.\\
+\dscolor{DSText} & Text / Primary & \texttt{\#14263E} & Tiêu đề, dữ liệu chính và nhãn trường.\\
+\dscolor{DSSecondary} & Text / Secondary & \texttt{\#586A80} & Mô tả, ngày cập nhật và thông tin bổ sung.\\
+\dscolor{DSBorder} & Border & \texttt{\#DCE3ED} & Viền ô nhập, thẻ và đường phân cách.\\
+\dscolor{DSNavigation} & Navigation & \texttt{\#1F4D3A} & Nền thanh điều hướng và phiên bản logo nền tối.\\
+\dscolor{DSPrimary} & Action / Primary & \texttt{\#2F6B4A} & Nút chính, liên kết quan trọng và mục được chọn.\\
+\dscolor{DSPrimary} & Action / Focus & \texttt{\#2F6B4A} & Viền focus khi người dùng thao tác với thành phần.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\begin{smalltable}\begin{longtable}{L{2.6cm}L{5cm}L{6.8cm}}
+\caption{Màu trạng thái và ý nghĩa}\\\toprule Vai trò & Chữ / nền & Cách diễn đạt\\\midrule\endfirsthead
+\toprule Vai trò & Chữ / nền & Cách diễn đạt\\\midrule\endhead
+Success & \texttt{\#20754D / \#EDF7F1} & Kết quả thành công hoặc trạng thái chưa đến hạn.\\
+Warning & \texttt{\#8C5C0B / \#FFF5DF} & Sắp đến hạn, cần người dùng chú ý.\\
+Due & \texttt{\#AD4C10 / \#FFF0E8} & Đã chạm ngày hoặc số km đến hạn.\\
+Error & \texttt{\#B3313A / \#FDEFF0} & Lỗi dữ liệu hoặc trạng thái quá hạn.\\
+Unknown & \texttt{\#626879 / \#EDF0F4} & Chưa đủ dữ liệu để kết luận.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\subsection{Chữ và cách trình bày số liệu}
+Bộ thiết kế sử dụng Inter với hỗ trợ tiếng Việt. Cỡ chữ được phân cấp theo vai trò; số liệu như số km và số tiền được nhấn mạnh hơn phần mô tả. Nội dung chính của giao diện có cỡ tối thiểu 14 px.
+\begin{smalltable}\begin{longtable}{L{4.2cm}L{2.3cm}L{2.5cm}L{5.3cm}}
+\caption{Thang chữ của giao diện}\\\toprule Vai trò & Cỡ chữ & Độ đậm & Vị trí sử dụng\\\midrule\endfirsthead
+\toprule Vai trò & Cỡ chữ & Độ đậm & Vị trí sử dụng\\\midrule\endhead
+Heading & 32--40 px & 650 & Tiêu đề trang và thông điệp chính.\\
+Title & 24 px & 650 & Tên khối, tên xe hoặc nội dung nổi bật.\\
+Subtitle & 18 px & 600 & Tiêu đề nhóm thông tin.\\
+Body & 16 px & 400 & Nội dung chính; chiều cao dòng 1,5.\\
+Table và control & 14 px & 400--600 & Bảng, nhãn trường và nội dung điều khiển.\\
+Caption & 12 px & 400--600 & Chú thích và thông tin bổ sung.\\\bottomrule
+\end{longtable}\end{smalltable}
+Ngày được trình bày theo định dạng ngày/tháng/năm. Số tiền và số km có phân cách hàng nghìn; đơn vị đặt cạnh giá trị. Ô nhập giữ đơn vị ở vị trí cố định để người dùng hiểu rõ dữ liệu cần điền.
+
+\subsection{Khoảng cách, bo góc và mức nổi}
+Nhịp khoảng cách được xây dựng theo bội số của 4 px: 4, 8, 12, 16, 24 và 32 px. Khoảng cách nhỏ liên kết nhãn với trường nhập; khoảng cách lớn phân tách thẻ và khu vực chức năng.
+\begin{smalltable}\begin{longtable}{L{4.2cm}L{3.3cm}L{6.8cm}}
+\caption{Quy tắc bố trí và hình khối}\\\toprule Thành phần & Giá trị thiết kế & Mục đích\\\midrule\endfirsthead
+\toprule Thành phần & Giá trị thiết kế & Mục đích\\\midrule\endhead
+Lề nội dung desktop & 32 px & Giữ khoảng thở giữa khung ứng dụng và nội dung.\\
+Khoảng đệm thẻ, khoảng cách biểu mẫu & 24 px & Nhóm dữ liệu và tách các phần nhập liệu.\\
+Chiều cao dòng bảng & Tối thiểu 48 px & Thuận tiện theo dõi từng dòng và chọn thao tác.\\
+Vùng chạm & Tối thiểu 44 px & Hỗ trợ thao tác trên màn hình cảm ứng.\\
+Bo góc trường nhập & 6 px & Giữ hình thức thống nhất cho điều khiển.\\
+Bo góc thẻ & 10 px & Phân nhóm nội dung.\\
+Bo góc khối trình bày & 16 px & Dùng ở các khu vực giới thiệu và trình bày lớn.\\
+Bóng đổ & Cấu hình 0 / 3 / 12 & Mức nổi nhẹ cho hộp thoại và phản hồi nổi.\\
+Vòng focus & 3 px, \texttt{\#2F6B4A} & Xác định thành phần đang nhận thao tác.\\\bottomrule
+\end{longtable}\end{smalltable}
+Bảng dữ liệu ưu tiên đường viền và khoảng cách. Bóng đổ được sử dụng có chọn lọc để các phần nổi không cạnh tranh với nội dung chính.
+
+\subsection{Năm trạng thái bảo dưỡng}
+Nhãn trạng thái thể hiện cùng lúc màu, ký hiệu và tên. Người dùng có thể phân biệt \enquote{Sắp đến hạn}, \enquote{Đến hạn} và \enquote{Quá hạn} mà không chỉ dựa vào màu.
+\begin{figure}[H]\centering
+\includegraphics[width=.95\linewidth]{figures/design/status-badges.png}
+\caption{Năm nhãn trạng thái trong thư viện thành phần}\label{fig:design-status}
+\end{figure}
+\begin{smalltable}\begin{longtable}{L{3cm}L{3cm}L{8.3cm}}
+\caption{Ý nghĩa của nhãn bảo dưỡng}\\\toprule Nhãn & Trạng thái nghiệp vụ & Thông tin cần đi kèm\\\midrule\endfirsthead
+\toprule Nhãn & Trạng thái nghiệp vụ & Thông tin cần đi kèm\\\midrule\endhead
+Chưa đến hạn & NotDue & Mốc đến hạn và ngày cập nhật số km.\\
+Sắp đến hạn & Soon & Khoảng ngày hoặc số km còn lại trong ngưỡng nhắc.\\
+Đến hạn & Due & Giá trị hiện tại bằng mốc đến hạn.\\
+Quá hạn & Overdue & Khoảng ngày hoặc số km đã vượt.\\
+Không đủ dữ liệu & Unknown & Dữ liệu còn thiếu và thao tác bổ sung phù hợp.\\\bottomrule
+\end{longtable}\end{smalltable}
+Lưu trữ xe, tạm dừng kế hoạch và số km chưa được cập nhật là các thuộc tính riêng. Chúng được trình bày cạnh thông tin kế hoạch khi cần, giữ nguyên ý nghĩa của mức hạn.
+
+\section{Thành phần và hành vi tương tác}
+\subsection{Nút, trường nhập và kiểm tra dữ liệu}
+Thư viện nút có các biến thể mặc định, hover, focus, vô hiệu hóa và đang xử lý. Nút chính giữ cùng nhãn hành động; trạng thái đang xử lý cho biết hệ thống đã nhận thao tác. Trong thời gian đó, việc gửi lặp được hạn chế tại giao diện.
+
+Ô nhập có nhãn, đơn vị và phần diễn giải khi cần. Trường đang được chọn có viền xanh; trường không hợp lệ có viền lỗi và thông báo cụ thể. Giá trị tổng dịch vụ là dữ liệu được tính từ các dòng hạng mục.
+\begin{figure}[H]\centering
+\begin{tabular}{cc}
+\includegraphics[width=.47\linewidth]{figures/design/field-focus.png} &
+\includegraphics[width=.47\linewidth]{figures/design/field-error.png}
+\end{tabular}
+\caption{Trường nhập đang focus và trường có dữ liệu không hợp lệ}\label{fig:design-fields}
+\end{figure}
+
+\subsection{Thẻ phương tiện, số km, nhắc và chi phí}
+VehicleCard tóm tắt tên xe, biển số, số km và trạng thái bảo dưỡng. OdometerSummary bổ sung ngày cập nhật và nguồn nhập. ReminderCard đặt hành động ghi nhận bảo dưỡng cạnh lý do nhắc. ExpenseSummary trình bày số tổng cùng các nhóm chi phí để người dùng đối chiếu.
+\begin{figure}[H]\centering
+\begin{tabular}{cc}
+\includegraphics[width=.46\linewidth]{figures/design/card-vehicle.png} &
+\includegraphics[width=.46\linewidth]{figures/design/card-odometer.png}\\[6pt]
+\includegraphics[width=.46\linewidth]{figures/design/card-reminder.png} &
+\includegraphics[width=.46\linewidth]{figures/design/card-expenses.png}
+\end{tabular}
+\caption{Các thẻ thông tin dùng chung của iCareX}\label{fig:design-cards}
+\end{figure}
+
+\subsection{Danh sách, bộ lọc và phản hồi}
+Bộ lọc gồm xe, khoảng ngày và loại hoạt động. Các lựa chọn được giữ khi người dùng mở một bản ghi rồi quay lại. Trên desktop, lịch sử được trình bày bằng bảng; ở chiều rộng nhỏ, nội dung từng hoạt động chuyển thành thẻ có ngày, loại, số km và số tiền.
+
+Khi danh sách đang tải, vùng nội dung hiển thị khung chờ. Khi chưa có hoạt động, thông báo dẫn người dùng đến thao tác ghi đầu tiên. Nếu tải thất bại, trang giữ dữ liệu đã có và cung cấp nút thử lại. Thông báo lưu thành công xuất hiện ngắn gọn, tránh che thông tin về kỳ bảo dưỡng.
+\begin{figure}[H]\centering
+\begin{tabular}{cc}
+\includegraphics[width=.46\linewidth]{figures/design/feedback-loading.png} &
+\includegraphics[width=.46\linewidth]{figures/design/feedback-empty.png}\\[6pt]
+\includegraphics[width=.46\linewidth]{figures/design/feedback-error.png} &
+\includegraphics[width=.46\linewidth]{figures/design/feedback-success.png}
+\end{tabular}
+\caption{Trạng thái đang tải, rỗng, lỗi tải và lưu thành công}\label{fig:design-feedback}
+\end{figure}
+
+\subsection{Bố trí đáp ứng và hỗ trợ tiếp cận}
+\begin{smalltable}\begin{longtable}{L{3cm}L{4.5cm}L{6.8cm}}
+\caption{Bố trí tại các kích thước tham chiếu}\label{tab:design-responsive}\\\toprule Kích thước & Điều hướng & Nội dung và biểu mẫu\\\midrule\endfirsthead
+\toprule Kích thước & Điều hướng & Nội dung và biểu mẫu\\\midrule\endhead
+Desktop 1440 px & Sidebar 224 px và topbar. & Bảng đầy đủ, ba thẻ chỉ số; biểu mẫu có vùng thông tin ngữ cảnh.\\
+Tablet 768 px & Rail 72 px, giữ nhãn truy cập. & Hai cột khi đủ chỗ; biểu mẫu một cột; bảng có vùng cuộn riêng khi cần.\\
+Mobile web 360 px & Menu dạng drawer; topbar 64--72 px. & Một cột; lịch sử dùng ActivityCard; trường nhập vẫn có nhãn và đơn vị.\\\bottomrule
+\end{longtable}\end{smalltable}
+Khi mở menu trên điện thoại, người dùng vẫn thấy tên chức năng và mục đang chọn. Các vùng tương tác có kích thước đủ lớn; focus được giữ rõ khi chuyển bằng bàn phím. Thiết kế đặt mục tiêu tương phản WCAG AA và sử dụng chữ, ký hiệu để bổ sung cho màu trạng thái.
+
+\clearpage
+\section{Các trang minh họa}
+Các trang sau sử dụng nhân vật Minh Anh và xe Yamaha NVX 155 làm dữ liệu minh họa. Nội dung cho thấy cách các thành phần được kết hợp thành từng tác vụ; cơ chế phiên và yêu cầu mật khẩu được áp dụng theo UC01 và DEC07 ở chương~\ref{chap:requirements}.
+
+\subsection{Trang giới thiệu}
+Trang giới thiệu trình bày ba giá trị chính: lưu lịch sử theo xe, nhắc bảo dưỡng có lý do và theo dõi chi phí từ từng khoản đã ghi. Khối đầu trang kết hợp thông điệp với một thẻ xe mẫu. Hai hành động \enquote{Trải nghiệm demo} và \enquote{Tạo tài khoản} phục vụ người muốn tìm hiểu và người muốn bắt đầu sử dụng.
+\begin{figure}[H]\centering
+\includegraphics[width=.97\linewidth,height=.66\textheight,keepaspectratio]{figures/design/landing.png}
+\caption{Thiết kế trang giới thiệu và điểm bắt đầu trải nghiệm}\label{fig:design-landing}
+\end{figure}
+
+\clearpage
+\subsection{Đăng nhập}
+Trang đăng nhập chia hai vùng: nhận diện ở bên trái và biểu mẫu ở bên phải. Người dùng nhập email, mật khẩu, chọn đăng nhập hoặc chuyển sang tạo tài khoản. Liên kết về trang chủ được đặt trước biểu mẫu; phần giải thích bên dưới nhấn mạnh phạm vi dữ liệu cá nhân.
+\begin{figure}[H]\centering
+\includegraphics[width=.97\linewidth,height=.63\textheight,keepaspectratio]{figures/design/login.png}
+\caption{Bố cục trang đăng nhập; quy tắc duy trì phiên theo DEC07}\label{fig:design-login}
+\end{figure}
+Theo DEC07, tải lại trang vẫn duy trì đăng nhập khi cookie và phiên trong DB còn hiệu lực. Khi phiên hết hạn hoặc bị thu hồi, ứng dụng chuyển người dùng về bước đăng nhập. Quy tắc này được dùng thống nhất trong luồng trình bày chức năng.
+
+\clearpage
+\subsection{Đăng ký tài khoản}
+Trang đăng ký sử dụng cùng khung nhận diện với trang đăng nhập. Các trường gồm họ tên, email, mật khẩu và nhập lại mật khẩu; người dùng có thể chuyển sang đăng nhập nếu đã có tài khoản. Sau khi tạo tài khoản thành công, hệ thống hướng dẫn đăng nhập để bắt đầu quản lý xe.
+\begin{figure}[H]\centering
+\includegraphics[width=.97\linewidth,height=.62\textheight,keepaspectratio]{figures/design/register.png}
+\caption{Bố cục trang đăng ký tài khoản}\label{fig:design-register}
+\end{figure}
+Yêu cầu mật khẩu trong đặc tả là tối thiểu 12 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt. Thông báo hướng dẫn và lỗi xác nhận mật khẩu cần thể hiện đúng quy tắc này.
+
+\clearpage
+\subsection{Chi tiết phương tiện}
+Trang xe đặt tên và thông tin nhận diện ở đầu nội dung. Nhóm thao tác nhanh gồm ghi nhiên liệu, thêm chi phí và cập nhật số km. Ba thẻ chính hiển thị ODO hiện tại, chi phí tháng và số kế hoạch đang theo dõi; các tab phía dưới dẫn đến lịch sử và từng loại hoạt động.
+\begin{figure}[H]\centering
+{\setlength{\fboxsep}{0pt}\colorbox{DSBackground}{\includegraphics[width=.97\linewidth,height=.62\textheight,keepaspectratio]{figures/design/vehicle-overview.png}}}
+\caption{Trang xe với số km, chi phí và các kế hoạch bảo dưỡng}\label{fig:design-vehicle}
+\end{figure}
+Trong ví dụ ngày 01/10/2026, xe có 12.699 km và chưa phát sinh chi phí tháng 10. Kế hoạch thay dầu đến hạn tại 13.000 km, còn 301 km; kế hoạch lọc gió đến hạn tại 18.000 km. Mỗi kế hoạch có đường dẫn xem căn cứ và lịch sử liên quan.
+
+\clearpage
+\subsection{Ghi nhiên liệu}
+Biểu mẫu đặt các trường xe, ngày đổ, ODO, số lít, số tiền và ghi chú trong một khối. Cột bên cạnh giữ thông tin số km gần nhất và diễn giải ảnh hưởng của lần ghi mới. Nút lưu và hủy nằm cuối biểu mẫu để người dùng kiểm tra dữ liệu trước khi xác nhận.
+\begin{figure}[H]\centering
+{\setlength{\fboxsep}{0pt}\colorbox{DSBackground}{\includegraphics[width=.97\linewidth,height=.62\textheight,keepaspectratio]{figures/design/fuel-create.png}}}
+\caption{Biểu mẫu ghi nhiên liệu và thông tin đối chiếu của xe}\label{fig:design-fuel}
+\end{figure}
+Lần đổ ngày 02/10/2026 ghi 8 lít, 200.000 VNĐ tại 12.700 km. Sau khi lưu, chi phí tháng tăng lên 200.000 VNĐ và khoảng còn lại đến kỳ thay dầu là 300 km. Giao diện tải lại lịch sử, số km và nhắc liên quan để người dùng thấy kết quả nhất quán.
+
+\clearpage
+\subsection{Hộp thư và giải thích nhắc bảo dưỡng}
+Hộp thư có bộ lọc xe, trạng thái đọc và khoảng ngày. Danh sách nhắc được đặt bên trái; phần chi tiết bên phải giải thích mốc trước, chu kỳ, mốc đến hạn, số km hiện tại và khoảng còn lại. Hai thao tác \enquote{Ghi nhận bảo dưỡng} và \enquote{Đánh dấu đã đọc} được trình bày riêng.
+\begin{figure}[H]\centering
+{\setlength{\fboxsep}{0pt}\colorbox{DSBackground}{\includegraphics[width=.97\linewidth,height=.62\textheight,keepaspectratio]{figures/design/notifications.png}}}
+\caption{Hộp thư giải thích nhắc đến hạn và phân biệt việc đọc với hoàn thành}\label{fig:design-inbox}
+\end{figure}
+Tại 13.000 km, kế hoạch thay dầu đã đến hạn. Đánh dấu đã đọc làm số nhắc chưa đọc giảm nhưng giữ nguyên mốc 13.000 km. Chỉ khi ghi một hạng mục bảo dưỡng liên kết đúng kế hoạch, hệ thống mới xác định mốc cho kỳ tiếp theo.
+
+\section{Kịch bản demo theo hành trình sử dụng}
+Nhóm tổ chức phần trình bày theo một hành trình liên tục để người xem đối chiếu được dữ liệu trước và sau thao tác.
+\begin{smalltable}\begin{longtable}{L{1cm}L{4cm}L{5cm}L{4.4cm}}
+\caption{Trình tự demo từ ghi hoạt động đến nhắc bảo dưỡng}\label{tab:design-demo}\\\toprule Bước & Màn hình và thao tác & Dữ liệu minh họa & Kết quả cần quan sát\\\midrule\endfirsthead
+\toprule Bước & Màn hình và thao tác & Dữ liệu minh họa & Kết quả cần quan sát\\\midrule\endhead
+1 & Giới thiệu, đăng ký và đăng nhập. & Tài khoản Minh Anh; áp dụng UC01 và DEC07. & Vào không gian cá nhân; tải lại trang tiếp tục phiên hợp lệ.\\
+2 & Mở trang xe. & Ngày 01/10, ODO 12.699 km; chi phí tháng 0; hai kế hoạch. & Kỳ thay dầu còn 301 km; thông tin ngày cập nhật rõ ràng.\\
+3 & Ghi nhiên liệu. & Ngày 02/10, ODO 12.700 km, 8 lít, 200.000 VNĐ. & Lịch sử có một lần đổ; tổng 200.000 VNĐ; nhắc còn 300 km.\\
+4 & Cập nhật số km và mở hộp thư. & Ngày 15/10, ODO đạt 13.000 km. & Nhắc thay dầu chuyển đến hạn; bảng căn cứ cho khoảng còn lại 0 km.\\
+5 & Đánh dấu nhắc đã đọc. & Chọn nhắc đến hạn đang chưa đọc. & Badge giảm; kỳ bảo dưỡng và chi phí không đổi.\\
+6 & Ghi dịch vụ có hạng mục liên kết. & Ngày 16/10: sửa chữa 100.000 VNĐ; bảo dưỡng 150.000 VNĐ tại 13.000 km. & Tổng dịch vụ 250.000 VNĐ; tổng tháng 450.000 VNĐ; kỳ thay dầu tiếp theo 16.000 km.\\
+7 & Mở lịch sử và đối chiếu tổng. & Giữ bộ lọc xe và tháng 10/2026. & Các khoản nguồn khớp tổng; mở lại được từng hoạt động.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+Khi trình bày, nhóm bổ sung một số tình huống như nhập số tiền âm, mất kết nối khi tải danh sách và thử lại yêu cầu lưu. Những trường hợp này minh họa cách phản hồi và giữ dữ liệu cho người dùng. Kết quả thực thi được ghi nhận theo kế hoạch kiểm thử ở chương~\ref{chap:testing}.
+
+\section{Mã nguồn}
+Mã nguồn của hệ thống được quản lý tại kho dự án iCareX~\cite{repo}:
+\url{https://github.com/tungbinhdinh89/iCareX-dath}.

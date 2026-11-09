@@ -1,0 +1,129 @@
+\chapter{Kiến trúc và thiết kế hệ thống}\label{chap:architecture}
+\section{Mục tiêu và nguyên tắc thiết kế}
+Nhóm lựa chọn kiến trúc nguyên khối với ASP.NET Core cho phía máy chủ và React cho giao diện. Các chức năng được phân chia theo Clean Architecture để quy tắc nghiệp vụ có thể kiểm thử độc lập với cơ sở dữ liệu và giao diện. Bộ xử lý nhắc bảo dưỡng chạy cùng ứng dụng, sử dụng chung quy tắc tính hạn với các yêu cầu từ người dùng.
+
+Thiết kế tập trung vào ba yêu cầu: mỗi tài khoản chỉ truy cập dữ liệu của mình; các thay đổi liên quan được lưu trong cùng giao dịch; và số liệu tổng hợp luôn được tính từ bản ghi nguồn. Các tầng trao đổi thông qua những hợp đồng dữ liệu rõ ràng, giúp nhóm kiểm soát phạm vi thay đổi khi phát triển thêm chức năng.
+
+\section{Công nghệ sử dụng}
+\begin{smalltable}\begin{longtable}{L{3cm}L{5.5cm}L{6.1cm}}
+\caption{Nền tảng và thư viện của hệ thống}\label{tab:stack}\\\toprule Thành phần & Nền tảng / thư viện & Vai trò\\\midrule\endfirsthead
+\toprule Thành phần & Nền tảng / thư viện & Vai trò\\\midrule\endhead
+Frontend & React/React DOM 19; Vite 8; TypeScript 5.7; Tailwind 4 & Xây dựng giao diện web và đóng gói ứng dụng.\\
+UI/forms & MUI 7.3.5, Astra UI, React Hook Form, Zod & Xây dựng thành phần giao diện và kiểm tra dữ liệu biểu mẫu.\\
+State/routing & TanStack Query 5; React Router 7.13 & Quản lý dữ liệu lấy từ máy chủ và điều hướng trang.\\
+Biểu đồ & Chart.js 4, react-chartjs-2 5 & Trình bày số liệu tổng hợp theo thời gian và phương tiện.\\
+Backend & ASP.NET Core 10, Identity, EF Core 10.0.14 & Cung cấp API, xác thực, xử lý nghiệp vụ và truy cập dữ liệu.\\
+Persistence & Npgsql EF provider 10.0.3; PostgreSQL & Lưu trữ dữ liệu và thực thi các ràng buộc quan hệ.\\
+API/quan sát & OpenAPI, Scalar 2.18.6, Serilog & Mô tả API, ghi nhận lỗi và theo dõi trạng thái dịch vụ.\\
+Test & xUnit 2.9.3, WebApplicationFactory, Testcontainers PostgreSQL 4.16 & Kiểm thử quy tắc nghiệp vụ, API và tương tác cơ sở dữ liệu.\\\bottomrule
+\end{longtable}\end{smalltable}
+Nền tảng triển khai gồm React ở phía trình duyệt, ASP.NET Core ở phía máy chủ và PostgreSQL để lưu trữ dữ liệu~\cite{repo,backend}.
+
+\section{Sơ đồ triển khai tổng quát}
+\diagram{deployment.tex}{Mô hình triển khai gồm trình duyệt, web server, API và PostgreSQL}{deployment}
+\subsection{Node, artifact và giao thức}
+Trình duyệt nhận tài nguyên giao diện và gửi yêu cầu đến API. Web server phục vụ các tài nguyên tĩnh, đồng thời chuyển tiếp yêu cầu dưới đường dẫn API đến ASP.NET Core. Máy chủ ứng dụng xử lý xác thực, nghiệp vụ và truy cập PostgreSQL. Cookie HttpOnly được trình duyệt gửi kèm theo cơ chế xác thực đã xác định trong DEC07.
+
+Kết nối từ trình duyệt được bảo vệ bằng HTTPS. Cơ sở dữ liệu được đặt trong mạng nội bộ của môi trường triển khai; thông tin kết nối và khóa bảo vệ phiên được cấu hình riêng. Trong môi trường phát triển, Vite chuyển tiếp yêu cầu đến API tại cổng 5080.
+
+\subsection{Kịch bản triển khai}
+Ở môi trường phát triển, giao diện và API chạy riêng để thuận tiện theo dõi thay đổi. Ở môi trường trình bày và triển khai, web server cung cấp giao diện cùng đường dẫn truy cập API. Dữ liệu PostgreSQL và khóa bảo vệ phiên được lưu bền vững để việc khởi động lại ứng dụng không làm mất thông tin đã ghi.
+
+Khi cơ sở dữ liệu gián đoạn, kiểm tra sẵn sàng phản ánh tình trạng không phục vụ được các yêu cầu dữ liệu. Giao diện giữ biểu mẫu và cho phép thử lại. Quy trình phục hồi sử dụng bản sao lưu trên một cơ sở dữ liệu riêng, sau đó đối chiếu số bản ghi, tổng tiền và quyền truy cập.
+
+\section{Kiến trúc phát triển và thành phần}
+\diagram{layers.tex}{Quan hệ phụ thuộc giữa các tầng của hệ thống}{layers}
+Domain chứa entities, exception và GarageRules; không chứa EF mapping. Shared chứa request/response DTO công khai và TypeScript sinh tự động, không phụ thuộc Domain, EF, HTTP hoặc Identity. Application chứa interface dịch vụ, lỗi use case và ports; tham chiếu Shared khi cần. Frontend dùng alias \code{@shared/*}, không import entity lưu trữ. Infrastructure chứa service implementation, repositories và EF persistence. API composition root đăng ký DI; controller gọi interface và chuyển lỗi thành HTTP. Cách phân chia này giúp nhóm thay đổi giao diện hoặc tầng lưu trữ mà vẫn giữ các quy tắc nghiệp vụ độc lập.
+\diagram{components.tex}{Các thành phần chính và hướng mở rộng}{components}
+\subsection{Đường đi request và cache}
+Giao diện gửi dữ liệu biểu mẫu đến controller. Controller xác định tài khoản từ phiên đăng nhập và chuyển yêu cầu cho dịch vụ. Dịch vụ kiểm tra dữ liệu, áp dụng quy tắc nghiệp vụ và sử dụng repository để lưu thay đổi. Kết quả trả về là DTO chứa thông tin cần thiết cho giao diện.
+
+Sau khi lưu thành công, ứng dụng tải lại những dữ liệu chịu ảnh hưởng như số km, lịch sử, kế hoạch và báo cáo. Khi đăng xuất hoặc chuyển tài khoản, dữ liệu tạm của tài khoản trước được xóa. Danh mục loại, hãng và dòng xe được dùng chung, trong khi dữ liệu nhật ký luôn được giới hạn theo tài khoản.
+
+\subsection{Ranh giới transaction và cạnh tranh}
+Một nghiệp vụ có thể thay đổi nhiều bản ghi. Chẳng hạn, ghi dịch vụ cần lưu thông tin chung, các hạng mục, số km và cập nhật kế hoạch liên quan. Các bước này được đặt trong cùng giao dịch: hoặc tất cả thay đổi được xác nhận, hoặc dữ liệu trở về trạng thái trước đó.
+
+Những thao tác sửa và xóa có kiểm tra phiên bản để tránh ghi đè thay đổi của người dùng ở phiên khác. Các thao tác ảnh hưởng chuỗi số km còn cần được kiểm soát ở cấp phương tiện. Cách xử lý này bảo đảm hai yêu cầu đồng thời không cùng tạo ra một lịch sử sai thứ tự.
+
+\section{Thiết kế cơ sở dữ liệu và lớp}
+\subsection{Sơ đồ lớp của mô hình cơ sở}
+\diagram{class-current.tex}{Các lớp miền và lớp quy tắc nghiệp vụ GarageRules}{class-current}
+Account lưu hồ sơ của người dùng và liên kết một--một với cài đặt cá nhân. Vehicle thuộc một Account và tham chiếu VehicleModel; mỗi dòng xe thuộc một hãng, mỗi hãng nằm trong một loại xe. Mô hình cơ sở sử dụng Entry để ghi nhiên liệu, dịch vụ và số km; MaintenancePlan lưu thông tin chu kỳ bảo dưỡng. Các bản ghi có thời điểm tạo, cập nhật và phiên bản phục vụ kiểm soát thay đổi.
+\subsection{Lược đồ dữ liệu cơ sở}
+\diagram{erd-current.tex}{Quan hệ giữa các bảng trong mô hình cơ sở}{erd-current}
+Lược đồ thể hiện các khóa chính, khóa ngoại và số lượng liên kết giữa các bảng. Các bảng chuẩn của Identity được lược bớt để tập trung vào dữ liệu nghiệp vụ và phiên đăng nhập.
+
+\begin{smalltable}\begin{longtable}{L{2.8cm}L{5cm}L{6.8cm}}
+\caption{Từ điển dữ liệu của model hiện có}\label{tab:data-current}\\\toprule Bảng / entity & Trường chính & Ràng buộc và ý nghĩa\\\midrule\endfirsthead
+\toprule Bảng / entity & Trường chính & Ràng buộc và ý nghĩa\\\midrule\endhead
+Account & Id, Name, Phone, GarageRevision & Id PK/FK Identity; tên tối đa 60, phone tối đa 10; revision không âm, concurrency token.\\
+UserSettings & AccountId, Reminders, ThresholdKm, ThresholdDays & PK/FK Account; mặc định true/500/30; threshold toàn cục, ngưỡng nhắc dùng chung.\\
+Vehicle & Id, AccountId, Name, Plate, PlateNormalized, VehicleModelId, Year, BaseOdo, ImageUrl, ArchivedAtUtc?, Version & Unique owner + normalized plate; name 60, plate 20, URL 2048; ODO từ 0 đến 9.999.999; year DB >=1980, service <=2100.\\
+VehicleType & Id, Code, Name, IsActive, Version & Code unique, dài 32; tên 60. CAR/MOTORCYCLE được đề cập trong migration.\\
+VehicleBrand & Id, VehicleTypeId, Name, IsActive, Version & Unique TypeId+Name; FK restrict.\\
+VehicleModel & Id, VehicleBrandId, Name, IsActive, Version & Unique BrandId+Name; FK restrict; vehicle chỉ nhận chuỗi active.\\
+Entry & Id, AccountId, VehicleId, Kind, Title, Date, Odo, Cost, Liters, Note, PlanId?, Version & Title 100, note 500; DateOnly/date; enum lưu string; FK owner/vehicle và owner/vehicle/plan.\\
+MaintenancePlan & Id, AccountId, VehicleId, Title, DueDate, DueOdo, IntervalKm, IntervalMonths & AK owner/vehicle/id; months 1--120, km 1--1.000.000; chu kỳ theo ngày và số km.\\
+AuthSession & Id, AccountId, ProtectedTicket, CreatedAtUtc, ExpiresAtUtc, RevokedAtUtc? & Phiên DB; index owner+expiry; không gọi ProtectedTicket là refresh token.\\
+Idempotency\allowbreak Record & AccountId+Key, RequestHash, ResponseStatus/Body/ETag, timestamps & Composite PK; key tối đa 128, hash/ETag 64; lưu kết quả để xử lý yêu cầu gửi lặp.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+Trong mô hình cơ sở, các trường số sử dụng độ chính xác 20 chữ số và 6 chữ số thập phân. Ràng buộc theo loại Entry kiểm soát số tiền, số lít và liên kết kế hoạch. Chỉ mục theo tài khoản, phương tiện và ngày hỗ trợ truy vấn lịch sử. Thao tác lưu trữ phương tiện giữ lại các bản ghi để người dùng tiếp tục tra cứu.
+
+\subsection{Thiết kế dữ liệu mở rộng}
+\diagram{erd-target.tex}{Thiết kế dữ liệu cho nhiên liệu, dịch vụ nhiều hạng mục và thông báo}{erd-target}
+Để hỗ trợ dịch vụ có nhiều hạng mục, thiết kế mở rộng tách FuelRecord, ServiceRecord và ServiceItem. Mỗi hoạt động nhiên liệu hoặc dịch vụ liên kết với một reading lưu ngày và số km. Khóa ngoại ghép kiểm tra tài khoản, phương tiện và loại nguồn, giúp các dữ liệu liên quan luôn thuộc cùng phạm vi. Thông báo có khóa theo kế hoạch, kỳ và mức nhắc để các vòng đánh giá không tạo bản ghi trùng.
+
+\begin{smalltable}\begin{longtable}{L{3cm}L{6.5cm}L{5cm}}
+\caption{Các thành phần của thiết kế dữ liệu mở rộng}\\\toprule Phần & Bổ sung / ràng buộc đề xuất & Ý nghĩa\\\midrule\endfirsthead
+\toprule Phần & Bổ sung / ràng buộc đề xuất & Ý nghĩa\\\midrule\endhead
+FuelRecord & owner, vehicle, readingId unique, kind=FUEL, amount, liters, title/note/version & Ngày/ODO chỉ tại reading; chuyển Entry Fuel có đối chiếu ID, count và tổng tiền.\\
+ServiceRecord & owner, vehicle, readingId unique, kind=SERVICE, title/note/version & Ngày/ODO chỉ tại reading; ít nhất một item; tổng suy ra, không cộng header lần nữa.\\
+ServiceItem & ServiceId, Kind, title, amount, PlanId? & Repair không plan; Maintenance tùy chọn; unique plan trong một service.\\
+MaintenancePlan & Mode, baseline, meaning, intervals, thresholds, IsPaused, BaselineRevision, FirstCompletedAtUtc, Version & Null theo mode; baseline revision chỉ đổi khi đổi mốc; dấu vết completion đầu tiên không xóa khi source bị xóa.\\
+Notification & owner/plan/cycleKey/level, readAt, supersededAt, reason & Unique plan+cycle+level; index inbox owner/current/read.\\
+UserSettings & RemindersEnabled, StaleOdoDays, Version & Không đánh đồng stale ODO với ngưỡng due toàn cục hiện có.\\
+Completion & JOIN item Maintenance liên kết plan, service và reading; không là bảng chi phí riêng & Mỗi plan tối đa một completion/ngày nghiệp vụ; guard/trigger xuyên JOIN và kiểm thử concurrency.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+
+\section{Mô tả phương thức và method table}
+\subsection{Các phương thức chính}
+\begin{smalltable}\begin{longtable}{L{4.2cm}L{4.2cm}L{6.2cm}}
+\caption{Trách nhiệm của các phương thức chính}\label{tab:methods-current}\\\toprule Phương thức & Input / output & Xử lý và lỗi chính\\\midrule\endfirsthead
+\toprule Phương thức & Input / output & Xử lý và lỗi chính\\\midrule\endhead
+AuthService.RegisterAsync & RegisterRequest -> AccountResponse & Validate name/email/phone; Identity policy; transaction User/role/Profile/Settings; conflict email.\\
+AuthService.LoginAsync & LoginRequest -> (Account, SessionId)? & Find/check lockout/password; save 8h session; null khi sai.\\
+RevokeSessionAsync & accountId, sessionId -> Task & Revoke đúng phiên; gọi save nếu có thay đổi.\\
+VehicleService.ListAsync / GetAsync & owner, filters/id -> DTO list/item & Owner scope; đọc readings để suy current; Tính số km từ lịch sử của từng xe.\\
+CreateAsync / UpdateAsync & owner + create/update DTO -> VehicleResponse & Active model chain; unique plate; baseline check; version cho update.\\
+ArchiveAsync / RestoreAsync & owner,id,version -> VehicleResponse & Set ArchivedAtUtc; tăng version; không xóa Entry.\\
+CreateReadingAsync & owner,vehicle,DTO -> reading DTO & EnsureActive; ValidateEntry; lưu EntryKind.Odo.\\
+UpdateReadingAsync & owner, vehicle, id, DTO và version & Validate chain sau loại chính ID; version++; save concurrency.\\
+DeleteReadingAsync & owner,vehicle,id,version -> Task & Chỉ manual qua repository; xóa entry; save concurrency.\\
+GarageRules.\allowbreak NormalizePlate & string -> string & Giữ ASCII a-z/A-Z/0-9/underscore, uppercase; không mô tả là parser pháp lý biển số.\\
+GarageRules.CurrentOdo & Vehicle + entries -> decimal & Max ODO của entries cùng xe và baseline.\\
+ValidateEntry / ValidateBaseOdo & vehicle / entry / history / today & Guard active, owner, kind, numeric/date và láng giềng ngày.\\
+GarageRules.\allowbreak CalculatePlan & plan, vehicle, entries, settings, today -> PlanState & Latest service date rồi ODO; AddMonths; OR hai chiều; good/soon/overdue.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+\section{Thiết kế HTTP contract}
+\begin{smalltable}\begin{longtable}{L{1.6cm}L{7.5cm}L{5.7cm}}
+\caption{Các API của phân hệ tài khoản, phương tiện và danh mục}\label{tab:api-current}\\\toprule Method & Path dưới /api/v1 & Hợp đồng chính\\\midrule\endfirsthead
+\toprule Method & Path dưới /api/v1 & Hợp đồng chính\\\midrule\endhead
+GET & /auth/csrf & Token JSON + protected CSRF cookie.\\
+POST & /auth/register; /auth/login; /auth/logout & CSRF header; register 201, login 200, logout 204.\\
+GET & /auth/me & Cookie/session; AccountResponse hoặc 401.\\
+GET & /vehicles; /vehicles/\{id\} & Owner từ claim; includeArchived tùy chọn.\\
+POST & /vehicles & name, plate, vehicleModelId, year, baseOdo, imageUrl.\\
+PUT & /vehicles/\{id\} & Trường xe + version; stale 409.\\
+POST & /vehicles/\{id\}/archive; /restore & Body version; giữ history.\\
+GET / POST & /vehicles/\{id\}/odometer-readings & List hoặc create manual: date, odo, note.\\
+PUT / DELETE & /vehicles/\{id\}/odometer-readings/\{readingId\} & PUT có version; DELETE gửi version qua query.\\
+GET & /vehicle-catalog/types; /vehicle-catalog/types/\{id\}/brands; /vehicle-catalog/brands/\{id\}/models & Cascade đọc AllowAnonymous; không có dữ liệu nhật ký riêng.\\
+POST / PUT & /vehicle-catalog/types; /vehicle-catalog/brands; /vehicle-catalog/models [/{id} khi sửa] & Admin role; DTO create/update riêng.\\\bottomrule
+\end{longtable}\end{smalltable}
+
+Các phân hệ nhiên liệu, dịch vụ, kế hoạch bảo dưỡng, thông báo, lịch sử và báo cáo được tổ chức theo từng tài nguyên. Những yêu cầu sửa và xóa gửi kèm phiên bản của bản ghi; nếu phiên bản không còn khớp, máy chủ trả về mã 409 để người dùng tải lại dữ liệu.
+
+Dữ liệu JSON dùng camelCase. Mã định danh có kiểu Guid; ngày nghiệp vụ dùng định dạng YYYY-MM-DD và thời điểm kỹ thuật được lưu theo UTC. Máy chủ lấy tài khoản từ phiên đăng nhập, tự tính số km hiện tại, tổng tiền và trạng thái bảo dưỡng. Phản hồi lỗi dùng ProblemDetails để cung cấp mã lỗi, mô tả và mã theo dõi yêu cầu. Các mã phản hồi chính gồm 400 cho dữ liệu không hợp lệ, 401 khi chưa đăng nhập, 403 khi không có quyền, 404 khi không tìm thấy tài nguyên, 409 khi xảy ra xung đột và 503 khi dịch vụ phụ thuộc không sẵn sàng.

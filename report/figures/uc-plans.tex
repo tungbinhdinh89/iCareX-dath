@@ -1,0 +1,15 @@
+\begin{tikzpicture}[font=\small,>=Stealth,
+box/.style={draw=ink,fill=pale,rounded corners=2pt,align=center,text width=3.3cm,minimum height=.85cm,inner sep=6pt},
+decision/.style={diamond,draw=ink,fill=white,aspect=2.3,align=center,text width=2.6cm,inner sep=2pt},
+state/.style={draw=ink,rounded corners=7pt,fill=pale,align=center,text width=2.7cm,minimum height=.9cm},
+initial/.style={circle,fill=ink,minimum size=.22cm,inner sep=0pt},
+final/.style={circle,draw=ink,double,fill=ink,minimum size=.28cm,inner sep=0pt},
+uc/.style={ellipse,draw=ink,fill=pale,align=center,text width=3.5cm,minimum height=1.1cm},
+edge/.style={->,draw=ink,thick},lbl/.style={font=\scriptsize,fill=white,inner sep=2pt,align=center}]
+\draw[ink] (0,-2.6) circle (.16);
+\draw[ink] (0,-2.7600000000000002) -- (0,-3.3);
+\draw[ink] (-0.35,-2.95) -- (0.35,-2.95);
+\draw[ink] (0,-3.3) -- (-0.3,-3.6500000000000004);
+\draw[ink] (0,-3.3) -- (0.3,-3.6500000000000004);
+\node[align=center,font=\small] (owner) at (0,-4.0) {Chủ xe};\draw[ink] (2,1.1) rectangle (12.2,-6.8);\node[font=\bfseries] at (7.1,.7) {Kế hoạch và nhắc};\node[uc,text width=3cm] (a) at (5,-0.5) {UC06 -- Cấu hình kế hoạch};\draw[ink] (owner.east) -- (a.west);\node[uc,text width=3cm] (b) at (5,-2.3) {UC07.1 -- Xem hạn};\draw[ink] (owner.east) -- (b.west);\node[uc,text width=3cm] (c) at (5,-4.1) {UC07.2 -- Đọc nhắc};\draw[ink] (owner.east) -- (c.west);\node[uc,text width=3cm] (d) at (5,-5.9) {UC05 -- Ghi việc đã làm};\draw[ink] (owner.east) -- (d.west);\node[uc,text width=2.1cm,font=\scriptsize] (inc0) at (10,-1.5) {Tính trạng thái};\draw[dashed,->] (b) -- node[lbl,sloped,above] {$\langle\!\langle$include$\rangle\!\rangle$} (inc0);
+\end{tikzpicture}

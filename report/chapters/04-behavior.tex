@@ -1,0 +1,140 @@
+\chapter{Mô hình hóa hành vi hệ thống}\label{chap:behavior}
+\section{Cách trình bày mô hình hành vi}
+Nhóm sử dụng sơ đồ tuần tự để mô tả trao đổi giữa giao diện, các thành phần xử lý và cơ sở dữ liệu. Sơ đồ hoạt động làm rõ trình tự xử lý cùng các nhánh lựa chọn, còn sơ đồ trạng thái thể hiện vòng đời của phiên đăng nhập, phương tiện và thông báo. Các mô hình được tổ chức theo từng nghiệp vụ để thuận tiện đối chiếu với use case.
+
+\section{Sơ đồ tuần tự}
+\subsection{SQ01 -- Đăng ký}
+\diagram{seq-register.tex}{SQ01: đăng ký tạo bộ Identity/Account/Settings trong transaction}{sq01}
+Người dùng nhập thông tin đăng ký; máy chủ kiểm tra dữ liệu và tạo tài khoản cùng hồ sơ, cài đặt mặc định trong một giao dịch. Email trùng được phản hồi bằng mã 409. Sau khi đăng ký thành công, người dùng chuyển sang đăng nhập.
+
+\subsection{SQ02 -- Đăng nhập}
+\diagram{seq-auth.tex}{SQ02: login cookie + DB session + CSRF}{sq02}
+Theo DEC07, máy chủ kiểm tra CSRF token và thông tin đăng nhập, sau đó tạo phiên trong DB và phát cookie HttpOnly. Các yêu cầu tiếp theo được đối chiếu với thời hạn và trạng thái thu hồi của phiên. Thông tin đăng nhập sai được phản hồi thống nhất để tránh tiết lộ sự tồn tại của tài khoản.
+
+\subsection{SQ03 -- Thêm xe với catalog}
+\diagram{seq-vehicle.tex}{SQ03: tạo vehicle với model active và owner từ claim}{sq03}
+Máy chủ kiểm tra loại xe, hãng và dòng xe còn hoạt động trước khi lưu. Biển số được chuẩn hóa và kiểm tra trùng trong phạm vi tài khoản, kể cả với xe đã lưu trữ. Thông tin danh mục trong kết quả được lấy từ các quan hệ đã lưu.
+
+\subsection{SQ04 -- Sửa reading thủ công}
+\diagram{seq-odo.tex}{SQ04: sửa ODO dùng version và domain validation}{sq04}
+Khi sửa số km, hệ thống kiểm tra quyền sở hữu, trạng thái xe và phiên bản bản ghi. Giá trị mới được đối chiếu với lịch sử trước và sau ngày đang sửa. Nếu bản ghi đã thay đổi ở phiên khác, máy chủ trả mã 409 và giao diện giữ nội dung người dùng đang nhập.
+
+\subsection{SQ05 -- Ghi nhiên liệu có retry}
+\diagram{seq-fuel.tex}{SQ05: tạo fuel và reading có idempotency}{sq05}
+Mỗi lần tạo bản ghi nhiên liệu có một RequestId. Nếu người dùng thử lại cùng yêu cầu sau khi mất kết nối, hệ thống trả kết quả đã lưu. Cùng một khóa nhưng nội dung khác được phản hồi bằng mã 409. Bản ghi nhiên liệu và số km liên quan được lưu trong cùng giao dịch.
+
+\subsection{SQ06 -- Dịch vụ nhiều dòng}
+\diagram{seq-service.tex}{SQ06: service/items/reading/completion/reminder trong một đơn vị nhất quán}{sq06}
+Hệ thống kiểm tra từng hạng mục sửa chữa, bảo dưỡng và kế hoạch được liên kết. Sau khi lưu, các mốc bảo dưỡng và thông báo liên quan được tính lại. Nếu một hạng mục không hợp lệ, toàn bộ giao dịch được hoàn tác để giữ đầy đủ dữ liệu của lần dịch vụ.
+
+\subsection{SQ07 -- Sửa/xóa nguồn quá khứ}
+\diagram{seq-history-edit.tex}{SQ07: sửa lịch sử phải tìm lại completion còn hợp lệ}{sq07}
+Khi sửa hoặc xóa dịch vụ, hệ thống xét cả những kế hoạch được liên kết trước và sau thay đổi. Nếu mốc hoàn thành mới nhất bị xóa, kỳ bảo dưỡng được tính từ mốc hợp lệ còn lại hoặc mốc ban đầu. Số tiền báo cáo được tổng hợp lại từ các bản ghi nguồn.
+
+\subsection{SQ08 -- Tạo kế hoạch}
+\diagram{seq-plan.tex}{SQ08: baseline không tạo service hoặc tiền giả}{sq08}
+Người dùng lựa chọn cách theo dõi, mốc bắt đầu, chu kỳ và ngưỡng nhắc. Hệ thống kiểm tra các trường phù hợp với từng cách theo dõi, sau đó trả về hạn tiếp theo cùng diễn giải. Việc thiết lập mốc ban đầu không làm phát sinh khoản chi phí.
+
+\subsection{SQ09 -- Worker nhắc và phục hồi}
+\diagram{seq-worker.tex}{SQ09: worker đọc DB, upsert và đánh giá sau restart}{sq09}
+Bộ xử lý nhắc đọc dữ liệu theo từng vòng và sử dụng chung quy tắc tính hạn với chức năng xem kế hoạch. Thông báo được cập nhật theo khóa kế hoạch, kỳ và mức nhắc để tránh trùng. Sau khi máy chủ khởi động lại, vòng đánh giá tiếp theo xác định các thông báo còn hiệu lực.
+
+\subsection{SQ10 -- Báo cáo}
+\diagram{seq-report.tex}{SQ10: query tổng hợp số liệu cùng filter}{sq10}
+Yêu cầu báo cáo được giới hạn trong các xe thuộc tài khoản đăng nhập. Số tổng, biểu đồ và bảng chi tiết dùng chung bộ lọc ngày, xe và trạng thái lưu trữ. Khoảng thời gian không có hoạt động cho tổng bằng 0; lỗi tải dữ liệu được hiển thị riêng.
+
+\section{Sơ đồ hoạt động}
+\subsection{AD01 -- Tạo xe}
+\diagram{act-vehicle.tex}{AD01: thêm xe, kiểm catalog và giữ form khi lỗi}{ad01}
+Người dùng chọn danh mục và nhập thông tin xe. Giao diện hỗ trợ kiểm tra trường nhập, máy chủ xác nhận tính hợp lệ trước khi lưu. Khi có lỗi, biểu mẫu giữ nội dung để người dùng điều chỉnh.
+
+\subsection{AD02 -- Chuỗi ODO}
+\diagram{act-odo.tex}{AD02: nhập ODO theo chuỗi và xử lý conflict}{ad02}
+Khi thêm số km ở một ngày trong quá khứ, hệ thống xác định giới hạn từ các lần ghi trước và sau. Nếu giá trị không phù hợp, thông báo nêu khoảng số km có thể nhập. Các bản ghi cùng ngày được sắp xếp ổn định.
+
+\subsection{AD03 -- Nhiên liệu}
+\diagram{act-fuel.tex}{AD03: ghi nhiên liệu, retry giữ RequestId}{ad03}
+Khóa RequestId được giữ khi người dùng thử lại do lỗi mạng. Bản ghi nhiên liệu, số km và kết quả xử lý được xác nhận trong cùng giao dịch. Sau thành công, giao diện tải lại lịch sử và số liệu liên quan.
+
+\subsection{AD04 -- Dịch vụ và completion}
+\diagram{act-service.tex}{AD04: kiểm từng item và chuyển kỳ đúng plan}{ad04}
+Các hạng mục được kiểm tra trước khi lưu. Chỉ hạng mục bảo dưỡng được phép liên kết với kế hoạch của cùng xe. Lỗi tại một dòng được chỉ rõ trên biểu mẫu và toàn bộ dữ liệu đang nhập được giữ để sửa.
+
+\subsection{AD05 -- Cấu hình kế hoạch}
+\diagram{act-plan.tex}{AD05: mode quyết định field và validation}{ad05}
+Cách theo dõi quyết định những trường cần nhập. Với điều kiện đến trước, kế hoạch được nhắc khi thời gian hoặc số km chạm ngưỡng. Người dùng xem phần diễn giải hạn để kiểm tra cấu hình trước khi lưu.
+
+\subsection{AD06 -- Nhắc chủ động}
+\diagram{act-reminder.tex}{AD06: vòng quét nhắc, dedup và loại nhắc lỗi thời}{ad06}
+Mỗi vòng đánh giá xác định kế hoạch đủ điều kiện nhắc và cập nhật những thông báo đã hết hiệu lực. Các vòng tiếp theo được kích hoạt định kỳ; việc đọc thông báo được giữ độc lập với việc hoàn thành bảo dưỡng.
+
+\subsection{AD07 -- Báo cáo và dữ liệu rỗng}
+\diagram{act-report.tex}{AD07: báo cáo phân biệt không dữ liệu với lỗi}{ad07}
+Hệ thống kiểm tra bộ lọc trước khi tổng hợp. Kết quả rỗng được trình bày bằng thông báo chưa có hoạt động phù hợp. Khi tải thất bại, giao diện giữ bộ lọc và cung cấp thao tác thử lại.
+
+\section{Sơ đồ trạng thái}
+\subsection{ST01 -- Phiên xác thực}
+\diagram{state-session.tex}{ST01: lifecycle cookie/session }{st01}
+Phiên đăng nhập được tạo khi xác thực thành công và không còn sử dụng được khi hết hạn hoặc bị thu hồi. Đăng xuất thu hồi phiên đang dùng; đổi mật khẩu yêu cầu xác thực lại và thu hồi các phiên theo chính sách tài khoản.
+
+\subsection{ST02 -- Xe active và archived}
+\diagram{state-vehicle.tex}{ST02: archive là chuyển trạng thái, không xóa lịch sử}{st02}
+Xe đang sử dụng cho phép ghi hoạt động. Khi được lưu trữ, thông tin và lịch sử được giữ để tra cứu. Khôi phục xe cho phép tiếp tục ghi dữ liệu và tính lại hạn bảo dưỡng theo ngày, số km hiện tại.
+
+\subsection{ST03 -- Trạng thái bảo dưỡng}
+\diagram{state-plan.tex}{ST03: năm trạng thái tính hạn của đặc tả đích}{st03}
+Trạng thái bảo dưỡng được suy ra từ mốc hoàn thành, chu kỳ, ngày hiện tại và số km đã ghi. Khi dữ liệu thay đổi, trạng thái được tính lại. Tạm dừng kế hoạch và dữ liệu số km cũ được thể hiện riêng để người dùng hiểu tình trạng theo dõi.
+
+\subsection{ST04 -- Vòng đời notification}
+\diagram{state-notification.tex}{ST04: Current/Read và Superseded, không liên quan completion trực tiếp}{st04}
+Trạng thái đã đọc và trạng thái hết hiệu lực được theo dõi độc lập. Số thông báo trên biểu tượng chỉ tính các nhắc hiện hành chưa đọc. Khi cùng kỳ và mức nhắc được đánh giá lại, hệ thống sử dụng bản ghi cũ; mức nhắc mới được hiển thị là chưa đọc.
+
+\section{Đặc tả thuật toán tính hạn}
+Cho mốc hợp lệ mới nhất $(d_b,o_b)$, chu kỳ $(m,k)$ và ngưỡng $(t_d,t_k)$. Chỉ xét chiều có trong mode:
+\begin{align}
+d_{due} &= \operatorname{AddCalendarMonths}(d_b,m),\\
+o_{due} &= o_b + k,\\
+\Delta_d &= d_{due}-today_{VN},\qquad
+\Delta_k = o_{due}-o_{current}.
+\end{align}
+Hiệu ngày là số ngày lịch, không phải số giờ UTC chia 24. Với một chiều có dữ liệu và ngưỡng $t$:
+\[
+S(\Delta,t)=\begin{cases}
+\text{Overdue}&\Delta<0,\\
+\text{Due}&\Delta=0,\\
+\text{Soon}&0<\Delta\le t,\\
+\text{NotDue}&\Delta>t.
+\end{cases}
+\]
+Missing input trả Unknown ở chiều đó. Either chọn mức nghiêm trọng cao nhất khi đã có Soon/Due/Overdue; nếu mọi chiều có dữ liệu đều NotDue nhưng còn chiều thiếu, kết quả Unknown. Với Time/Distance không xét chiều ngoài mode.
+
+Ví dụ: kỳ 31/01/2026 + 1 tháng = 28/02/2026; 31/01/2028 + 1 tháng = 29/02/2028. Nếu dueOdo=11.300, current=11.300 thì Due dù còn nhiều ngày; current=11.301 thì Overdue. Nếu current=11.250 với ngưỡng 100 km thì Soon. Sửa completion mới nhất về ngày cũ phải tìm lại mốc, không cộng chu kỳ từ today.
+
+\section{User flow và điều hướng}
+\subsection{UF00 -- Khởi đầu đến chiếc xe đầu tiên}
+\diagram{uf-onboard.tex}{UF00: đăng ký, đăng nhập và tạo xe đầu tiên}{uf00}
+Từ trang tổng quan chưa có dữ liệu, người dùng được hướng dẫn tạo chiếc xe đầu tiên. Sau khi chọn danh mục và nhập thông tin cơ bản, xe xuất hiện trong danh sách và có thể bắt đầu ghi hoạt động.
+
+\subsection{UF01 -- Ghi chi phí nhiên liệu}
+\diagram{uf-fuel.tex}{UF01 chọn xe, ghi nhiên liệu, kiểm tra kết quả}{uf01}
+Người dùng chọn xe, nhập thông tin lần đổ nhiên liệu và xác nhận lưu. Khoản tiền vừa ghi xuất hiện trong lịch sử và số liệu tổng hợp. Nếu kết nối bị gián đoạn, người dùng có thể thử lại yêu cầu.
+
+\subsection{UF02 -- Từ nhắc đến hoàn thành}
+\diagram{uf-complete.tex}{UF02 ghi dịch vụ thật mới tạo kỳ kế tiếp}{uf02}
+Từ một nhắc bảo dưỡng, người dùng mở biểu mẫu dịch vụ đã chọn sẵn xe và kế hoạch liên quan. Sau khi xác nhận công việc đã thực hiện và lưu dịch vụ, hệ thống xác định mốc cho kỳ tiếp theo.
+
+\subsection{UF03 -- Điều chỉnh lịch sử}
+\diagram{uf-edit.tex}{UF03 sửa/xóa và đọc trạng thái tính lại}{uf03}
+Người dùng mở một hoạt động từ lịch sử để sửa hoặc xóa. Sau thay đổi, lịch sử, chi phí và kế hoạch liên quan được cập nhật. Khi có xung đột phiên bản, người dùng được hướng dẫn tải dữ liệu mới.
+
+\subsection{UF04 -- Thiết lập kế hoạch}
+\diagram{uf-plan.tex}{UF04: lựa chọn mode, baseline và kiểm tra ý nghĩa hạn}{uf04}
+Biểu mẫu phân biệt mốc đã thực hiện bảo dưỡng với mốc bắt đầu theo dõi. Với kế hoạch theo điều kiện đến trước, phần giải thích cho biết thời gian hoặc số km đều có thể làm phát sinh nhắc.
+
+\subsection{UF05 -- Đối chiếu chi phí}
+\diagram{uf-report.tex}{UF05: chọn filter và đối chiếu nguồn với tổng}{uf05}
+Người dùng chọn khoảng thời gian và phương tiện, xem số tổng rồi mở từng hoạt động để đối chiếu. Khi quay lại báo cáo, bộ lọc được giữ và số liệu được làm mới nếu hoạt động nguồn vừa thay đổi.
+
+\subsection{UF06 -- Lưu trữ và dùng lại xe}
+\diagram{uf-archive.tex}{UF06: archive giữ dữ liệu, restore không reset lịch}{uf06}
+Thao tác lưu trữ có bước xác nhận và giải thích rằng lịch sử vẫn được giữ. Khi cần sử dụng lại xe, người dùng chọn khôi phục; hệ thống đánh giá kế hoạch theo mốc đã có.
