@@ -36,3 +36,5 @@ logs/
 /node_modules
 # Python helper cache
 **/__pycache__/
+/Design
+/latex-local-studio

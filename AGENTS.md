@@ -36,4 +36,13 @@ A Vite dev server may already run on PORT (default 8443); use the existing previ
 
 ## Verification and handoff
 
+Follow [ticket workflow](doc/ticket-workflow.md): use feature, bug, fix, enhanced,
+test, ui, docs, refactor or chore labels and define scope/acceptance criteria.
+Create a `<label>/<issue-number>-<slug>` branch before implementing a ticket.
+Use `<type>(<scope>): <summary> (#<issue>)` commits and `Refs #<issue>` in PRs.
+After creating a PR, wait for owner review. Never self-approve, merge, enable
+auto-merge, close issues/PRs or mark Done without explicit owner authorization.
+Review alone does not authorize merge. Do not force-add ignored directories
+wholesale.
+
 Run relevant unit/host/integration checks and frontend typecheck/build when affected. Report exact results and pre-existing blockers; never mark a skipped or blocked check as passed. Keep user changes; do not commit secrets, logs, dependencies, SDKs or generated local state. Do not approve, merge or close work without explicit owner authorization.

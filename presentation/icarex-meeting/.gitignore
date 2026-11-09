@@ -1,0 +1,16 @@
+build/
+dist/
+logs/
+rendered/
+__pycache__/
+/main.pdf
+/iCareX-ThuyetTrinh.pdf
+*.aux
+*.nav
+*.snm
+*.toc
+*.out
+*.vrb
+*.synctex.gz
+*.fls
+*.fdb_latexmk
