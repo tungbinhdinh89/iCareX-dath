@@ -1,3 +1,5 @@
+import LoginForm from "@/components/AuthForm"
+export { default as LoginForm } from "@/components/AuthForm"
 import { useEffect, useState } from "react"
 import {
   Alert,
@@ -16,8 +18,6 @@ import {
 } from "@mui/material"
 import CloseRounded from "@mui/icons-material/CloseRounded"
 import ShieldOutlined from "@mui/icons-material/ShieldOutlined"
-import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined"
-import VisibilityOffOutlined from "@mui/icons-material/VisibilityOffOutlined"
 import CheckCircleOutline from "@mui/icons-material/CheckCircleOutline"
 import DirectionsCarOutlined from "@mui/icons-material/DirectionsCarOutlined"
 import SpeedOutlined from "@mui/icons-material/SpeedOutlined"
@@ -93,10 +93,14 @@ function EntryForm({
 }: {
   modal: Extract<ModalState, { type: "entry" }>
 }) {
-  const { data, save, pending, setModal, refetch, notify } = useGarage()
+  const { data, save, pending, setModal, refetch, notify, canManageOdo } =
+    useGarage()
   const [error, setError] = useState("")
   const initialVehicle =
-    modal.entry?.vehicleId ?? modal.vehicleId ?? data?.vehicles[0]?.id ?? ""
+    modal.entry?.vehicleId ??
+    modal.vehicleId ??
+    data?.vehicles.find((vehicle) => canManageOdo(vehicle.id))?.id ??
+    ""
   const vehicle = data?.vehicles.find((v) => v.id === initialVehicle)
   const {
     register,
@@ -129,14 +133,18 @@ function EntryForm({
   if (!data) return null
   const submit = handleSubmit(async (values) => {
     setError("")
+    if (modal.kind !== "odo" || !canManageOdo(values.vehicleId)) {
+      setError("Bạn không có quyền ghi ODO cho phương tiện này.")
+      return
+    }
     const entry: Entry = {
       ...values,
       date: values.date.split("/").reverse().join("-"),
       kind: modal.kind,
       id: modal.entry?.id ?? crypto.randomUUID(),
       planId: modal.entry?.planId ?? modal.plan?.id,
-      cost: modal.kind === "odo" ? 0 : values.cost,
-      liters: modal.kind === "fuel" ? values.liters : 0,
+      cost: 0,
+      liters: 0,
     }
     try {
       validateEntry(data, entry)
@@ -216,7 +224,7 @@ function EntryForm({
                 {...field}
                 select
                 label="Phương tiện *"
-                disabled={!!modal.plan || !!modal.entry?.planId}
+                disabled={!!modal.entry || !!modal.plan}
                 error={!!errors.vehicleId}
                 helperText={errors.vehicleId?.message}
                 className="full"
@@ -226,11 +234,13 @@ function EntryForm({
                   if (v) setValue("odo", odoOf(v, data.entries))
                 }}
               >
-                {data.vehicles.map((v) => (
-                  <MenuItem value={v.id} key={v.id}>
-                    {v.name} · {v.plate}
-                  </MenuItem>
-                ))}
+                {data.vehicles
+                  .filter((v) => canManageOdo(v.id))
+                  .map((v) => (
+                    <MenuItem value={v.id} key={v.id}>
+                      {v.name} · {v.plate}
+                    </MenuItem>
+                  ))}
               </TextField>
             )}
           />
@@ -327,7 +337,9 @@ function EntryForm({
           variant="contained"
           disabled={pending || isSubmitting || !data.vehicles.length}
           startIcon={
-            pending || isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined
+            pending || isSubmitting ? (
+              <CircularProgress size={16} color="inherit" />
+            ) : undefined
           }
         >
           {pending || isSubmitting
@@ -763,164 +775,7 @@ function PlanForm({ modal }: { modal: Extract<ModalState, { type: "plan" }> }) {
     </Box>
   )
 }
-export function LoginForm() {
-  const { login, notify } = useGarage()
-  const [registerMode, setRegisterMode] = useState(false)
-  const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [show, setShow] = useState(false)
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState("")
-  return (
-    <Box
-      component="form"
-      noValidate
-      onSubmit={async (e) => {
-        e.preventDefault()
-        setPending(true)
-        setError("")
-        try {
-          if (registerMode) {
-            await api.register({ name, email, password, phone })
-            notify("Tạo tài khoản thành công. Hãy đăng nhập để tiếp tục.")
-            setRegisterMode(false)
-          } else {
-            login(await api.login(email, password))
-          }
-        } catch (e) {
-          const message = (e as Error).message
-          setError(message)
-          notify(message, "error")
-        } finally {
-          setPending(false)
-        }
-      }}
-    >
-      <DialogContent className="auth-content">
-        <Box className="auth-intro">
-          <Typography variant="h6" component="h3">
-            {registerMode
-              ? "Bắt đầu hành trình chăm xe"
-              : "Rất vui được gặp lại bạn"}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {registerMode
-              ? "Tạo tài khoản để quản lý phương tiện và ghi lại lịch sử chăm sóc xe của riêng bạn."
-              : "Đăng nhập để trở về garage và tiếp tục theo dõi phương tiện của bạn."}
-          </Typography>
-        </Box>
-        <Box
-          className="auth-fields"
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-2xl)",
-          }}
-        >
-          {registerMode && (
-            <>
-              <TextField
-                label="Họ và tên"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoComplete="name"
-              />
-              <TextField
-                label="Số điện thoại"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                helperText="Không bắt buộc, 10 chữ số bắt đầu bằng 0"
-                type="tel"
-                autoComplete="tel"
-              />
-            </>
-          )}
-          {error && <Alert severity="error">{error}</Alert>}
-          <TextField
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="username"
-            placeholder="ban@example.com"
-          />
-          <TextField
-            label="Mật khẩu"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            type={show ? "text" : "password"}
-            autoComplete={registerMode ? "new-password" : "current-password"}
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShow(!show)}
-                      edge="end"
-                      aria-label={show ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                    >
-                      {show ? (
-                        <VisibilityOffOutlined fontSize="small" />
-                      ) : (
-                        <VisibilityOutlined fontSize="small" />
-                      )}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
-            helperText={
-              registerMode
-                ? "Mật khẩu tối thiểu 12 ký tự, gồm hoa/thường/số/ký tự đặc biệt."
-                : undefined
-            }
-          />
-        </Box>
-        <Box
-          className="auth-security"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-md)",
-            mt: "var(--space-2xl)",
-            color: "text.secondary",
-          }}
-        >
-          <ShieldOutlined fontSize="small" />
-          <Typography variant="caption">
-            Không gian riêng cho bạn và những chiếc xe.
-          </Typography>
-        </Box>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button
-          type="button"
-          onClick={() => {
-            setRegisterMode(!registerMode)
-            setError("")
-          }}
-          disabled={pending}
-        >
-          {registerMode ? "Đã có tài khoản" : "Tạo tài khoản"}
-        </Button>
-        <Button type="submit" variant="contained" disabled={pending}>
-          {pending
-            ? registerMode
-              ? "Đang tạo..."
-              : "Đang đăng nhập..."
-            : registerMode
-              ? "Đăng ký"
-              : "Đăng nhập & bắt đầu"}
-        </Button>
-      </DialogActions>
-    </Box>
-  )
-}
+
 export default function Dialogs() {
   const { modal, setModal, data, save, pending, notify, refetch } = useGarage()
   if (!modal) return null

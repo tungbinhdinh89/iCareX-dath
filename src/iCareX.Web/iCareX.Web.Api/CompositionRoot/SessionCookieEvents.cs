@@ -24,9 +24,24 @@ internal sealed class SessionCookieEvents(GarageDbContext db, TimeProvider timeP
             session => session.Id == sessionId &&
                        session.AccountId == accountId &&
                        session.RevokedAtUtc == null &&
-                       session.ExpiresAtUtc > now,
+                       session.ExpiresAtUtc > now &&
+                       db.Users.Any(user => user.Id == accountId &&
+                           (!user.LockoutEnabled || user.LockoutEnd == null || user.LockoutEnd <= now)),
             context.HttpContext.RequestAborted);
         if (!valid)
+        {
             context.RejectPrincipal();
+            return;
+        }
+        // Role changes take effect without waiting for cookie expiry.
+        if (principal.Identity is ClaimsIdentity identity)
+        {
+            foreach (var claim in identity.FindAll(ClaimTypes.Role).ToArray()) identity.RemoveClaim(claim);
+            var roles = await (from membership in db.UserRoles.AsNoTracking()
+                               join role in db.Roles.AsNoTracking() on membership.RoleId equals role.Id
+                               where membership.UserId == accountId
+                               select role.Name).ToArrayAsync(context.HttpContext.RequestAborted);
+            identity.AddClaims(roles.Where(x => x != null).Select(x => new Claim(ClaimTypes.Role, x!)));
+        }
     }
 }

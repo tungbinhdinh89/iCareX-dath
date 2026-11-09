@@ -1,3 +1,4 @@
+using iCareX.Application.Features.Authorization.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using iCareX.Application.Features.Identity.Contracts;
 using iCareX.Shared.Contracts.Identity;
@@ -14,7 +15,14 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddOptions<AccountEmailOptions>().BindConfiguration("AccountEmail");
+        services.AddScoped<IAccountEmailSender, AccountEmailSender>();
+        services.AddScoped<IAccountSecurityService, AccountSecurityService>();
         services.AddScoped<VehicleRepository>();
+        services.AddScoped<IVehicleMembershipResolver, VehicleMembershipResolver>();
+        services.AddScoped<IVehicleAccessService, VehicleAccessService>();
+        services.AddScoped<IVehicleMemberService, VehicleMemberService>();
+        services.AddScoped<IVehicleInvitationService, VehicleInvitationService>();
         services.AddScoped<IVehicleService, VehicleService>();
         services.AddScoped<IVehicleCatalogService, VehicleCatalogService>();
         return services;

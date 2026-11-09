@@ -2,6 +2,21 @@
 
 Web quản lý phương tiện cá nhân, ODO, chi phí và kế hoạch bảo dưỡng. Backend ASP.NET Core 10; frontend React 19/TypeScript/Vite; PostgreSQL qua EF Core.
 
+Authentication/Vehicle authorization hiện có: [runtime contract và cấu hình SMTP](doc/.be/access-control.md).
+Account mới phải xác thực email trước khi vào ứng dụng; setup `AccountEmail:*`
+bằng User Secrets/environment để gửi thư thật. Có permissions API, membership,
+invitation, verify/reset/change password; chưa có Fuel/Maintenance/Reminder CRUD
+hoặc ownership transfer. Các migration sharing hiện có phải được áp dụng chủ
+động; ứng dụng không tự migrate lúc startup.
+
+Đăng ký hiện lưu tài khoản trước khi gửi thư; SMTP lỗi vẫn trả 201 với
+`verificationEmailSent=false`, tài khoản chờ xác thực và có thể gửi lại sau.
+Xem [kế hoạch và khôi phục SMTP](doc/.be/registration-email-recovery.md).
+
+Cấu hình Gmail local bằng `powershell -NoProfile -ExecutionPolicy Bypass -File
+scripts/configure-gmail.ps1`: nhập email/App Password trực tiếp trên máy, gõ
+SEND để thử gửi và lưu User Secrets khi thành công. Không gửi App Password qua chat.
+
 ## Cấu trúc
 
 - `src/`: Domain, Application, Infrastructure, Shared, Web và hai project test.
@@ -14,7 +29,18 @@ Web quản lý phương tiện cá nhân, ODO, chi phí và kế hoạch bảo d
 
 Xem [cây repository và dependency](doc/structure-architecture.md). Các thư mục ẩn Git/GitHub, manifest tool .NET và Figma là cấu hình cần thiết.
 
+Đặc tả auth/access mới: [authentication-authorization](doc/authentication-authorization.md),
+[schema sharing](doc/schema-database.md#auth-sharing-schema) và
+[test matrix](doc/.be/testing.md#access-test-matrix). Thiết kế đích bổ sung
+Owner/Manager/Contributor/Viewer theo xe, invitation và transfer; source hiện
+vẫn owner-only, chưa có migration/API sharing. Reuse Identity/cookie/session/
+CSRF; không tạo authentication thứ hai.
+
 ## Codex agents và custom skills
+
+Nghiệp vụ auth/access cho backend/database/frontend/test dùng
+[icarex-access-control](.agents/skills/icarex-access-control/SKILL.md);
+đọc phần theo vai trò, đối chiếu current/target và giữ phạm vi user giao.
 
 Đọc [hướng dẫn dùng skills cho Codex](doc/codex-skills.md) và [quy tắc iCareX](doc/rules.md) trước khi giao việc cho agent. `AGENTS.md` ở root dẫn agent tới hai tài liệu này; chỉ đọc các skill phù hợp tác vụ, không nạp toàn bộ bộ skill mỗi phiên.
 

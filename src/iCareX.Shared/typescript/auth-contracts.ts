@@ -18,8 +18,45 @@ export type AccountResponse = {
   email: string
   phone: string
   roles: Array<string>
+  accountStatus: string
+  emailVerified: boolean
 }
 
 export type CsrfResponse = {
   token: string
+}
+
+export type RegistrationResponse = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  roles: Array<string>
+  accountStatus: string
+  emailVerified: boolean
+  verificationEmailSent: boolean
+}
+
+export type EmailActionRequest = {
+  email: string
+}
+
+export type VerifyEmailRequest = {
+  email: string
+  token: string
+}
+
+export type ResetPasswordRequest = {
+  email: string
+  token: string
+  newPassword: string
+}
+
+export type ChangePasswordRequest = {
+  currentPassword: string
+  newPassword: string
+}
+
+export type AccountActionAcceptedResponse = {
+  message: string
 }

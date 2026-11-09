@@ -352,3 +352,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--brand-primary);
   .stat-value { font-size: calc(var(--text-title-size) - var(--space-xs)); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+.member-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-xl); padding: var(--space-xl) 0; border-bottom: 1px solid var(--border-primary); }
+.member-row:last-child { border-bottom: 0; }
+.member-row .MuiTypography-root { overflow-wrap: anywhere; }
+@media (max-width: 600px) { .member-row { align-items: flex-start; flex-direction: column; } }
