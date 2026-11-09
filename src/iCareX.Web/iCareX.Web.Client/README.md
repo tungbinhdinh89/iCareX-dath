@@ -6,6 +6,16 @@ ASP.NET Core API. Đây là stack hiện tại; `reference.md` có mô tả Next
 
 ## Teaching stack
 
+Auth/vehicle access business requirements are maintained in
+[the shared specification](../../../doc/authentication-authorization.md) and
+[the access skill](../../../.agents/skills/icarex-access-control/SKILL.md).
+The current API is owner-only; per-vehicle roles, membership, invitation and
+ownership transfer are target behavior, not available endpoints. Permission
+UI must use account + vehicle + resource capabilities, preserve creator-only
+Contributor edits, and refresh access/cache after membership changes.
+Manager can read members but cannot invite/change/remove them; Viewer cannot
+write. Keep the existing session gate, cookie/CSRF client and Vietnamese design.
+
 - UI: MUI Community 7, Material Icons, Astra Make Kit.
 - Styling: Tailwind CSS v4 và token/font tập trung tại `src/index.css`.
 - Routing: React Router 7 Data Mode.

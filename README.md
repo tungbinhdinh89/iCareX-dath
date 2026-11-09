@@ -14,7 +14,18 @@ Web quản lý phương tiện cá nhân, ODO, chi phí và kế hoạch bảo d
 
 Xem [cây repository và dependency](doc/structure-architecture.md). Các thư mục ẩn Git/GitHub, manifest tool .NET và Figma là cấu hình cần thiết.
 
+Đặc tả auth/access mới: [authentication-authorization](doc/authentication-authorization.md),
+[schema sharing](doc/schema-database.md#auth-sharing-schema) và
+[test matrix](doc/.be/testing.md#access-test-matrix). Thiết kế đích bổ sung
+Owner/Manager/Contributor/Viewer theo xe, invitation và transfer; source hiện
+vẫn owner-only, chưa có migration/API sharing. Reuse Identity/cookie/session/
+CSRF; không tạo authentication thứ hai.
+
 ## Codex agents và custom skills
+
+Nghiệp vụ auth/access cho backend/database/frontend/test dùng
+[icarex-access-control](.agents/skills/icarex-access-control/SKILL.md);
+đọc phần theo vai trò, đối chiếu current/target và giữ phạm vi user giao.
 
 Đọc [hướng dẫn dùng skills cho Codex](doc/codex-skills.md) và [quy tắc iCareX](doc/rules.md) trước khi giao việc cho agent. `AGENTS.md` ở root dẫn agent tới hai tài liệu này; chỉ đọc các skill phù hợp tác vụ, không nạp toàn bộ bộ skill mỗi phiên.
 

@@ -5,6 +5,13 @@ description: Thiết kế và chỉnh sửa UI iCareX theo bộ design system xa
 
 ## Chuẩn iCareX — đọc trước
 
+Nếu UI liên quan authentication, quyền trên xe, membership/invitation/transfer
+hoặc test quyền, đọc `doc/authentication-authorization.md` và
+`.agents/skills/icarex-access-control/SKILL.md`. Thiết kế đích có bốn role theo
+xe; không dùng global role hoặc equality owner==session cho mọi nút. Manager
+xem members nhưng không quản lý; Contributor sửa/xóa own; Viewer không write.
+Hiện API owner-only chưa có sharing, không mock permission hoặc đoán endpoint.
+
 Trong repository iCareX, đọc `doc/rules.md` và `doc/guidelines/Guidelines.md`.
 Nguồn thị giác là `Design/Design_system_1.png` (component/trạng thái) và
 `Design/Design_system_2.png` (brand/tokens/responsive), do owner chỉ định.

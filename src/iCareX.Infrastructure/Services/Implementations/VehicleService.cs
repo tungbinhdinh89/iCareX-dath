@@ -43,6 +43,7 @@ public sealed class VehicleService(
         var vehicle = new Vehicle
         {
             AccountId = accountId,
+            CreatedByUserId = accountId,
             Name = request.Name.Trim(),
             Plate = request.Plate.Trim().ToUpperInvariant(),
             PlateNormalized = normalizedPlate,
@@ -53,9 +54,15 @@ public sealed class VehicleService(
             ImageUrl = request.ImageUrl?.Trim() ?? ""
         };
         repository.AddVehicle(vehicle);
+        db.VehicleMembers.Add(new VehicleMember
+        {
+            VehicleId = vehicle.Id,
+            UserId = accountId,
+            Role = VehicleMemberRole.Owner
+        });
         await repository.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Vehicle created {VehicleId} for account {AccountId}", vehicle.Id, accountId);
-        return ToResponse(vehicle, Array.Empty<Entry>());
+        return ToResponse(vehicle, Array.Empty<OdometerReading>());
     }
 
     public async Task<VehicleResponse> UpdateAsync(Guid accountId, Guid vehicleId, UpdateVehicleRequest request, CancellationToken cancellationToken)
@@ -66,7 +73,7 @@ public sealed class VehicleService(
         EnsureVersion(vehicle, request.Version);
         var model = await RequireActiveModel(request.VehicleModelId, cancellationToken);
         var readings = await repository.ReadingsAsync(accountId, vehicleId, cancellationToken);
-        GarageRules.ValidateBaseOdo(request.BaseOdo, readings);
+        GarageRules.ValidateBaseOdo(request.BaseOdo, readings.Select(ToEntry));
         var normalizedPlate = GarageRules.NormalizePlate(request.Plate);
         if (await db.Vehicles.AnyAsync(x => x.AccountId == accountId && x.Id != vehicleId &&
             x.PlateNormalized == normalizedPlate, cancellationToken))
@@ -102,14 +109,14 @@ public sealed class VehicleService(
     {
         var vehicle = await RequireVehicle(accountId, vehicleId, cancellationToken);
         GarageRules.EnsureActive(vehicle);
-        var reading = new Entry
+        var reading = new OdometerReading
         {
-            AccountId = accountId, VehicleId = vehicleId, Kind = EntryKind.Odo,
-            Title = "Cập nhật ODO", Date = request.Date, Odo = request.Odo,
+            AccountId = accountId, VehicleId = vehicleId, CreatedByUserId = accountId,
+            Date = request.Date, Odo = request.Odo,
             Note = request.Note?.Trim() ?? ""
         };
         var history = await repository.ReadingsAsync(accountId, vehicleId, cancellationToken);
-        GarageRules.ValidateEntry(vehicle, reading, history, clock.Today);
+        GarageRules.ValidateEntry(vehicle, ToEntry(reading), history.Select(ToEntry), clock.Today);
         repository.AddReading(reading);
         await repository.SaveChangesAsync(cancellationToken);
         logger.LogInformation("ODO reading created {ReadingId} for vehicle {VehicleId}", reading.Id, vehicleId);
@@ -125,7 +132,7 @@ public sealed class VehicleService(
         EnsureVersion(reading, request.Version);
         var history = await repository.ReadingsAsync(accountId, vehicleId, cancellationToken);
         reading.Date = request.Date; reading.Odo = request.Odo; reading.Note = request.Note?.Trim() ?? "";
-        GarageRules.ValidateEntry(vehicle, reading, history, clock.Today);
+        GarageRules.ValidateEntry(vehicle, ToEntry(reading), history.Select(ToEntry), clock.Today);
         reading.Version++;
         reading.UpdatedAtUtc = clock.UtcNow;
         await SaveWithConcurrency(cancellationToken);
@@ -168,7 +175,7 @@ public sealed class VehicleService(
     private static void EnsureVersion(AuditedEntity entity, long version)
     {
         if (entity is Vehicle vehicle && vehicle.Version != version ||
-            entity is Entry entry && entry.Version != version)
+            entity is OdometerReading reading && reading.Version != version)
             throw new VehicleConflictException("Phiên bản dữ liệu không còn mới.");
     }
 
@@ -188,7 +195,7 @@ public sealed class VehicleService(
             throw new VehicleValidationException(["Biển số không hợp lệ."]);
     }
 
-    private static VehicleResponse ToResponse(Vehicle vehicle, IEnumerable<Entry> readings) =>
+    private static VehicleResponse ToResponse(Vehicle vehicle, IEnumerable<OdometerReading> readings) =>
         new(vehicle.Id, vehicle.Name, vehicle.Plate,
             vehicle.VehicleModel!.VehicleBrand!.VehicleType!.Id,
             vehicle.VehicleModel.VehicleBrand.VehicleType.Name,
@@ -197,9 +204,16 @@ public sealed class VehicleService(
             vehicle.VehicleModel.Id,
             vehicle.VehicleModel.Name,
             vehicle.Year,
-            vehicle.BaseOdo, GarageRules.CurrentOdo(vehicle, readings), vehicle.ImageUrl,
+            vehicle.BaseOdo, GarageRules.CurrentOdo(vehicle, readings.Select(ToEntry)), vehicle.ImageUrl,
             vehicle.ArchivedAtUtc is not null, vehicle.Version);
 
-    private static OdometerReadingResponse ToReadingResponse(Entry reading) =>
-        new(reading.Id, reading.VehicleId, reading.Date, reading.Odo, reading.Title, reading.Note, reading.Version);
+    private static OdometerReadingResponse ToReadingResponse(OdometerReading reading) =>
+        new(reading.Id, reading.VehicleId, reading.Date, reading.Odo, "Cập nhật ODO", reading.Note, reading.Version);
+
+    private static Entry ToEntry(OdometerReading reading) => new()
+    {
+        Id = reading.Id, AccountId = reading.AccountId, VehicleId = reading.VehicleId,
+        Kind = EntryKind.Odo, Date = reading.Date, Odo = reading.Odo, Note = reading.Note,
+        CreatedAtUtc = reading.CreatedAtUtc, UpdatedAtUtc = reading.UpdatedAtUtc, Version = reading.Version
+    };
 }

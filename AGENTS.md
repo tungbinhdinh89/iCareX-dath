@@ -6,7 +6,7 @@ Read [rules](doc/rules.md), [implementation playbook](doc/skill.md), [README](RE
 
 Use [Codex skill guidance](doc/codex-skills.md) and the routing table in
 [rules](doc/rules.md) to select relevant `SKILL.md` files under
-`stephen-skills/.agents/skills/` or `stephen-skills/skills/`. Read the selected
+`.agents/skills/`, `stephen-skills/.agents/skills/` or `stephen-skills/skills/`. Read the selected
 skill before applying it and announce its use. Do not load all skills, assume
 nested files are registered, or execute inherited CMS commands against iCareX.
 Project architecture, scripts, design guidelines and the user's authorized
@@ -29,6 +29,15 @@ to spawn agents or mutate external services.
 
 ## Backend work
 
+For authentication, vehicle permissions, database changes or related tests,
+read [access specification](doc/authentication-authorization.md) and
+[access skill](.agents/skills/icarex-access-control/SKILL.md). Current source is
+owner-only; target access uses per-vehicle Owner/Manager/Contributor/Viewer
+membership, not a global user role. Keep Identity/cookie/session/CSRF.
+Creator, driver and current owner are separate. Invitations require hash-only,
+single-use tokens/email match; ownership transfer requires recipient confirmation.
+Revoke preserves history. Do not describe proposed sharing APIs/migrations as live.
+
 Read [backend README](doc/.be/README.md) and the relevant data/API/testing pages before changing backend code. Update relevant backend documentation and `doc/.be/changelog.md` with each backend change. Use .NET 10 and PostgreSQL; Domain and Shared must not depend on EF, HTTP or Identity.
 
 Put transport request/response models in `iCareX.Shared/Contracts/<Feature>`; keep service interfaces and errors in Application. Generate TypeScript from the C# DTOs and run the generator with `--check`. Do not expose persisted entities, Identity secrets, DbContext or IQueryable to the frontend.
@@ -36,6 +45,12 @@ Put transport request/response models in `iCareX.Shared/Contracts/<Feature>`; ke
 Check ownership, archive, validation, transaction, concurrency and idempotency for business mutations. Never automatically migrate/seed at startup or use the NAS database for destructive tests. Never log passwords, tokens, cookies or connection strings. Existing UserSecretsId/key compatibility is documented in README; renaming the application does not authorize modifying a live database.
 
 ## Frontend work
+
+Use the same access specification/skill for permission-based UI and tests:
+centralize capabilities per vehicle/resource, invalidate account/vehicle caches
+on session or membership changes, and keep server authorization authoritative.
+Manager can read members but cannot manage them; Contributor edits own records;
+Viewer cannot write. Keep the existing login/session gate and supplied design system.
 
 Use React 19, Vite 8, TypeScript and Tailwind v4 through `@tailwindcss/vite`; no Tailwind/PostCSS config is required. Keep global CSS/font wiring in `src/index.css`, CSS imports first. Preserve MUI/Astra styling and Vietnamese UX. Read [design guidelines](doc/guidelines/Guidelines.md) when working on UI.
 
